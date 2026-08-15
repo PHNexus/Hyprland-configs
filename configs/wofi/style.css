@@ -1,0 +1,94 @@
+/* Global styles */
+window {
+  margin: 0px;
+  border: 2px solid #000000;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.95);
+  font-family: JetBrains Mono, monospace;
+  color: #ffffff;
+}
+
+/* Input box */
+#input {
+  margin: 5px;
+  border: 1px solid #222222;
+  color: #ffffff;
+  background-color: #111111;
+  padding: 6px;
+  border-radius: 5px;
+}
+
+#input::placeholder {
+  color: #888888;
+}
+
+#input:focus {
+  color: #ffffff;
+}
+
+#input prompt {
+  color: #ffffff;
+}
+
+#input image {
+  color: #ffffff;
+}
+
+#prompt {
+  color: #ffffff;
+}
+
+/* Inner box */
+#inner-box {
+  margin: 5px;
+  border: none;
+  color: #ffffff;
+  padding: 0px;
+}
+
+/* Outer box */
+#outer-box {
+  margin: 5px;
+  border: none;
+  padding: 5px;
+}
+
+/* Scroll area */
+#scroll {
+  margin: 0px;
+}
+
+/* Text styling */
+#text {
+  margin: 5px;
+  border: none;
+  color: #cccccc;
+  font-size: 14px;
+}
+
+#entry.activatable #text {
+  color: #ffffff;
+}
+
+#entry > * {
+  color: #cccccc;
+}
+
+/* Active entry (Item selecionado) */
+#entry:selected {
+  background-color: #333333;
+  border-radius: 5px;
+}
+
+#entry:selected #text {
+  font-weight: bold;
+  color: #ffffff;
+}
+
+#entry:hover {
+  background-color: #222222;
+}
+
+#entry:hover #text {
+  color: #ffffff;
+}
