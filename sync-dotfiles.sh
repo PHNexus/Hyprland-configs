@@ -50,28 +50,6 @@ else
     warn "Themes folder not found at ~/.themes"
 fi
 
-# Sincronização de Ícones (tentando localizações comuns)
-ICON_PATHS=(
-    "$HOME/.icons"
-    "$HOME/.local/share/icons"
-    "/usr/share/icons"
-)
-
-ICONS_FOUND=false
-for icon_path in "${ICON_PATHS[@]}"; do
-    if [[ -d "$icon_path" ]] && [[ -n "$(ls -A "$icon_path" 2>/dev/null)" ]]; then
-        mkdir -p "$REPO_DIR/.icons"
-        rsync -a --delete "$icon_path/" "$REPO_DIR/.icons/"
-        ok "Icons: synced from $icon_path"
-        ICONS_FOUND=true
-        break
-    fi
-done
-
-if [[ "$ICONS_FOUND" == "false" ]]; then
-    warn "No icons folder found in common locations"
-fi
-
 # Sincronização das pastas de configuração
 msg "Copying configurations..."
 for folder in "${CONFIG_FOLDERS[@]}"; do
@@ -89,23 +67,7 @@ for folder in "${CONFIG_FOLDERS[@]}"; do
     fi
 done
 
-# Sincronização de scripts (opcional)
-if [[ -d "$SCRIPTS_DIR" ]]; then
-    msg "Updating scripts..."
-    mkdir -p "$HOME/.local/bin"
-    for script in "$SCRIPTS_DIR"/*; do
-        [[ -f "$script" ]] || continue
-        name="$(basename "$script")"
-        if [[ -f "$HOME/.local/bin/$name" ]]; then
-            cp -f "$HOME/.local/bin/$name" "$script"
-            ok "Script: $name"
-        else
-            warn "Script not found in system: $name"
-        fi
-    done
-fi
-
-# Arquivos dotfiles da Home (opcional)
+# Arquivos dotfiles da Home
 msg "Copying home dotfiles..."
 for file in .bashrc .zshrc; do
     if [[ -f "$HOME/$file" ]]; then
