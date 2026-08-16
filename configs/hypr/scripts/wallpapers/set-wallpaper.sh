@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 
-WALL_DIR="$HOME/.config/wallpapers"
+WALL_DIR="$HOME/Pictures/Wallpapers"
 
 
 if [ ! -d "$WALL_DIR" ]; then
