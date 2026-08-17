@@ -41,15 +41,6 @@ else
     warn "Wallpapers folder not found at ~/.config/wallpapers"
 fi
 
-# Sincronização de Temas
-if [[ -d "$HOME/.themes" ]]; then
-    mkdir -p "$REPO_DIR/.themes"
-    rsync -a --delete "$HOME/.themes/" "$REPO_DIR/.themes/"
-    ok "Themes: synced"
-else
-    warn "Themes folder not found at ~/.themes"
-fi
-
 # Sincronização das pastas de configuração
 msg "Copying configurations..."
 for folder in "${CONFIG_FOLDERS[@]}"; do
