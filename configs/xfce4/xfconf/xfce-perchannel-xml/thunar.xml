@@ -12,6 +12,7 @@
     <value type="string" value="computer:///"/>
     <value type="string" value="recent:///"/>
     <value type="string" value="network:///"/>
+    <value type="string" value="file:///home/mark/Desktop"/>
   </property>
   <property name="misc-single-click" type="bool" value="false"/>
   <property name="shortcuts-icon-size" type="string" value="THUNAR_ICON_SIZE_16"/>
