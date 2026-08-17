@@ -284,7 +284,6 @@ hl.bind(mainMod .. " + F", function()
     hl.dsp.window.float()
     hl.dsp.window.resize({ width = 1000, height = 600 })
 end)
--- Window Switch
 hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "up" }))
