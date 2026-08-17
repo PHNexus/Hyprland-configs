@@ -3,7 +3,6 @@ set -eu
 
 WALL_DIR="$HOME/Pictures/Wallpapers"
 
-
 if [ ! -d "$WALL_DIR" ]; then
     echo "Cannot find directory with wallpapers: $WALL_DIR"
     exit 1
@@ -17,6 +16,8 @@ SELECTED_FILE=$(echo "$FILE_LIST" | wofi --dmenu --prompt "Select wallpaper")
 
 WALL="$WALL_DIR/$SELECTED_FILE"
 echo "Setting wallpaper: $SELECTED_FILE"
+
+# Usar awww (com 4 letras)
 awww img --transition-type center --transition-step 90 "$WALL"
 echo "Wallpaper set successfully"
 
@@ -24,7 +25,6 @@ if command -v wal >/dev/null 2>&1; then
     echo "Applying pywal colors..."
     wal -i "$WALL"
     echo "Pywal applied successfully"
-    
     
     export PATH="$HOME/.local/bin:$PATH:/usr/local/bin"
     
@@ -35,7 +35,6 @@ if command -v wal >/dev/null 2>&1; then
         echo "pywalfox not found in PATH"
     fi
     
-    
     KEYBOARD_SCRIPT="$HOME/.config/keyboard/set-color-keyboard.sh"
     if [ -x "$KEYBOARD_SCRIPT" ]; then
         echo "Updating keyboard colors..."
@@ -45,7 +44,6 @@ if command -v wal >/dev/null 2>&1; then
     fi
     
     wait
-    
 else
     echo "Pywal not installed, skipping"
 fi
