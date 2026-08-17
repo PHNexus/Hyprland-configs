@@ -4,54 +4,342 @@
 
 ---@module 'hl'
 
--- source = ~/.config/hypr/configs/monitors.conf -> requires manual conversion
--- local monitors = require("configs.monitors")
--- TODO: convert ~/.config/hypr/configs/monitors.conf to .lua and use require()
+--###############
+--## MONITORS ###
+--###############
 
--- source = ~/.config/hypr/configs/autostart.conf -> requires manual conversion
--- local autostart = require("configs.autostart")
--- TODO: convert ~/.config/hypr/configs/autostart.conf to .lua and use require()
+hl.monitor({
+    output   = "DP-1",
+    mode     = "1920x1080@180",
+    position = "0x0",
+    scale    = 1,
+})
 
--- source = ~/.config/hypr/configs/env.conf -> requires manual conversion
--- local env = require("configs.env")
--- TODO: convert ~/.config/hypr/configs/env.conf to .lua and use require()
+hl.monitor({
+    output   = "HDMI-A-1",
+    mode     = "1366x768@60",
+    position = "-1366x0",
+    scale    = 1,
+})
 
--- source = ~/.config/hypr/configs/hyprcolors.conf -> requires manual conversion
--- local hyprcolors = require("configs.hyprcolors")
--- TODO: convert ~/.config/hypr/configs/hyprcolors.conf to .lua and use require()
+----#################
+--## WORKSPACES ###
+--#################
 
--- source = ~/.config/hypr/configs/animations.conf -> requires manual conversion
--- local animations = require("configs.animations")
--- TODO: convert ~/.config/hypr/configs/animations.conf to .lua and use require()
+-- Workspaces no DP-1 (monitor principal)
+hl.workspace_rule({
+    workspace = 1,
+    monitor = "DP-1",
+})
 
--- source = ~/.config/hypr/configs/general.conf -> requires manual conversion
--- local general = require("configs.general")
--- TODO: convert ~/.config/hypr/configs/general.conf to .lua and use require()
+hl.workspace_rule({
+    workspace = 3,
+    monitor = "DP-1",
+})
 
--- source = ~/.config/hypr/configs/input.conf -> requires manual conversion
--- local input = require("configs.input")
--- TODO: convert ~/.config/hypr/configs/input.conf to .lua and use require()
+-- Workspaces no HDMI-A-1 (monitor secundário)
+hl.workspace_rule({
+    workspace = 2,
+    monitor = "HDMI-A-1",
+})
 
--- source = ~/.config/hypr/configs/keybinds.conf -> requires manual conversion
--- local keybinds = require("configs.keybinds")
--- TODO: convert ~/.config/hypr/configs/keybinds.conf to .lua and use require()
+hl.workspace_rule({
+    workspace = 4,
+    monitor = "HDMI-A-1",
+})
 
--- source = ~/.config/hypr/configs/windowrule.conf -> requires manual conversion
--- local windowrule = require("configs.windowrule")
--- TODO: convert ~/.config/hypr/configs/windowrule.conf to .lua and use require()
+--###########################
+--## ENVIRONMENT VARIABLES ##
+--###########################
 
--- source = ~/.config/hypr/configs/workspaces.conf -> requires manual conversion
--- local workspaces = require("configs.workspaces")
--- TODO: convert ~/.config/hypr/configs/workspaces.conf to .lua and use require()
+hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
+hl.env("XCURSOR_SIZE", "24")
+hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
+hl.env("HYPRCURSOR_SIZE", "24")
 
--- source = ~/.config/hypr/configs/debug.conf -> requires manual conversion
--- local debug = require("configs.debug")
--- TODO: convert ~/.config/hypr/configs/debug.conf to .lua and use require()
+-- Flatpak
+hl.env("XDG_DATA_DIRS",
+    os.getenv("HOME") .. "/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share")
 
+-- NVIDIA
+hl.env("LIBVA_DRIVER_NAME", "nvidia")
+hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 
+-- Wayland
+hl.env("OZONE_PLATFORM", "wayland")
+hl.env("ELECTRON_OZONE_PLATFORM_HINT", "wayland")
+hl.env("NVD_BACKEND", "direct")
 
--- Autostart
+-- NVIDIA Shader Cache
+hl.env("__GL_SHADER_DISK_CACHE", "1")
+hl.env("__GL_SHADER_DISK_CACHE_SIZE", "10737418240")
+hl.env("__GL_SYNC_TO_VBLANK", "0")
+
+--############
+--## INPUT ###
+--############
+
+hl.config({
+    input = {
+        kb_layout = "us",
+        kb_options = "grp:win_space_toggle",
+        follow_mouse = 1,
+        accel_profile = "flat",
+    },
+})
+
+hl.device({
+    name = "epic-mouse-v1",
+    sensitivity = -0.5,
+})
+
+--################
+--## ANIMATIONS ##
+--################
+
+hl.config({
+    animations = {
+        enabled = true,
+    },
+})
+
+--###############
+--## GENERAL ###
+--###############
+
+hl.config({
+    general = {
+        gaps_in = 2,
+        gaps_out = 0,
+        border_size = 0,
+        resize_on_border = true,
+        allow_tearing = true,
+        layout = "dwindle",
+        col = {
+            active_border = "rgb(bbbbbb)",
+            inactive_border = "rgb(666666)",
+        },
+    },
+})
+
+hl.config({
+    dwindle = {
+        preserve_split = true,
+    },
+})
+
+--##################
+--## DECORATION ###
+--##################
+
+hl.config({
+    decoration = {
+        rounding = 10,
+        rounding_power = 2,
+        active_opacity = 1,
+        inactive_opacity = 1,
+        shadow = {
+            enabled = true,
+            range = 4,
+            render_power = 3,
+            color = "rgb(15161e)",
+        },
+        blur = {
+            enabled = true,
+            size = 6,
+            passes = 4,
+            vibrancy = 0.1696,
+        },
+    },
+})
+
+--################
+--## MISC ###
+--################
+
+hl.config({
+    misc = {
+        force_default_wallpaper = -1,
+        disable_hyprland_logo = true,
+    },
+})
+
+--#############
+--## XWAYLAND ##
+--#############
+
+hl.config({
+    xwayland = {
+        force_zero_scaling = true,
+    },
+})
+
+--##################
+--## WINDOW RULES ##
+--##################
+
+-- Default opacity for all windows
+hl.window_rule({
+    name    = "opacity_default",
+    match   = {
+        class = ".*",
+    },
+    opacity = "1 0.7",
+})
+
+-- Kitty fully opaque
+hl.window_rule({
+    name    = "opacity_kitty",
+    match   = {
+        class = "^kitty$",
+    },
+    opacity = "0.85 0.85",
+})
+
+-- Browsers
+hl.window_rule({
+    name    = "opacity_browsers",
+    match   = {
+        class = "^(firefox|brave|chromium|librewolf|qutebrowser|zen-browser)$",
+    },
+    opacity = "1 0.7",
+})
+
+-- Spotify / Discord / VS Code / Thunar or Nemo by title
+hl.window_rule({
+    name    = "opacity_spotify",
+    match   = {
+        title = ".*Spotify.*",
+    },
+    opacity = "1 0.7",
+})
+
+hl.window_rule({
+    name    = "opacity_discord",
+    match   = {
+        title = ".*Discord.*",
+    },
+    opacity = "1 0.7",
+})
+
+hl.window_rule({
+    name    = "opacity_vscode",
+    match   = {
+        title = ".*Code.*",
+    },
+    opacity = "1 0.7",
+})
+
+hl.window_rule({
+    name    = "opacity_filemanager",
+    match   = {
+        title = ".*(Thunar|nemo).*",
+    },
+    opacity = "1 0.7",
+})
+
+-- Center floating windows
+hl.window_rule({
+    name   = "center_float",
+    match  = {
+        float = 1,
+    },
+    center = true,
+})
+
+-- Lunar Client fullscreen (static effect)
+hl.window_rule({
+    name       = "lunar_fullscreen",
+    match      = {
+        class = "^Lunar Client.*$",
+    },
+    fullscreen = true,
+})
+
+--##################
+--## KEYBINDINGS ###
+--##################
+
+local mainMod = "SUPER"
+
+-- Scripts and apps binds
+hl.bind(mainMod .. " + T", hl.dsp.exec_cmd("kitty"))
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("pgrep -x wofi >/dev/null && pkill -x wofi || wofi --show drun"))
+hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("thunar"))
+hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"))
+hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
+
+-- Set a random wallpaper
+hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-wallpaper.sh"))
+
+-- Copilot key → Claude
+hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai"))
+
+-- WM Control binds
+hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+hl.bind(mainMod .. " + M", hl.dsp.exit())
+hl.bind(mainMod .. " + F", function()
+    hl.dsp.window.float()
+    hl.dsp.window.resize({ width = 1000, height = 600 })
+end)
+-- Window Switch
+hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }))
+hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
+hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "up" }))
+hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "down" }))
+
+-- Switch workspaces with mainMod + [0-9]
+hl.bind(mainMod .. " + 1", hl.dsp.focus({ workspace = 1 }))
+hl.bind(mainMod .. " + 2", hl.dsp.focus({ workspace = 2 }))
+hl.bind(mainMod .. " + 3", hl.dsp.focus({ workspace = 3 }))
+hl.bind(mainMod .. " + 4", hl.dsp.focus({ workspace = 4 }))
+hl.bind(mainMod .. " + Tab", hl.dsp.focus({ workspace = "previous" }))
+hl.bind(mainMod .. " + ALT + left", hl.dsp.focus({ workspace = -1 }))
+hl.bind(mainMod .. " + ALT + right", hl.dsp.focus({ workspace = "+1" }))
+
+-- Move active window to a workspace with mainMod + SHIFT + [0-9]
+hl.bind(mainMod .. " + SHIFT + 1", hl.dsp.window.move({ workspace = 1 }))
+hl.bind(mainMod .. " + SHIFT + 2", hl.dsp.window.move({ workspace = 2 }))
+hl.bind(mainMod .. " + SHIFT + 3", hl.dsp.window.move({ workspace = 3 }))
+hl.bind(mainMod .. " + SHIFT + 4", hl.dsp.window.move({ workspace = 4 }))
+hl.bind(mainMod .. " + SHIFT + left", hl.dsp.window.move({ direction = "l" }))
+hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "r" }))
+-- Scroll through existing workspaces with mainMod + scroll
+hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
+hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
+
+-- Move/resize windows with mainMod + LMB/RMB and dragging
+hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
+hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+-- Laptop multimedia keys for volume and LCD brightness
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl s 5%+"), { locked = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl s 5%-"), { locked = true })
+
+-- Screenshot a region
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -o ~/Pictures/Screenshots -c --notify"))
+
+--#################
+--## AUTOSTART ###
+--#################
 hl.on("hyprland.start", function()
+    hl.exec_cmd("hyprctl dispatch workspace 1")
+    hl.exec_cmd("hyprctl setcursor Bibata-Modern-Ice 24")
+    hl.exec_cmd("hypridle")
+    hl.exec_cmd("wl-paste --type text --watch cliphist store")
+    hl.exec_cmd("wl-paste --type image --watch cliphist store")
+    hl.exec_cmd("systemctl --user start hyprpolkitagent")
+    hl.exec_cmd("xrandr --output DP-1 --primary")
+    hl.exec_cmd("sleep 1 && waybar")
+    hl.exec_cmd(
+        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
+
+    -- CORRETO: usar awww-daemon (com hífen)
     hl.exec_cmd("awww-daemon")
-    hl.exec_cmd("sleep 1 && awww restore")
 end)
