@@ -163,8 +163,11 @@ hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/s
 hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai"))
 
 -- Toggle floating
+--hl.bind(mainMod .. " + F", hl.dsp.window.float())
+-- Toggle floating e resize para 1000x600
 hl.bind(mainMod .. " + F", hl.dsp.window.float())
-
+hl.bind(mainMod .. " + F", hl.dsp.window.center())
+hl.bind(mainMod .. " + F", hl.dsp.window.resize({ x = 1000, y = 600 }))
 -- Window control
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + M", hl.dsp.exit())
