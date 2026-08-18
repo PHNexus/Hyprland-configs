@@ -12,7 +12,7 @@ hl.monitor({ output = "HDMI-A-1", mode = "1366x768@60", position = "-1366x0", sc
 --## WORKSPACES ###
 --#################
 -- Workspaces on DP-1 (primary monitor)
-hl.workspace_rule({ workspace = 1, monitor = "DP-1" })
+hl.workspace_rule({ workspace = 1, monitor = "DP-1", default = true })
 hl.workspace_rule({ workspace = 3, monitor = "DP-1" })
 
 -- Workspaces on HDMI-A-1 (secondary monitor)
@@ -218,9 +218,7 @@ hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -o ~/Pict
 --## AUTOSTART ###
 --#################
 hl.on("hyprland.start", function()
-    hl.on("hyprland.ready", function()
-    hl.dsp.focus({ workspace = 1 })
-end)
+    hl.exec_cmd("hyprctl dispatch 'hl.dsp.focus({ workspace = 1 })'")
     hl.exec_cmd("hyprctl setcursor Bibata-Modern-Ice 24")
     hl.exec_cmd("hypridle")
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
@@ -232,7 +230,8 @@ end)
     hl.exec_cmd(
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
     hl.exec_cmd("awww-daemon")
-hl.on("hyprland.exit", function()
-    os.execute("kill -9 -1")
 end)
+
+hl.on("hyprland.shutdown", function()
+    os.execute("kill -9 -1")
 end)
