@@ -165,9 +165,11 @@ hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai")
 -- Toggle floating
 --hl.bind(mainMod .. " + F", hl.dsp.window.float())
 -- Toggle floating e resize para 1000x600
-hl.bind(mainMod .. " + F", hl.dsp.window.float())
-hl.bind(mainMod .. " + F", hl.dsp.window.center())
-hl.bind(mainMod .. " + F", hl.dsp.window.resize({ x = 1000, y = 600 }))
+hl.bind(mainMod .. " + F", function()
+    hl.dispatch(hl.dsp.window.float())
+    hl.dispatch(hl.dsp.window.center())
+    hl.dispatch(hl.dsp.window.resize({ x = 1000, y = 600 }))
+end)
 -- Window control
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + M", hl.dsp.exit())
@@ -213,7 +215,6 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl s 5%-"), { locke
 
 -- Screenshot
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -o ~/Pictures/Screenshots -c --notify"))
-
 --#################
 --## AUTOSTART ###
 --#################
