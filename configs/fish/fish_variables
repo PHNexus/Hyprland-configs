@@ -1,0 +1,5 @@
+# This file contains fish universal variable definitions.
+# VERSION: 3.0
+SETUVAR EDITOR:code\x20\x2d\x2dwait
+SETUVAR VISUAL:code\x20\x2d\x2dwait
+SETUVAR _fisher_upgraded_to_4_4:\x1d

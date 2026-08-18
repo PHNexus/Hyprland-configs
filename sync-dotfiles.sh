@@ -8,7 +8,7 @@ SCRIPTS_DIR="$REPO_DIR/bin"
 
 # Pastas do .config que serão sincronizadas
 CONFIG_FOLDERS=(
-    "btop" "cava" "fastfetch" "gtk-3.0" "gtk-4.0"
+    "btop" "cava" "fastfetch" "fish" "gtk-3.0" "gtk-4.0"
     "hypr" "kitty" "swaync" "waybar" "wofi"
     "xdg-desktop-portal" "xfce4"
 )
