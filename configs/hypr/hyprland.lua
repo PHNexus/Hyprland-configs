@@ -218,7 +218,9 @@ hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -o ~/Pict
 --## AUTOSTART ###
 --#################
 hl.on("hyprland.start", function()
-    hl.exec_cmd("hyprctl dispatch workspace 1")
+    hl.on("hyprland.ready", function()
+    hl.dsp.focus({ workspace = 1 })
+end)
     hl.exec_cmd("hyprctl setcursor Bibata-Modern-Ice 24")
     hl.exec_cmd("hypridle")
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
@@ -230,4 +232,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
     hl.exec_cmd("awww-daemon")
+hl.on("hyprland.exit", function()
+    os.execute("kill -9 -1")
+end)
 end)
