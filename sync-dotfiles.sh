@@ -33,12 +33,12 @@ fi
 msg "Starting Hyprland dotfiles sync..."
 
 # Sincronização de Wallpapers
-if [[ -d "$HOME/.config/wallpapers" ]]; then
+if [[ -d "$HOME/Pictures/Wallpapers" ]]; then
     mkdir -p "$REPO_DIR/wallpapers"
-    rsync -a --delete "$HOME/.config/wallpapers/" "$REPO_DIR/wallpapers/"
+    rsync -a --delete "$HOME/Pictures/Wallpapers/" "$REPO_DIR/wallpapers/"
     ok "Wallpapers: synced"
 else
-    warn "Wallpapers folder not found at ~/.config/wallpapers"
+    warn "Wallpapers folder not found at ~/Pictures/Wallpapers"
 fi
 
 # Sincronização das pastas de configuração
