@@ -92,16 +92,20 @@ hl.config({
         active_opacity = 1,
         inactive_opacity = 0.7,
         shadow = { enabled = true, range = 4, render_power = 3, color = "rgb(15161e)" },
-        blur = { enabled = true, size = 6, passes = 4, vibrancy = 0.7,
-        brightness = 1.12, 
-        noise = 0.08,
-        ignore_opacity = true,
-          contrast = 1.5,
-              vibrancy_darkness = 0.0,
-              xray = false,
-              new_optimizations = true
+        blur = {
+            enabled = true,
+            size = 6,
+            passes = 4,
+            vibrancy = 0.7,
+            brightness = 1.12,
+            noise = 0.08,
+            ignore_opacity = true,
+            contrast = 1.5,
+            vibrancy_darkness = 0.0,
+            xray = false,
+            new_optimizations = true
+        },
     },
-},
 })
 --################
 --## MISC ###
