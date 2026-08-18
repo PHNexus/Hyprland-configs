@@ -90,12 +90,19 @@ hl.config({
         rounding = 10,
         rounding_power = 2,
         active_opacity = 1,
-        inactive_opacity = 1,
+        inactive_opacity = 0.7,
         shadow = { enabled = true, range = 4, render_power = 3, color = "rgb(15161e)" },
-        blur = { enabled = true, size = 6, passes = 4, vibrancy = 0.1696 },
+        blur = { enabled = true, size = 6, passes = 4, vibrancy = 0.7,
+        brightness = 1.12, 
+        noise = 0.08,
+        ignore_opacity = true,
+          contrast = 1.5,
+              vibrancy_darkness = 0.0,
+              xray = false,
+              new_optimizations = true
     },
+},
 })
-
 --################
 --## MISC ###
 --################
@@ -114,7 +121,7 @@ hl.config({ xwayland = { force_zero_scaling = true } })
 hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "1 0.7" })
 
 -- Kitty fully opaque
-hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity = "0.85 0.85" })
+--hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity = "1 1" })
 
 -- Browsers
 hl.window_rule({
