@@ -12,12 +12,12 @@ hl.monitor({ output = "HDMI-A-1", mode = "1366x768@60", position = "-1366x0", sc
 --## WORKSPACES ###
 --#################
 -- Workspaces on DP-1 (primary monitor)
-hl.workspace_rule({ workspace = 1, monitor = "DP-1", default = true })
-hl.workspace_rule({ workspace = 3, monitor = "DP-1" })
+hl.workspace_rule({ workspace = 1, monitor = "DP-1", default = true ,persistent = true})
+hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
 
 -- Workspaces on HDMI-A-1 (secondary monitor)
-hl.workspace_rule({ workspace = 2, monitor = "HDMI-A-1" })
-hl.workspace_rule({ workspace = 4, monitor = "HDMI-A-1" })
+hl.workspace_rule({ workspace = 3, monitor = "HDMI-A-1" ,persistent = true})
+hl.workspace_rule({ workspace = 4, monitor = "HDMI-A-1", persistent = true })
 
 --###########################
 --## ENVIRONMENT VARIABLES ##
@@ -130,7 +130,7 @@ hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "
 -- Browsers
 hl.window_rule({
     name = "opacity_browsers",
-    match = { class = "^(firefox|brave|chromium|librewolf|qutebrowser|zen-browser)$" },
+    match = { class = "^(firefox|brave|chromium|librewolf|qutebrowser|zen-browser|helium-browser)$" },
     opacity = "1 0.7"
 })
 
@@ -158,7 +158,7 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("thunar"))
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
+hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-wallpaper.sh"))
 hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai"))
 

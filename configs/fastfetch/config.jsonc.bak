@@ -15,14 +15,14 @@
     "modules": [
         {
             "type": "custom",
-            "key": "  ╭──Markosv───╮"
+            "key": "  ╭─Mark-Space─╮"
         },
         {
             "type": "command",
             "key": "  │ {$2}{$1}  user    │",
             "text": "echo $USER"
         },
-        {
+         {
             "type": "kernel",
             "key": "  │ {$2}{$1}  kernel  │"
         },
@@ -30,7 +30,7 @@
             "type": "os",
             "key": "  │ {$2}{$1}  os      │"
         },
-        {
+         {
             "type": "wm",
             "key": "  │ {$2}{$1}  wm      │"
         },
@@ -46,11 +46,6 @@
             "type": "command",
             "key": "  │ {$2}{$1}  nvme    │",
             "text": "df -h /dev/nvme0n1p2 | awk 'NR==2 {print \"NVMe \" $3 \" used / \" $2 \" total\"}'"
-        },
-        {
-            "type": "command",
-            "key": "  │ {$2}{$1}  ssd     │",
-            "text": "df -h /dev/sda1 | awk 'NR==2 {print \"SSD \" $3 \" used / \" $2 \" total\"}'"
         },
         {
             "type": "command",
