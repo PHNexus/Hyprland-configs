@@ -1,57 +1,28 @@
 {
+    "hyprland/workspaces": {
+        "all-outputs": true,
+        "format": "{icon}",
+        "format-icons": {
+            "1": "󰻠",
+            "2": "󰈹",
+            "3": "󰨞",
+            "4": "󰝚"
+        },
+        "sort-by-number": true,
+        "on-click": "activate",
+        "hide-empty": false,
+        "persistent-workspaces": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1
+        }
+    },
+
     "group/hworkspaces": {
         "orientation": "horizontal",
         "modules": [
-            "ext/workspaces"
+            "hyprland/workspaces"
         ]
-    },
-
-    "group/vworkspaces": {
-        "orientation": "vertical",
-        "modules": [
-            "ext/workspaces"
-        ]
-    },
-
-    "niri/workspaces": {
-        "format": "{icon}",
-        "format-icons": {
-            "active": "",
-            "default": ""
-        }
-    },
-"hyprland/workspaces": {
-    "all-outputs": true,
-    "persistent-workspaces": {
-        "*": 2
-    },
-    "format": " ",
-    "sort-by-number": true
-},
-
-
-    "mango/workspaces": {
-        "format": "{icon}",
-        "format-icons": {
-            "active": "",
-            "default": "",
-            "urgent": "",
-            "empty": ""
-        },
-        "on-click": "activate",
-        "on-click-right": "toggle",
-        "overview-label": "    ",
-        "hide-empty": true
-    },
-
-
-    "ext/workspaces": {
-        "format": "{icon}",
-        "on-click": "activate",
-        "format-icons": {
-            "active": "",
-            "default": ""
-        },
-        "sort-by-id": true
     }
 }
