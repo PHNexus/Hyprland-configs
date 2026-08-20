@@ -2,15 +2,14 @@
 
 ---@module 'hl'
 
---###############
---## MONITORS ###
---###############
+
+-- MONITORS 
+
 hl.monitor({ output = "DP-1", mode = "1920x1080@180", position = "0x0", scale = 1 })
 hl.monitor({ output = "HDMI-A-1", mode = "1366x768@60", position = "-1366x0", scale = 1 })
 
---#################
---## WORKSPACES ###
---#################
+
+--WORKSPACES 
 -- Workspaces on DP-1 (primary monitor)
 hl.workspace_rule({ workspace = 1, monitor = "DP-1", default = true, persistent = true })
 hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
@@ -19,9 +18,8 @@ hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 3, monitor = "HDMI-A-1", persistent = true })
 hl.workspace_rule({ workspace = 4, monitor = "HDMI-A-1", persistent = true })
 
---###########################
---## ENVIRONMENT VARIABLES ##
---###########################
+
+-- ENVIRONMENT VARIABLES 
 hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
@@ -45,9 +43,9 @@ hl.env("__GL_SHADER_DISK_CACHE", "1")
 hl.env("__GL_SHADER_DISK_CACHE_SIZE", "10737418240")
 hl.env("__GL_SYNC_TO_VBLANK", "0")
 
---############
---## INPUT ###
---############
+
+--INPUT 
+
 hl.config({
     input = {
         kb_layout = "us",
@@ -58,14 +56,10 @@ hl.config({
 })
 hl.device({ name = "epic-mouse-v1", sensitivity = -0.5 })
 
---################
---## ANIMATIONS ##
---################
+-- ANIMATIONS 
 hl.config({ animations = { enabled = true } })
 
---###############
---## GENERAL ###
---###############
+-- GENERAL
 hl.config({
     general = {
         gaps_in = 5,
@@ -80,11 +74,10 @@ hl.config({
         },
     },
 })
+
 hl.config({ dwindle = { preserve_split = true } })
 
---##################
---## DECORATION ###
---##################
+--DECORATION 
 hl.config({
     decoration = {
         rounding = 10,
@@ -107,22 +100,19 @@ hl.config({
         },
     },
 })
---################
---## MISC ###
---################
+
+--MISC 
+
 hl.config({ misc = { force_default_wallpaper = -1, disable_hyprland_logo = true } })
 
---#############
---## XWAYLAND ##
---#############
+-- XWAYLAND 
 hl.config({ xwayland = { force_zero_scaling = true } })
 
---##################
---## WINDOW RULES ##
---##################
+--WINDOW RULES 
 
 -- Default opacity for all windows
 hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "1 0.7" })
+
 -- Kitty fully opaque
 hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity = "1 1" })
 
@@ -145,9 +135,9 @@ hl.window_rule({ name = "center_float", match = { float = 1 }, center = true })
 -- Lunar Client fullscreen (static effect)
 hl.window_rule({ name = "lunar_fullscreen", match = { class = "^Lunar Client.*$" }, fullscreen = true })
 
---##################
---## KEYBINDINGS ###
---##################
+
+-- KEYBINDINGS 
+
 local mainMod = "SUPER"
 
 -- Apps
@@ -160,14 +150,15 @@ hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-wallpaper.sh"))
 hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai"))
+
 -- Toggle floating
 --hl.bind(mainMod .. " + F", hl.dsp.window.float())
--- Toggle floating e resize para 1000x600
 hl.bind(mainMod .. " + F", function()
     hl.dispatch(hl.dsp.window.float())
     hl.dispatch(hl.dsp.window.center())
     hl.dispatch(hl.dsp.window.resize({ x = 1000, y = 600 }))
 end)
+
 -- Window control
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + M", hl.dsp.exit())
@@ -177,6 +168,7 @@ hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "l" }))
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "r" }))
 hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "u" }))
 hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "d" }))
+
 -- Switch workspaces
 hl.bind(mainMod .. " + 1", hl.dsp.focus({ workspace = 1 }))
 hl.bind(mainMod .. " + 2", hl.dsp.focus({ workspace = 2 }))
@@ -201,6 +193,7 @@ hl.bind(mainMod .. " + mouse_up", hl.dsp.exec_cmd("hyprctl dispatch workspace e-
 -- Move/resize windows with mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true, floating = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true, floating = true })
+
 -- Multimedia keysuse:273", hl.ds
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true })
@@ -211,9 +204,8 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl s 5%-"), { locke
 
 -- Screenshot
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -o ~/Pictures/Screenshots -c --notify"))
---#################
---## AUTOSTART ###
---#################
+
+--AUTOSTART
 hl.on("hyprland.start", function()
     hl.exec_cmd("hyprctl dispatch 'hl.dsp.focus({ workspace = 1 })'")
     hl.exec_cmd("hyprctl setcursor Bibata-Modern-Ice 24")
@@ -224,11 +216,9 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("xrandr --output DP-1 --primary")
     hl.exec_cmd("sleep 1 && waybar")
     os.execute("nvibrant 0 512 512 0 >/dev/null 2>&1 &")
-    hl.exec_cmd(
-        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
+    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
     hl.exec_cmd("awww-daemon")
 end)
-
 hl.on("hyprland.shutdown", function()
     os.execute("kill -9 -1")
 end)
