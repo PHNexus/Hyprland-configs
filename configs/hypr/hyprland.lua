@@ -8,12 +8,12 @@ hl.monitor({ output = "DP-1", mode = "1920x1080@180", position = "0x0", scale = 
 hl.monitor({ output = "HDMI-A-1", mode = "1366x768@60", position = "-1366x0", scale = 1 })
 
 
---WORKSPACES
---DP-1 (primary monitor)
+-- WORKSPACES
+-- DP-1 (primary monitor)
 hl.workspace_rule({ workspace = 1, monitor = "DP-1", default = true, persistent = true })
 hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
 
---HDMI-A-1 (secondary monitor)
+-- HDMI-A-1 (secondary monitor)
 hl.workspace_rule({ workspace = 3, monitor = "HDMI-A-1", persistent = true })
 hl.workspace_rule({ workspace = 4, monitor = "HDMI-A-1", persistent = true })
 
@@ -41,8 +41,8 @@ hl.env("NVD_BACKEND", "direct")
 hl.env("__GL_SHADER_DISK_CACHE", "1")
 hl.env("__GL_SHADER_DISK_CACHE_SIZE", "10737418240")
 hl.env("__GL_SYNC_TO_VBLANK", "0")
---INPUT
 
+--INPUT
 hl.config({
     input = {
         kb_layout = "us",
@@ -74,7 +74,7 @@ hl.config({
 
 hl.config({ dwindle = { preserve_split = true } })
 
---DECORATION
+-- DECORATION
 hl.config({
     decoration = {
         rounding = 10,
@@ -98,26 +98,23 @@ hl.config({
     },
 })
 
---MISC
-
+-- MISC
 hl.config({ misc = { force_default_wallpaper = -1, disable_hyprland_logo = true } })
 
 -- XWAYLAND
 hl.config({ xwayland = { force_zero_scaling = true } })
 
---WINDOW RULES
-
+-- WINDOW RULES
 -- Default opacity for all windows
 --hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "1 0.7" })
 
 -- Kitty fully opaque
-hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity = "1 1" })
+hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity = "0.85 0.85" })
 
 -- Center floating windows
 hl.window_rule({ name = "center_float", match = { float = 1 }, center = true })
 
 -- KEYBINDINGS
-
 local mainMod = "SUPER"
 
 -- Apps
@@ -132,7 +129,6 @@ hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/s
 hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai"))
 
 -- Toggle floating
---hl.bind(mainMod .. " + F", hl.dsp.window.float())
 hl.bind(mainMod .. " + F", function()
     hl.dispatch(hl.dsp.window.float())
     hl.dispatch(hl.dsp.window.center())
@@ -185,7 +181,7 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl s 5%-"), { locke
 -- Screenshot
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -o ~/Pictures/Screenshots -c --notify"))
 
---AUTOSTART
+-- AUTOSTART
 hl.on("hyprland.start", function()
     hl.exec_cmd("hyprctl dispatch 'hl.dsp.focus({ workspace = 1 })'")
     hl.exec_cmd("hyprctl setcursor Bibata-Modern-Ice 24")
