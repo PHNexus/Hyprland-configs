@@ -6,7 +6,7 @@ CONFIG_DIR="$REPO_DIR/configs"
 
 CONFIG_FOLDERS=(
     "btop" "cava" "fastfetch" "fish" "gtk-3.0" "gtk-4.0"
-    "hypr" "kitty" "starship" "swaync" "waybar" "wofi"
+    "hypr" "kitty" "swaync" "waybar" "wofi"
     "xdg-desktop-portal" "xfce4" "stellar"
 )
 
@@ -19,7 +19,6 @@ shopt -s nullglob
 
 [[ -d "$REPO_DIR" ]] || err "Directory $REPO_DIR not found."
 cd "$REPO_DIR" || err "Cannot access $REPO_DIR."
-
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || err "Not a valid Git repository."
 
 msg "Starting sync..."
@@ -49,13 +48,21 @@ for folder in "${CONFIG_FOLDERS[@]}"; do
     fi
 done
 
-# User dirs
+# Individual config files
+mkdir -p "$CONFIG_DIR"
+
 if [[ -f "$HOME/.config/user-dirs.dirs" ]]; then
-    mkdir -p "$CONFIG_DIR"
     cp -f "$HOME/.config/user-dirs.dirs" "$CONFIG_DIR/"
     ok "File: user-dirs.dirs"
 else
     warn "File not found: user-dirs.dirs"
+fi
+
+if [[ -f "$HOME/.config/starship.toml" ]]; then
+    cp -fL "$HOME/.config/starship.toml" "$CONFIG_DIR/"
+    ok "File: starship.toml"
+else
+    warn "File not found: starship.toml"
 fi
 
 # Home dotfiles
