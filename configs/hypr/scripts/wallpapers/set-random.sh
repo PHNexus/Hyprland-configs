@@ -1,4 +1,7 @@
 #!/bin/bash
+set -eu
 
-choose_random="$HOME/.config/hypr/scripts/wallpapers/random.sh"
-$HOME/.config/hypr/scripts/wallpapers/set.sh $($choose_random)
+CHOOSE_RANDOM="$HOME/.config/hypr/scripts/wallpapers/random.sh"
+SET_SCRIPT="$HOME/.config/hypr/scripts/wallpapers/set.sh"
+
+"$SET_SCRIPT" "$("$CHOOSE_RANDOM")"
