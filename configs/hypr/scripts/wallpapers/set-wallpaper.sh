@@ -2,49 +2,35 @@
 set -eu
 
 WALL_DIR="$HOME/Pictures/Wallpapers"
+HISTORY_FILE="$HOME/.cache/wallpaper_history.txt"
+SET_SCRIPT="$HOME/.config/hypr/scripts/wallpapers/set.sh"
 
 if [ ! -d "$WALL_DIR" ]; then
     echo "Cannot find directory with wallpapers: $WALL_DIR"
     exit 1
 fi
 
-FILE_LIST=$(find "$WALL_DIR" -type f \( -iname "*.png" -o -iname "*.jpg" \) -printf "%f\n")
+mkdir -p "$(dirname "$HISTORY_FILE")"
+touch "$HISTORY_FILE"
 
-SELECTED_FILE=$(echo "$FILE_LIST" | wofi --dmenu --prompt "Select wallpaper")
+FILE_LIST=$(find "$WALL_DIR" -type f \( -iname "*.png" -o -iname "*.jpg" \) -printf "%f\n" | sort)
+AVAILABLE_LIST=$(comm -23 <(echo "$FILE_LIST") <(sort "$HISTORY_FILE"))
+
+if [ -z "$AVAILABLE_LIST" ]; then
+    echo "Todos os wallpapers foram usados. Reiniciando o ciclo..."
+    > "$HISTORY_FILE"
+    AVAILABLE_LIST="$FILE_LIST"
+fi
+
+SELECTED_FILE=$(echo "$AVAILABLE_LIST" | wofi --dmenu --prompt "Select wallpaper")
 
 [ -z "$SELECTED_FILE" ] && exit 1
+
+echo "$SELECTED_FILE" >> "$HISTORY_FILE"
 
 WALL="$WALL_DIR/$SELECTED_FILE"
 echo "Setting wallpaper: $SELECTED_FILE"
 
-# Usar awww (com 4 letras)
-awww img --transition-type center --transition-step 90 "$WALL"
-echo "Wallpaper set successfully"
+"$SET_SCRIPT" "$WALL"
 
-if command -v wal >/dev/null 2>&1; then
-    echo "Applying pywal colors..."
-    wal -i "$WALL"
-    echo "Pywal applied successfully"
-    
-    export PATH="$HOME/.local/bin:$PATH:/usr/local/bin"
-    
-    if command -v pywalfox >/dev/null 2>&1; then
-        echo "Updating pywalfox..."
-        pywalfox update &
-    else
-        echo "pywalfox not found in PATH"
-    fi
-    
-    KEYBOARD_SCRIPT="$HOME/.config/keyboard/set-color-keyboard.sh"
-    if [ -x "$KEYBOARD_SCRIPT" ]; then
-        echo "Updating keyboard colors..."
-        bash "$KEYBOARD_SCRIPT" &
-    else
-        echo "Keyboard color script not found or not executable: $KEYBOARD_SCRIPT"
-    fi
-    
-    wait
-else
-    echo "Pywal not installed, skipping"
-fi
 echo "All done!"
