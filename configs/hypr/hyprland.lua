@@ -3,12 +3,12 @@
 ---@module 'hl'
 
 
--- MONITORS 
+-- MONITORS
 hl.monitor({ output = "DP-1", mode = "1920x1080@180", position = "0x0", scale = 1 })
 hl.monitor({ output = "HDMI-A-1", mode = "1366x768@60", position = "-1366x0", scale = 1 })
 
 
---WORKSPACES 
+--WORKSPACES
 --DP-1 (primary monitor)
 hl.workspace_rule({ workspace = 1, monitor = "DP-1", default = true, persistent = true })
 hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
@@ -18,7 +18,7 @@ hl.workspace_rule({ workspace = 3, monitor = "HDMI-A-1", persistent = true })
 hl.workspace_rule({ workspace = 4, monitor = "HDMI-A-1", persistent = true })
 
 
--- ENVIRONMENT VARIABLES 
+-- ENVIRONMENT VARIABLES
 hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
@@ -41,9 +41,9 @@ hl.env("NVD_BACKEND", "direct")
 hl.env("__GL_SHADER_DISK_CACHE", "1")
 hl.env("__GL_SHADER_DISK_CACHE_SIZE", "10737418240")
 hl.env("__GL_SYNC_TO_VBLANK", "0")
+hl.env("SDL_VIDEODRIVER", "wayland")
 
-
---INPUT 
+--INPUT
 
 hl.config({
     input = {
@@ -55,7 +55,7 @@ hl.config({
 })
 hl.device({ name = "epic-mouse-v1", sensitivity = -0.5 })
 
--- ANIMATIONS 
+-- ANIMATIONS
 hl.config({ animations = { enabled = true } })
 
 -- GENERAL
@@ -76,7 +76,7 @@ hl.config({
 
 hl.config({ dwindle = { preserve_split = true } })
 
---DECORATION 
+--DECORATION
 hl.config({
     decoration = {
         rounding = 10,
@@ -100,14 +100,14 @@ hl.config({
     },
 })
 
---MISC 
+--MISC
 
 hl.config({ misc = { force_default_wallpaper = -1, disable_hyprland_logo = true } })
 
--- XWAYLAND 
+-- XWAYLAND
 hl.config({ xwayland = { force_zero_scaling = true } })
 
---WINDOW RULES 
+--WINDOW RULES
 
 -- Default opacity for all windows
 hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "1 0.7" })
@@ -135,7 +135,7 @@ hl.window_rule({ name = "center_float", match = { float = 1 }, center = true })
 hl.window_rule({ name = "lunar_fullscreen", match = { class = "^Lunar Client.*$" }, fullscreen = true })
 
 
--- KEYBINDINGS 
+-- KEYBINDINGS
 
 local mainMod = "SUPER"
 
