@@ -1,6 +1,5 @@
-# Desativa a mensagem de boas-vindas padrão do Fish
 set -g fish_greeting
-
+starship init fish | source
 #fastfetch 
 if status is-interactive
     fastfetch
