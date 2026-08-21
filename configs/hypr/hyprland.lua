@@ -81,8 +81,8 @@ hl.config({
     decoration = {
         rounding = 10,
         rounding_power = 2,
-        active_opacity = 1.0,
-        inactive_opacity = 0.7,
+        active_opacity = 0.9,
+        inactive_opacity = 0.9,
         shadow = { enabled = true, range = 4, render_power = 3, color = "rgb(15161e)" },
         blur = {
             enabled = true,
@@ -91,7 +91,7 @@ hl.config({
             vibrancy = 0.7,
             brightness = 1.12,
             noise = 0.05,
-            ignore_opacity = false,
+            ignore_opacity = true,
             contrast = 1.5,
             vibrancy_darkness = 0.0,
             xray = true,
@@ -113,12 +113,12 @@ hl.config({ xwayland = { force_zero_scaling = true } })
 hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "1 0.7" })
 
 -- Kitty fully opaque
-hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity = "1 1" })
+hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity = "0.85 0.85" })
 
 -- Browsers
 hl.window_rule({
     name = "opacity_browsers",
-    match = { class = "^(firefox|brave|chromium|librewolf|qutebrowser|zen-browser|helium-browser)$" },
+    match = { class = "^(firefox|brave|chromium|librewolf|qutebrowser|zen-browser|helium)$" },
     opacity = "1 0.7"
 })
 
