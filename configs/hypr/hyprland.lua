@@ -79,12 +79,12 @@ hl.config({
     decoration = {
         rounding = 10,
         rounding_power = 2,
-        active_opacity = 0.9,
+        active_opacity = 1,
         inactive_opacity = 0.7,
         shadow = { enabled = true, range = 4, render_power = 3, color = "rgb(15161e)" },
         blur = {
             enabled = true,
-            size = 2,
+            size = 6,
             passes = 4,
             vibrancy = 0.7,
             brightness = 1.12,

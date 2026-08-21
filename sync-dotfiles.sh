@@ -1,64 +1,64 @@
 #!/bin/bash
 set -euo pipefail
 
-# Configuração do repositório
 REPO_DIR="$HOME/Documents/GitHub/Hyprland-configs"
 CONFIG_DIR="$REPO_DIR/configs"
-SCRIPTS_DIR="$REPO_DIR/bin"
 
-# Pastas do .config que serão sincronizadas
 CONFIG_FOLDERS=(
     "btop" "cava" "fastfetch" "fish" "gtk-3.0" "gtk-4.0"
-    "hypr" "kitty" "swaync" "waybar" "wofi"
-    "xdg-desktop-portal" "xfce4"
+    "hypr" "kitty" "starship" "swaync" "waybar" "wofi"
+    "xdg-desktop-portal" "xfce4" "stellar"
 )
 
-# Cores e funções de logging
 msg()  { echo -e "\033[1;34m[INFO]\033[0m $1"; }
 ok()   { echo -e "\033[1;32m[ OK ]\033[0m $1"; }
 warn() { echo -e "\033[1;33m[WARN]\033[0m $1"; }
 err()  { echo -e "\033[1;31m[ERR ]\033[0m $1"; exit 1; }
 
-# Configurações do shell
 shopt -s nullglob
 
-# Verificações iniciais
 [[ -d "$REPO_DIR" ]] || err "Directory $REPO_DIR not found."
 cd "$REPO_DIR" || err "Cannot access $REPO_DIR."
 
-if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    err "Not a valid Git repository."
-fi
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || err "Not a valid Git repository."
 
-msg "Starting Hyprland dotfiles sync..."
+msg "Starting sync..."
 
-# Sincronização de Wallpapers
+# Wallpapers
 if [[ -d "$HOME/Pictures/Wallpapers" ]]; then
     mkdir -p "$REPO_DIR/wallpapers"
     rsync -a --delete "$HOME/Pictures/Wallpapers/" "$REPO_DIR/wallpapers/"
-    ok "Wallpapers: synced"
+    ok "Wallpapers synced"
 else
-    warn "Wallpapers folder not found at ~/Pictures/Wallpapers"
+    warn "Wallpapers folder not found"
 fi
 
-# Sincronização das pastas de configuração
-msg "Copying configurations..."
+# Config folders
+msg "Copying configs..."
 for folder in "${CONFIG_FOLDERS[@]}"; do
     if [[ -d "$HOME/.config/$folder" ]]; then
         mkdir -p "$CONFIG_DIR/$folder"
         if [[ -n "$(ls -A "$HOME/.config/$folder" 2>/dev/null)" ]]; then
             rsync -a --delete "$HOME/.config/$folder/" "$CONFIG_DIR/$folder/"
-            ok "Config: $folder"
         else
-            warn "Folder $folder is empty, copying without --delete"
             rsync -a "$HOME/.config/$folder/" "$CONFIG_DIR/$folder/"
         fi
+        ok "Config: $folder"
     else
         warn "Folder not found: $folder"
     fi
 done
 
-# Arquivos dotfiles da Home
+# User dirs
+if [[ -f "$HOME/.config/user-dirs.dirs" ]]; then
+    mkdir -p "$CONFIG_DIR"
+    cp -f "$HOME/.config/user-dirs.dirs" "$CONFIG_DIR/"
+    ok "File: user-dirs.dirs"
+else
+    warn "File not found: user-dirs.dirs"
+fi
+
+# Home dotfiles
 msg "Copying home dotfiles..."
 for file in .bashrc .zshrc; do
     if [[ -f "$HOME/$file" ]]; then
@@ -87,7 +87,7 @@ if git pull --rebase origin main 2>/dev/null; then
     git push origin main && ok "Push successful."
 else
     git rebase --abort 2>/dev/null || true
-    err "Pull/push failed. Rebase aborted. Check your connection."
+    err "Pull/push failed."
 fi
 
 ok "Sync complete."
