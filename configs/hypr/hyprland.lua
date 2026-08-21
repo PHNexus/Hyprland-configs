@@ -108,30 +108,13 @@ hl.config({ xwayland = { force_zero_scaling = true } })
 --WINDOW RULES
 
 -- Default opacity for all windows
-hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "1 0.7" })
+--hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "1 0.7" })
 
 -- Kitty fully opaque
 hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity = "1 1" })
 
--- Browsers
-hl.window_rule({
-    name = "opacity_browsers",
-    match = { class = "^(firefox|brave|chromium|librewolf|qutebrowser|zen-browser|helium)$" },
-    opacity = "1 0.7"
-})
-
--- Spotify / Discord / VS Code / Thunar or Nemo by title
-hl.window_rule({ name = "opacity_spotify", match = { title = ".*Spotify.*" }, opacity = "1 0.7" })
-hl.window_rule({ name = "opacity_discord", match = { title = ".*Discord.*" }, opacity = "1 0.7" })
-hl.window_rule({ name = "opacity_vscode", match = { title = ".*Code.*" }, opacity = "1 0.7" })
-hl.window_rule({ name = "opacity_filemanager", match = { title = ".*(Thunar|nemo).*" }, opacity = "1 0.7" })
-
 -- Center floating windows
 hl.window_rule({ name = "center_float", match = { float = 1 }, center = true })
-
--- Lunar Client fullscreen (static effect)
-hl.window_rule({ name = "lunar_fullscreen", match = { class = "^Lunar Client.*$" }, fullscreen = true })
-
 
 -- KEYBINDINGS
 
