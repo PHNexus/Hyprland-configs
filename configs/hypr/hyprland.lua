@@ -84,8 +84,8 @@ hl.config({
         shadow = { enabled = true, range = 12, render_power = 3, color = "rgb(15161e)" },
         blur = {
             enabled = true,
-            size = 5,   --3
-            passes = 1, --2
+            size = 6,   --3
+            passes = 2, --2
             vibrancy = 0.2,
             brightness = 1.0,
             noise = 0.00,
@@ -118,7 +118,7 @@ hl.window_rule({ name = "center_float", match = { float = 1 }, center = true })
 hl.window_rule({
     name = "float-pavucontrol",
     -- Removemos o ^ e $ para que ele encontre a palavra em qualquer lugar do nome da classe
-    match = { class = ".*pavucontrol.*" }, 
+    match = { class = ".*pavucontrol.*" },
     float = true,
     size = "1000 600",
 })
@@ -134,19 +134,6 @@ hl.window_rule({
     match = { class = "^(blueman-manager)$" },
     float = true,
 })
-
-hl.window_rule({
-    name = "float-open-file",
-    match = { title = ".*(Open|Abrir).*" },
-    float = true,
-})
-
-hl.window_rule({
-    name = "float-save-file",
-    match = { title = ".*(Save|Salvar).*" },
-    float = true,
-})
-
 -- KEYBINDINGS
 local mainMod = "SUPER"
 
@@ -159,7 +146,8 @@ hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliph
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
 --hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-wallpaper.sh"))
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("pgrep -x quickshell >/dev/null && pkill -x quickshell || quickshell -c hyprquickpaper"))
+hl.bind(mainMod .. " + W",
+    hl.dsp.exec_cmd("pgrep -x quickshell >/dev/null && pkill -x quickshell || quickshell -c hyprquickpaper"))
 hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai"))
 
 -- Toggle floating
