@@ -87,7 +87,7 @@ hl.config({
             size = 6,   --3
             passes = 2, --2
             vibrancy = 0.2,
-            brightness = 1.0,
+            brightness = 0.9,
             noise = 0.00,
             ignore_opacity = true,
             contrast = 1.5,
