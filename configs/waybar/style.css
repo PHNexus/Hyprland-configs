@@ -53,6 +53,18 @@ window#waybar {
     min-width: 28px;
     font-family: monospace;
 }
+#custom-power {
+    background-color: rgb(0, 0, 0);
+    border-radius: 9px; 
+    padding: 2px 8px; 
+    margin: 2px 4px 2px 8px; 
+    color: @accent_color;
+    text-shadow: 0px 0px 5px @accent_color; 
+    box-shadow: 0 0 0px #000000;
+    min-width: 28px;
+    font-family: monospace;
+    font-size: 22px;
+}
 #custom-logo {
     padding: 2px 16px;
 }
@@ -163,7 +175,10 @@ window#waybar {
     min-width: 60px; 
     padding: 2px 13px;
 }
-
+#custom-power:hover {
+    min-width: 60px; 
+    padding: 2px 13px;
+}
 #workspaces button:hover {
     min-width: 26px; 
 }
