@@ -1,74 +1,101 @@
 {
-    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
-    "logo": {
-        "source": "~/.config/fastfetch/markfetch.txt",
-        "type": "auto",
-        "position": "top",
-        "padding": { "left": 2 },
-        "color": { "1": "white" }
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "source": "~/.config/fastfetch/logo/pochita.icon",
+    "position": "left",
+    "width": 35,
+    "padding": {
+      "top": 1,
+      "left": 1,
+      "right": 2
+    }
+  },
+  "modules": [
+    {
+      "type": "custom",
+      "format": ""
     },
-    "display": {
-        "separator": "  ",
-        "color": { "keys": "white", "output": "white", "title": "white" },
-        "constants": ["\u001b[37m", "\u001b[37m"]
+    {
+      "type": "custom",
+      "format": ""
     },
-    "modules": [
-        {
-            "type": "custom",
-            "key": "  ╭──Markosv───╮"
-        },
-        {
-            "type": "command",
-            "key": "  │ {$2}{$1}  user    │",
-            "text": "echo $USER"
-        },
-        {
-            "type": "kernel",
-            "key": "  │ {$2}{$1}  kernel  │"
-        },
-        {
-            "type": "os",
-            "key": "  │ {$2}{$1}  os      │"
-        },
-        {
-            "type": "wm",
-            "key": "  │ {$2}{$1}  wm      │"
-        },
-        {
-            "type": "cpu",
-            "key": "  │ {$2}󰻠{$1}  cpu     │"
-        },
-        {
-            "type": "gpu",
-            "key": "  │ {$2}󰢮{$1}  gpu     │"
-        },
-        {
-            "type": "command",
-            "key": "  │ {$2}{$1}  nvme    │",
-            "text": "df -h /dev/nvme0n1p2 | awk 'NR==2 {print \"NVMe \" $3 \" used / \" $2 \" total\"}'"
-        },
-        {
-            "type": "command",
-            "key": "  │ {$2}{$1}  ssd     │",
-            "text": "df -h /dev/sda1 | awk 'NR==2 {print \"SSD \" $3 \" used / \" $2 \" total\"}'"
-        },
-        {
-            "type": "command",
-            "key": "  │ {$2}{$1}  memory  │",
-            "text": "free -h | awk '/^Mem:/ {print $3 \" used / \" $2 \" total\"}'"
-        },
-        {
-            "type": "packages",
-            "key": "  │   pkgs    │"
-        },
-        {
-            "type": "custom",
-            "key": "  ╰────────────╯"
-        },
-        {
-            "type": "colors",
-            "key": "  ",
-            "symbol": "circle"
-        }
-    ]
+    {
+      "type": "custom",
+      "format": ""
+    },
+    {
+      "type": "custom",
+      "key": " ╭─Markosv─╮",
+      "keyColor": "white"
+    },
+    {
+      "type": "command",
+      "key": " │   usr  │",
+      "keyColor": "white",
+      "text": "echo $USER"
+    },
+    {
+      "type": "kernel",
+      "key": " │   ker  │",
+      "keyColor": "white",
+      "format": "{2}"
+    },
+    {
+      "type": "os",
+      "key": " │   os   │",
+      "keyColor": "white",
+      "format": "{3}"
+    },
+    {
+      "type": "wm",
+      "key": " │   wm   │",
+      "keyColor": "white",
+      "format": "{2}"
+    },
+    {
+      "type": "cpu",
+      "key": " │  󰻠 cpu  │",
+      "keyColor": "white",
+      "format": "{1}"
+    },
+    {
+      "type": "gpu",
+      "key": " │  󰢮 gpu  │",
+      "keyColor": "white",
+      "format": "{2}"
+    },
+    {
+      "type": "command",
+      "key": " │   nvm  │",
+      "keyColor": "white",
+      "text": "df -h /dev/nvme0n1p2 | awk 'NR==2 {print $3 \"/\" $2}'"
+    },
+    {
+      "type": "command",
+      "key": " │   ssd  │",
+      "keyColor": "white",
+      "text": "df -h /dev/sda1 | awk 'NR==2 {print $3 \"/\" $2}'"
+    },
+    {
+      "type": "command",
+      "key": " │   ram  │",
+      "keyColor": "white",
+      "text": "free -h | awk '/^Mem:/ {print $3 \"/\" $2}'"
+    },
+    {
+      "type": "packages",
+      "key": " │   pkg  │",
+      "keyColor": "white"
+    },
+    {
+      "type": "custom",
+      "key": " ╰─────────╯",
+      "keyColor": "white"
+    },
+    {
+      "type": "colors",
+      "key": " ",
+      "symbol": "circle"
+    }
+  ]
 }
