@@ -6,7 +6,7 @@ CONFIG_DIR="$REPO_DIR/configs"
 
 CONFIG_FOLDERS=(
     "btop" "cava" "fastfetch" "fish" "gtk-3.0" "gtk-4.0"
-    "hypr" "kitty" "swaync" "waybar" "wofi"
+    "hypr" "kitty" "quickshell" "swaync" "waybar" "wofi"
     "xdg-desktop-portal" "xfce4" "stellar"
 )
 
