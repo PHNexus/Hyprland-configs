@@ -120,6 +120,7 @@ hl.window_rule({
     -- Removemos o ^ e $ para que ele encontre a palavra em qualquer lugar do nome da classe
     match = { class = ".*pavucontrol.*" }, 
     float = true,
+    size = "1000 600",
 })
 
 hl.window_rule({
@@ -136,15 +137,16 @@ hl.window_rule({
 
 hl.window_rule({
     name = "float-open-file",
-    match = { title = ".*(Open|Abrir).*" }, -- Pega janelas que contenham "Open" ou "Abrir"
+    match = { title = ".*(Open|Abrir).*" },
     float = true,
 })
 
 hl.window_rule({
     name = "float-save-file",
-    match = { title = ".*(Save|Salvar).*" }, -- Pega janelas que contenham "Save" ou "Salvar"
+    match = { title = ".*(Save|Salvar).*" },
     float = true,
 })
+
 -- KEYBINDINGS
 local mainMod = "SUPER"
 
