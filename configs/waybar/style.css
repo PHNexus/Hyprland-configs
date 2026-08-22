@@ -45,7 +45,7 @@ window#waybar {
 #custom-notification {
     background-color: rgb(0, 0, 0);
     border-radius: 9px; 
-    padding: 2px  8px 3 5px; 
+    padding: 2px  6px 3 5px; 
     margin: 2px 4px 2px 8px; 
     color: @accent_color;
     text-shadow: 0px 0px 5px @accent_color; 
@@ -56,14 +56,14 @@ window#waybar {
 #custom-power {
     background-color: rgb(0, 0, 0);
     border-radius: 9px; 
-    padding: 2px 8px; 
+    padding: 2px 5px; 
     margin: 2px 4px 2px 8px; 
     color: @accent_color;
     text-shadow: 0px 0px 5px @accent_color; 
     box-shadow: 0 0 0px #000000;
     min-width: 28px;
     font-family: monospace;
-    font-size: 22px;
+    font-size: 23px;
 }
 #custom-logo {
     padding: 2px 16px;
