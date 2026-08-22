@@ -19,7 +19,7 @@ hl.workspace_rule({ workspace = 4, monitor = "HDMI-A-1", persistent = true })
 
 -- ENVIRONMENT VARIABLES
 hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
-hl.env("XCURSOR_SIZE", "14")
+hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("QT_QPA_PLATFORM", "wayland")
@@ -213,6 +213,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("xrandr --output DP-1 --primary")
     hl.exec_cmd("sleep 1 && waybar")
+    hl.exec_cmd("hypridle")
     os.execute("nvibrant 0 512 512 0 >/dev/null 2>&1 &")
     hl.exec_cmd(
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
