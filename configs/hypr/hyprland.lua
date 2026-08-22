@@ -84,18 +84,18 @@ hl.config({
         shadow = { enabled = true, range = 4, render_power = 3, color = "rgb(15161e)" },
         blur = {
             enabled = true,
-            size = 6,
-            passes = 4,
+            size = 4,
+            passes = 2,
             vibrancy = 0.7,
-            brightness = 0.8912,
-            noise = 0.05,
+            brightness = 1.0,
+            noise = 0.00,
             ignore_opacity = true,
-            contrast = 1.5,
+            contrast = 1.5 ,
             vibrancy_darkness = 0.0,
             xray = true,
             new_optimizations = true
-        },
     },
+}
 })
 
 -- MISC
