@@ -63,5 +63,5 @@ echo "Executing hyprlock with appropriate configuration..."
 if [[ "$WIDTH" -ge 1920 && "$HEIGHT" -ge 1080 ]]; then
     hyprlock
 else
-    hyprlock -c ~/.config/hypr/hyprlock_tiny.conf
+    hyprlock -c ~/.config/hypr/hyprlock.conf
 fi
