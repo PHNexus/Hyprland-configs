@@ -8,7 +8,7 @@ hl.monitor({ output = "DP-1", mode = "1920x1080@180", position = "0x0", scale = 
 hl.monitor({ output = "HDMI-A-1", mode = "1366x768@60", position = "-1366x0", scale = 1 })
 
 
--- WORKSPACES
+-- WORKSPACEShl.env("QT_QPA_PLATFORM", "wayland")
 -- DP-1 (primary monitor)
 hl.workspace_rule({ workspace = 1, monitor = "DP-1", default = true, persistent = true })
 hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
@@ -17,13 +17,13 @@ hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 3, monitor = "HDMI-A-1", persistent = true })
 hl.workspace_rule({ workspace = 4, monitor = "HDMI-A-1", persistent = true })
 
-
 -- ENVIRONMENT VARIABLES
 hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
-hl.env("XCURSOR_SIZE", "24")
+hl.env("XCURSOR_SIZE", "14")
 hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
 hl.env("HYPRCURSOR_SIZE", "24")
-
+hl.env("QT_QPA_PLATFORM", "wayland")
+hl.env("MOZ_ENABLE_WAYLAND", "1")
 -- Flatpak
 hl.env("XDG_DATA_DIRS",
     os.getenv("HOME") .. "/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share")
@@ -77,25 +77,25 @@ hl.config({ dwindle = { preserve_split = true } })
 -- DECORATION
 hl.config({
     decoration = {
-        rounding = 10,
+        rounding = 8,
         rounding_power = 2,
         active_opacity = 0.9,
         inactive_opacity = 0.7,
-        shadow = { enabled = true, range = 4, render_power = 3, color = "rgb(15161e)" },
+        shadow = { enabled = true, range = 12, render_power = 3, color = "rgb(15161e)" },
         blur = {
             enabled = true,
-            size = 3,
-            passes = 2,
-            vibrancy = 0.7,
+            size = 5,   --3
+            passes = 1, --2
+            vibrancy = 0.2,
             brightness = 1.0,
             noise = 0.00,
             ignore_opacity = true,
-            contrast = 1.5 ,
+            contrast = 1.5,
             vibrancy_darkness = 0.0,
             xray = true,
             new_optimizations = true
-    },
-}
+        },
+    }
 })
 
 -- MISC
@@ -114,6 +114,37 @@ hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity 
 -- Center floating windows
 hl.window_rule({ name = "center_float", match = { float = 1 }, center = true })
 
+
+hl.window_rule({
+    name = "float-pavucontrol",
+    -- Removemos o ^ e $ para que ele encontre a palavra em qualquer lugar do nome da classe
+    match = { class = ".*pavucontrol.*" }, 
+    float = true,
+})
+
+hl.window_rule({
+    name = "float-nm-connection-editor",
+    match = { class = "^(nm-connection-editor)$" },
+    float = true,
+})
+
+hl.window_rule({
+    name = "float-blueman-manager",
+    match = { class = "^(blueman-manager)$" },
+    float = true,
+})
+
+hl.window_rule({
+    name = "float-open-file",
+    match = { title = ".*(Open|Abrir).*" }, -- Pega janelas que contenham "Open" ou "Abrir"
+    float = true,
+})
+
+hl.window_rule({
+    name = "float-save-file",
+    match = { title = ".*(Save|Salvar).*" }, -- Pega janelas que contenham "Save" ou "Salvar"
+    float = true,
+})
 -- KEYBINDINGS
 local mainMod = "SUPER"
 
@@ -192,7 +223,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("xrandr --output DP-1 --primary")
     hl.exec_cmd("sleep 1 && waybar")
     os.execute("nvibrant 0 512 512 0 >/dev/null 2>&1 &")
-    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
+    hl.exec_cmd(
+        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
     hl.exec_cmd("awww-daemon")
 end)
 hl.on("hyprland.shutdown", function()
