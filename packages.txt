@@ -15,14 +15,16 @@ quickshell
 xdg-desktop-portal-hyprland
 xorg-xwayland
 swaync
+
 # --------------------------------------------------
-# Wallpaper / screenshots
+# Wallpaper / screenshots / Recorder
 # --------------------------------------------------
 
 awww
 hyprshot
 grim
 slurp
+wf-recorder
 
 # --------------------------------------------------
 # Clipboard
@@ -34,15 +36,16 @@ wl-clipboard
 # --------------------------------------------------
 # Audio
 # --------------------------------------------------
-pipewire 
-wireplumber 
-pipewire-pulse 
-pipewire-alsa 
-alsa-utils 
-alsa-card-profiles 
-alsa-ucm-conf 
-pavucontrol 
-qpwgraph 
+
+pipewire
+wireplumber
+pipewire-pulse
+pipewire-alsa
+alsa-utils
+alsa-card-profiles
+alsa-ucm-conf
+pavucontrol
+qpwgraph
 easyeffects
 
 # --------------------------------------------------
@@ -56,6 +59,12 @@ starship
 helium-browser-bin
 visual-studio-code-bin
 thunar
+gvfs
+tumbler
+thunar-volman
+thunar-archive-plugin
+thunar-media-tags-plugin
+catfish
 
 # --------------------------------------------------
 # Fonts
@@ -63,17 +72,19 @@ thunar
 
 ttf-jetbrains-mono-nerd
 ttf-font-awesome
-ttf-dejavu 
-ttf-liberation 
-noto-fonts 
+ttf-dejavu
+ttf-liberation
+noto-fonts
 noto-fonts-emoji
-noto-fonts-cjk 
+noto-fonts-cjk
 noto-fonts-extra
 ttf-cascadia-code-nerd
 
 # --------------------------------------------------
 # Utilities
 # --------------------------------------------------
+
+fisher
 btop
 cava
 imv
@@ -82,4 +93,6 @@ git
 curl
 unzip
 wine
-
+bluez
+bluez-utils
+blueman
