@@ -25,5 +25,5 @@
 </p>
 
 <p align="center">
-  # Dependencies
+  <a href="packages.txt"># Dependencies</a>
 </p>
