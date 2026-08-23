@@ -10,6 +10,7 @@ waybar
 wofi
 hyprlock
 wlogout
+nwg-look
 quickshell
 xdg-desktop-portal-hyprland
 xorg-xwayland
