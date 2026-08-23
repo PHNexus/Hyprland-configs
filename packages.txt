@@ -1,4 +1,4 @@
-# 43PR/dotfiles
+# mark/dotfiles
 # Arch Linux packages required for the Hyprland setup
 
 # --------------------------------------------------
