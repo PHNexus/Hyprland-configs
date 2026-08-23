@@ -22,8 +22,7 @@
 | Browser | [Helium](https://helium.computer/) |
 | Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
 
+<a href="packages.txt"># Dependencies</a>
+
 </div>
 
-<div align="center">
-  <a href="packages.txt"># Dependencies</a>
-</div>
