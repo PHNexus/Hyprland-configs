@@ -1,5 +1,7 @@
 <div align="center">
+  
 # Hyprland
+  
 </div>
 <hr>
 
