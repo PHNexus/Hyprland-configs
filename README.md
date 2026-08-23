@@ -5,7 +5,7 @@
 |---|---|
 | <img width="1919" height="1080" alt="2026-08-23-135743_hyprshot" src="https://github.com/user-attachments/assets/fd92a3ea-8a8e-4047-bf96-77a200b990da" /> | |
 
-<p align="center">
+<div align="center">
 
 | Component | Program |
 |---|---|
@@ -22,8 +22,8 @@
 | Browser | [Helium](https://helium.computer/) |
 | Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
 
-</p>
+</div>
 
-<p align="center">
+<div align="center">
   <a href="packages.txt"># Dependencies</a>
-</p>
+</div>
