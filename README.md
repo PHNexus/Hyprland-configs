@@ -1,8 +1,9 @@
 
 
 
-<img width="1925" height="1081" alt="2026-08-23-135156_hyprshot" src="https://github.com/user-attachments/assets/1b4e5ff3-bca2-4c3c-b698-64279bdc1c96" />
-<img width="1913" height="1076" alt="2026-08-23-135208_hyprshot" src="https://github.com/user-attachments/assets/48f4fa19-baa3-479a-acef-aff92f5133b0" />
+| <img width="1925" height="1081" alt="2026-08-23-135156_hyprshot" src="https://github.com/user-attachments/assets/1b4e5ff3-bca2-4c3c-b698-64279bdc1c96" /> | <img width="1913" height="1076" alt="2026-08-23-135208_hyprshot" src="https://github.com/user-attachments/assets/48f4fa19-baa3-479a-acef-aff92f5133b0" />
+|--|--|
+
 | Component | Program |
 |---|---|
 | Terminal | [Kitty](https://github.com/kovidgoyal/kitty) |
