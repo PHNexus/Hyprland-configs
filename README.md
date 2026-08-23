@@ -1,8 +1,9 @@
 <div align="center">
   
-# Hyprland  <br>
-
+<h1>Hyprland</h1>
 </div>
+
+<br>
 
 | <img width="1925" height="1081" alt="2026-08-23-135156_hyprshot" src="https://github.com/user-attachments/assets/32116be3-b4c3-48b1-829e-6207a02023b6" /> | <img width="1913" height="1076" alt="2026-08-23-135208_hyprshot" src="https://github.com/user-attachments/assets/ee896327-0326-46b6-9b24-5b9a243bac87" /> |
 |---|---|
