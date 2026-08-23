@@ -18,6 +18,20 @@ xorg-xwayland
 swaync
 
 # --------------------------------------------------
+# Themes / Icons / Cursors
+# --------------------------------------------------
+
+# GTK Themes
+materia-gtk-theme
+
+# Icon Themes
+whitesur-icon-theme
+papirus-icon-theme
+
+# Cursor Themes
+bibata-cursor-theme
+
+# --------------------------------------------------
 # Wallpaper / screenshots / Recorder
 # --------------------------------------------------
 
