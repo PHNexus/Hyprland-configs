@@ -34,10 +34,16 @@ wl-clipboard
 # --------------------------------------------------
 # Audio
 # --------------------------------------------------
-
-pipewire
-pipewire-pulse
-wireplumber
+pipewire 
+wireplumber 
+pipewire-pulse 
+pipewire-alsa 
+alsa-utils 
+alsa-card-profiles 
+alsa-ucm-conf 
+pavucontrol 
+qpwgraph 
+easyeffects
 
 # --------------------------------------------------
 # Terminal / applications
@@ -48,6 +54,7 @@ fastfetch
 fish
 starship
 helium-browser-bin
+visual-studio-code-bin
 thunar
 
 # --------------------------------------------------
