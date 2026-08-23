@@ -14,4 +14,4 @@
 | Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
 
 
-[Dependencies](packages.txt)
+# [Dependencies](packages.txt)
