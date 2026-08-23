@@ -43,6 +43,7 @@ wireplumber
 # --------------------------------------------------
 
 kitty
+fastfetch
 helium-browser-bin
 thunar
 
@@ -52,11 +53,20 @@ thunar
 
 ttf-jetbrains-mono-nerd
 ttf-font-awesome
+ttf-dejavu 
+ttf-liberation 
+noto-fonts 
+noto-fonts-emoji
+noto-fonts-cjk 
+noto-fonts-extra
+ttf-cascadia-code-nerd
 
 # --------------------------------------------------
 # Utilities
 # --------------------------------------------------
 
+imv
+mpv
 git
 curl
 unzip
