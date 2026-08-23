@@ -29,9 +29,9 @@ Hyprland
 | Browser | [Helium](https://helium.computer/) |
 | Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
 
-<p align="center">
+
 # [Dependencies](packages.txt)
-</p>
+
 
 
 
