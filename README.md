@@ -1,8 +1,7 @@
 
 <div align="center">
 
-# Arch Linux
-Hyprland 
+# Hyprland
 
 </div>
 
