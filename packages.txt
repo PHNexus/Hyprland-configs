@@ -13,7 +13,7 @@ wlogout
 quickshell
 xdg-desktop-portal-hyprland
 xorg-xwayland
-
+swaync
 # --------------------------------------------------
 # Wallpaper / screenshots
 # --------------------------------------------------
@@ -44,6 +44,8 @@ wireplumber
 
 kitty
 fastfetch
+fish
+starship
 helium-browser-bin
 thunar
 
@@ -64,11 +66,12 @@ ttf-cascadia-code-nerd
 # --------------------------------------------------
 # Utilities
 # --------------------------------------------------
-
+btop
+cava
 imv
 mpv
 git
 curl
 unzip
-
+wine
 
