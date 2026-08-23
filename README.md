@@ -6,20 +6,22 @@
 | <img width="1919" height="1080" alt="2026-08-23-135743_hyprshot" src="https://github.com/user-attachments/assets/fd92a3ea-8a8e-4047-bf96-77a200b990da" /> | |
 
 <p align="center">
-  <strong>Component</strong> | <strong>Program</strong>
-  |---|---|
-  | Terminal | [Kitty](https://github.com/kovidgoyal/kitty) |
-  | App Launcher | [Wofi](https://hg.sr.ht/~scoopta/wofi) |
-  | Status Bar | [Waybar](https://github.com/alexays/waybar) |
-  | Shell | [Fish](https://fishshell.com/) + [Starship](https://starship.rs/) |
-  | File Manager | [Thunar](https://docs.xfce.org/xfce/thunar/start) |
-  | Notifications & Control Center | [SwayNC](https://github.com/ErikReider/SwayNotificationCenter) |
-  | Wallpaper | [Awww](https://codeberg.org/LGFae/awww) |
-  | Idle Management | [Hypridle](https://github.com/hyprwm/hypridle) |
-  | Screen Lock | [Hyprlock](https://github.com/hyprwm/hyprlock) |
-  | Editor | [VS Code](https://code.visualstudio.com/) |
-  | Browser | [Helium](https://helium.computer/) |
-  | Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
+
+| Component | Program |
+|---|---|
+| Terminal | [Kitty](https://github.com/kovidgoyal/kitty) |
+| App Launcher | [Wofi](https://hg.sr.ht/~scoopta/wofi) |
+| Status Bar | [Waybar](https://github.com/alexays/waybar) |
+| Shell | [Fish](https://fishshell.com/) + [Starship](https://starship.rs/) |
+| File Manager | [Thunar](https://docs.xfce.org/xfce/thunar/start) |
+| Notifications & Control Center | [SwayNC](https://github.com/ErikReider/SwayNotificationCenter) |
+| Wallpaper | [Awww](https://codeberg.org/LGFae/awww) |
+| Idle Management | [Hypridle](https://github.com/hyprwm/hypridle) |
+| Screen Lock | [Hyprlock](https://github.com/hyprwm/hyprlock) |
+| Editor | [VS Code](https://code.visualstudio.com/) |
+| Browser | [Helium](https://helium.computer/) |
+| Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
+
 </p>
 
 <p align="center">
