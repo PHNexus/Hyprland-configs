@@ -13,6 +13,5 @@
 | Browser | [Helium](https://helium.computer/) |
 | Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
 
-# Dependencies
 
 [Dependencies](packages.txt)
