@@ -1,9 +1,9 @@
 
 
 
-| <img width="1925" height="1081" alt="2026-08-23-135156_hyprshot" src="https://github.com/user-attachments/assets/1b4e5ff3-bca2-4c3c-b698-64279bdc1c96" /> | <img width="1913" height="1076" alt="2026-08-23-135208_hyprshot" src="https://github.com/user-attachments/assets/48f4fa19-baa3-479a-acef-aff92f5133b0" /> | <img width="1919" height="1080" alt="2026-08-23-135743_hyprshot" src="https://github.com/user-attachments/assets/f3c10321-1957-462e-80b8-eb1b11154e65" />
-|
-|--|--|
+| <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b5b3915e-e3d1-453d-9075-fe8a163fd2ce" /> | <img width="1920" height="1080" alt="screenshot_2026-08-03_17-59-18" src="https://github.com/user-attachments/assets/259dfd36-f46c-4366-ab8e-fa9ab6fc90bd" /> |
+|---|---|
+| <img width="1920" height="1080" alt="screenshot_2026-07-16_10-57-36" src="https://github.com/user-attachments/assets/02050014-7041-4a92-aa94-cef9a00c0592" /> | <img width="1920" height="1080" alt="screenshot_2026-08-03_17-53-03" src="https://github.com/user-attachments/assets/2ffee716-eaa0-471f-bbbf-e6c341adf75f" /> |
 
 | Component | Program |
 |---|---|
