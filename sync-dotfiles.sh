@@ -5,7 +5,7 @@ REPO_DIR="$HOME/Documents/GitHub/Hyprland-configs"
 CONFIG_DIR="$REPO_DIR/configs"
 
 CONFIG_FOLDERS=(
-    "btop" "cava" "fastfetch" "fish" "gtk-3.0" "gtk-4.0"
+    "btop" "nvim" "cava" "fastfetch" "fish" "gtk-3.0" "gtk-4.0"
     "hypr" "kitty" "quickshell" "swaync" "waybar" "wofi"
     "xdg-desktop-portal" "xfce4" "stellar"
 )
