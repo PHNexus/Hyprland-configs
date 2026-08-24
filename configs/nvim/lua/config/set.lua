@@ -30,3 +30,5 @@ vim.opt.updatetime = 50
 -- vim.api.nvim_set_hl(0, "LspReferenceText", {})
 -- vim.api.nvim_set_hl(0, "LspReferenceRead", {})
 -- vim.api.nvim_set_hl(0, "LspReferenceWrite", {})
+vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
+vim.api.nvim_set_hl(0, "NormalNC", { bg = "none" })
