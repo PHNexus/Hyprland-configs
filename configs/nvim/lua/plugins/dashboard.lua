@@ -1,17 +1,17 @@
 return {
 	"nvimdev/dashboard-nvim",
 	config = function()
-		local ascii = require("ascii")
-
-		local nvim_bloody = ascii.art.text.neovim.bloody
-		local kraked_king = ascii.art.misc.krakens.krakedking
-		local nvim_elit = ascii.art.text.neovim.elite
-		local make_cool_stuff = ascii.art.text.slogons.make_cool_stuff
-		local arch_btw = ascii.art.text.slogons.arch_btw_doom
-		local saturn_plus = ascii.art.planets.planets.saturn_plus
-
-		local logo = make_cool_stuff
-
+local logo = {
+    "                       _    ",
+    " _ __ ___   __ _ _ __| | __",
+    "| '_ ` _ \\ / _` | '__| |/ /",
+    "| | | | | | (_| | |  |   < ",
+    "|_| |_| |_|\\__,_|_|  |_|\\_\\",
+    "",
+    "        良い一日を!",
+    "",
+}
+   
 		table.insert(logo, 1, "")
 		table.insert(logo, 1, "")
 		vim.list_extend(logo, { "", "" })
@@ -40,18 +40,6 @@ return {
 						desc = " Recent Sessions",
 						icon = " ",
 						key = "s",
-					},
-					{
-						action = "Neotree ~/dotfiles/",
-						desc = " Dotfiles",
-						icon = " ",
-						key = "d",
-					},
-					{
-						action = "Neotree ~/personal/",
-						desc = " Personal",
-						icon = " ",
-						key = "p",
 					},
 					{
 						action = "Telescope find_files",
