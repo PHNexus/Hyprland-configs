@@ -150,6 +150,9 @@ hl.bind(mainMod .. " + W",
     hl.dsp.exec_cmd("pgrep -x quickshell >/dev/null && pkill -x quickshell || quickshell -c hyprquickpaper"))
 hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai"))
 
+-- Toggle waybar
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
+
 -- Toggle floating
 hl.bind(mainMod .. " + F", function()
     hl.dispatch(hl.dsp.window.float())
