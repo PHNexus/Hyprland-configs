@@ -55,6 +55,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | Keybind | Action |
 |---|---|
 | `SUPER + Q` | Close active window |
+| `SUPER + SHIFT + W` | Toggle Waybar |
 | `SUPER + F` | Toggle floating + center + resize 1000x600 |
 | `SUPER + M` | Exit Hyprland |
 | `SUPER + ← / → / ↑ / ↓` | Move focus |
