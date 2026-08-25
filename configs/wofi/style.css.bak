@@ -10,14 +10,12 @@ window {
 
 /* Input box */
 #input {
-  margin: 2px;              /* Margem reduzida */
+  margin: 5px;
   border: 1px solid #222222;
   color: #ffffff;
   background-color: #111111;
-  padding: 2px;             /* Padding reduzido */
-  border-radius: 4px;
-  font-size: 12px;          /* Fonte menor */
-  min-height: 24px;         /* Altura compacta */
+  padding: 6px;
+  border-radius: 5px;
 }
 
 #input::placeholder {
@@ -42,7 +40,7 @@ window {
 
 /* Inner box */
 #inner-box {
-  margin: 3px;
+  margin: 5px;
   border: none;
   color: #ffffff;
   padding: 0px;
@@ -50,9 +48,9 @@ window {
 
 /* Outer box */
 #outer-box {
-  margin: 3px;
+  margin: 5px;
   border: none;
-  padding: 3px;
+  padding: 5px;
 }
 
 /* Scroll area */
@@ -62,10 +60,10 @@ window {
 
 /* Text styling */
 #text {
-  margin: 4px;              /* Margem levemente reduzida */
+  margin: 5px;
   border: none;
   color: #cccccc;
-  font-size: 13px;          /* Fonte levemente menor */
+  font-size: 14px;
 }
 
 #entry.activatable #text {
@@ -93,4 +91,4 @@ window {
 
 #entry:hover #text {
   color: #ffffff;
-} 
+}
