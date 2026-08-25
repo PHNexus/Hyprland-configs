@@ -1,46 +1,50 @@
-/* Global styles */
 window {
   margin: 0px;
   border: 2px solid #000000;
   border-radius: 10px;
-  background-color: rgba(0, 0, 0, 0.95);
-  font-family: JetBrains Mono, monospace;
-  color: #ffffff;
+  background-color: #000000;
+  font-family: "Fira Code", "JetBrains Mono", monospace;
+  color: #f3f3f3;
 }
 
-/* Input box */
 #input {
-  margin: 2px;              /* Margem reduzida */
-  border: 1px solid #222222;
+  margin: 2px;
+  border: none;
   color: #ffffff;
-  background-color: #111111;
-  padding: 2px;             /* Padding reduzido */
-  border-radius: 4px;
-  font-size: 12px;          /* Fonte menor */
-  min-height: 24px;         /* Altura compacta */
+  background-color: #000000;
+  padding: 3px;
+  border-radius: 0px;
+  font-size: 13px;
+  min-height: 26px;
+  font-weight: 500;
 }
 
 #input::placeholder {
-  color: #888888;
+  color: #666666;
+  font-style: italic;
 }
 
 #input:focus {
   color: #ffffff;
+  border: none;
+  background-color: #000000;
 }
 
 #input prompt {
   color: #ffffff;
+  font-weight: bold;
 }
 
 #input image {
-  color: #ffffff;
+  color: transparent;
+  min-width: 0px;
+  min-height: 0px;
 }
 
 #prompt {
-  color: #ffffff;
+  color: transparent;
 }
 
-/* Inner box */
 #inner-box {
   margin: 3px;
   border: none;
@@ -48,24 +52,53 @@ window {
   padding: 0px;
 }
 
-/* Outer box */
 #outer-box {
   margin: 3px;
   border: none;
   padding: 3px;
 }
 
-/* Scroll area */
 #scroll {
   margin: 0px;
+  border: none;
+  background: none;
 }
 
-/* Text styling */
-#text {
-  margin: 4px;              /* Margem levemente reduzida */
+#scrollbar {
+  background: transparent;
   border: none;
-  color: #cccccc;
-  font-size: 13px;          /* Fonte levemente menor */
+  width: 0px;
+  min-width: 0px;
+}
+
+#scrollbar slider {
+  background: transparent;
+  border: none;
+  min-width: 0px;
+  min-height: 0px;
+  margin: 0px;
+  padding: 0px;
+}
+
+#scrollbar trough {
+  background: transparent;
+  border: none;
+  min-width: 0px;
+}
+
+#scrollbar thumb {
+  background: transparent;
+  border: none;
+  min-width: 0px;
+}
+
+#text {
+  margin: 5px;
+  border: none;
+  color: #d4d4d4;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
 }
 
 #entry.activatable #text {
@@ -73,24 +106,51 @@ window {
 }
 
 #entry > * {
-  color: #cccccc;
+  color: #d4d4d4;
 }
 
-/* Active entry (Item selecionado) */
 #entry:selected {
-  background-color: #333333;
-  border-radius: 5px;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  margin: 2px 4px;
+  border: 1px solid #333333;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
 }
 
 #entry:selected #text {
-  font-weight: bold;
+  font-weight: 600;
   color: #ffffff;
+  letter-spacing: 0.5px;
 }
 
 #entry:hover {
-  background-color: #222222;
+  background-color: #141414;
+  border-radius: 8px;
+  margin: 2px 4px;
+  border: 1px solid #2a2a2a;
+  transition: all 0.2s ease;
 }
 
 #entry:hover #text {
   color: #ffffff;
-} 
+  font-weight: 500;
+}
+
+#entry {
+  border: none;
+  border-radius: 8px;
+  background: none;
+  margin: 2px 4px;
+  transition: all 0.2s ease;
+}
+
+#entry image {
+  color: transparent;
+  border: none;
+  background: none;
+}
+
+#entry:selected image {
+  color: transparent;
+}
