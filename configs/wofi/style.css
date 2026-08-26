@@ -62,6 +62,7 @@ window {
   margin: 0px;
   border: none;
   background: none;
+  scroll-behavior: smooth;
 }
 
 #scrollbar {
@@ -99,6 +100,7 @@ window {
   font-size: 14px;
   font-weight: 400;
   letter-spacing: 0.3px;
+  transition: all 0.15s ease;
 }
 
 #entry.activatable #text {
@@ -142,7 +144,7 @@ window {
   border-radius: 8px;
   background: none;
   margin: 2px 4px;
-  transition: all 0.2s ease;
+  transition: all 0.1s ease-in-out;
 }
 
 #entry image {
@@ -153,4 +155,8 @@ window {
 
 #entry:selected image {
   color: transparent;
+}
+#scroll {
+  scroll-behavior: smooth;
+  transition: all 0.15s ease;
 }
