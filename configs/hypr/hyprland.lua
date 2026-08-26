@@ -1,5 +1,5 @@
 -- Hyprland configuration
-
+--ts
 ---@module 'hl'
 
 
