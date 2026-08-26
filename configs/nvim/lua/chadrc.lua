@@ -2,7 +2,7 @@
 local M = {}
 
 M.base46 = {
-  theme = "espresso",
+  theme = "ayu_dark",
   -- transparency = true,
   hl_add = require "hl",
 }
@@ -15,8 +15,7 @@ M.ui = {
 }
 
 M.nvdash = {
-  -- load_on_startup = true,
-  -- buttons = require "nvdash"
+  load_on_startup = true, -- <-- TIRE OS "--" DAQUI!
 }
 
 M.term = {

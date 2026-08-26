@@ -197,9 +197,22 @@ return {
     },
     config = function(_, opts)
       require("nvim-tree").setup(opts)
-      vim.api.nvim_create_autocmd("VimEnter", {
+      
+      -- AUTOCMD 1: Abre o NvimTree SEMPRE que abrir um arquivo real
+      vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
         callback = function()
-          vim.cmd("NvimTreeOpen")
+          if vim.bo.filetype ~= "NvimTree" and vim.fn.expand("%:t") ~= "" then
+            vim.cmd("NvimTreeOpen")
+          end
+        end,
+      })
+      
+      -- AUTOCMD 2: Fecha o NvimTree ANTES de fechar o último arquivo (evita o erro :q!)
+      vim.api.nvim_create_autocmd("QuitPre", {
+        callback = function()
+          if vim.fn.exists(":NvimTreeClose") == 2 then
+            vim.cmd("NvimTreeClose")
+          end
         end,
       })
     end,
