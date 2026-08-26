@@ -4,7 +4,8 @@ Welcome to my Hyprland Rice configuration! This setup is designed to provide a c
 I use these configs daily 
 
 ## Screenshots
-| <img width="1925" height="1081" alt="2026-08-23-135156_hyprshot" src="https://github.com/user-attachments/assets/32116be3-b4c3-48b1-829e-6207a02023b6" /> | <img width="1913" height="1076" alt="2026-08-23-135208_hyprshot" src="https://github.com/user-attachments/assets/ee896327-0326-46b6-9b24-5b9a243bac87" /> |
+| <img width="1925" height="1081" alt="2026-08-23-135156_hyprshot" src="https://github.com/user-attachments/assets/32116be3-b4c3-48b1-829e-6207a02023b6" /> | <img width="1925" height="1081" alt="2026-08-26-155806_hyprshot" src="https://github.com/user-attachments/assets/df31a3c9-e323-463f-aa51-d821ab54b5c8" />
+ |
 |---|---|
 |<img width="1925" height="1080" alt="2026-08-26-155406_hyprshot" src="https://github.com/user-attachments/assets/47cfb532-c03c-48e1-b627-dbb1c58cd8ca" /> | <img width="1920" height="1080" alt="2026-08-23-142231_hyprshot" src="https://github.com/user-attachments/assets/da4b0ac9-2d28-4ca3-9746-3ae4d7bbfae4" /> 
 
