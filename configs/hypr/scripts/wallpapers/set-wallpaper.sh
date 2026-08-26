@@ -34,3 +34,5 @@ echo "Setting wallpaper: $SELECTED_FILE"
 "$SET_SCRIPT" "$WALL"
 
 echo "All done!"
+
+
