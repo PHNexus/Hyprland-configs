@@ -1,7 +1,12 @@
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "*",
+  callback = function()
+    pcall(vim.treesitter.start)
+  end,
+})
+
 --@type NvPluginSpec[]
 return {
-
-  --------------------------------------- Default Plugins -----------------------------------------
 
   {
     "rachartier/tiny-glimmer.nvim",
@@ -50,6 +55,7 @@ return {
 
   {
     "neovim/nvim-lspconfig",
+    lazy = false,
     config = function()
       require "configs.lspconfig"
     end,
@@ -65,15 +71,12 @@ return {
 
   {
     "nvim-treesitter/nvim-treesitter",
-    lazy = false,
-    build = ":TSUpdate",
-    opts = {
-      ensure_installed = {
-        "vim", "html", "css", "javascript", "json", "toml", "markdown", "c",
-        "bash", "lua", "tsx", "typescript", "cpp", "vue", "astro",
-        "java", "kotlin"
-      },
-    },
+    opts = function(_, opts)
+      opts.ensure_installed = opts.ensure_installed or {}
+      vim.list_extend(opts.ensure_installed, { "java", "kotlin", "lua", "vim" })
+      opts.highlight = { enable = true }
+      return opts
+    end,
   },
 
   {
@@ -81,8 +84,6 @@ return {
     event = "InsertCharPre",
     opts = {},
   },
-
-  --------------------------------------- Custom Plugins -----------------------------------------
 
   {
     "karb94/neoscroll.nvim",
@@ -166,7 +167,6 @@ return {
     cmd = "CodeDiff",
   },
 
-  --------------------------------------- NvimTree (Fixado à esquerda) ---------------------------------------
   {
     "nvim-tree/nvim-tree.lua",
     lazy = false,
@@ -197,8 +197,7 @@ return {
     },
     config = function(_, opts)
       require("nvim-tree").setup(opts)
-      
-      -- AUTOCMD 1: Abre o NvimTree SEMPRE que abrir um arquivo real
+
       vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
         callback = function()
           if vim.bo.filetype ~= "NvimTree" and vim.fn.expand("%:t") ~= "" then
@@ -206,8 +205,7 @@ return {
           end
         end,
       })
-      
-      -- AUTOCMD 2: Fecha o NvimTree ANTES de fechar o último arquivo (evita o erro :q!)
+
       vim.api.nvim_create_autocmd("QuitPre", {
         callback = function()
           if vim.fn.exists(":NvimTreeClose") == 2 then

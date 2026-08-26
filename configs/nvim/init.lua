@@ -14,10 +14,8 @@ vim.opt.rtp:prepend(lazy_path)
 
 local lazy_config = require "configs.lazy"
 
--- ADICIONE ESTA LINHA AQUI (ANTES DO SETUP)
 vim.env.PATH = vim.env.PATH .. ":/usr/bin"
 
--- load plugins
 require("lazy").setup({
   {
     "nvchad/nvchad",
@@ -30,7 +28,6 @@ require("lazy").setup({
 
 dofile(vim.g.base46_cache .. "defaults")
 dofile(vim.g.base46_cache .. "statusline")
--- dofile(vim.g.base46_cache .. "markview")
 
 require "options"
 require "autocmds"
