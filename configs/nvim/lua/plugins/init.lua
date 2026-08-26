@@ -1,7 +1,7 @@
---@type NvPluginSpec[]plugi
+--@type NvPluginSpec[]
 return {
 
-  --------------------------------------- default plugins -----------------------------------------
+  --------------------------------------- Default Plugins -----------------------------------------
 
   {
     "rachartier/tiny-glimmer.nvim",
@@ -11,18 +11,13 @@ return {
         redo = {
           enabled = true,
           default_animation = {
-            settings = {
-              from_color = "DiffAdd",
-            },
+            settings = { from_color = "DiffAdd" },
           },
         },
-
         undo = {
           enabled = true,
           default_animation = {
-            settings = {
-              from_color = "DiffDelete",
-            },
+            settings = { from_color = "DiffDelete" },
           },
         },
       },
@@ -72,21 +67,8 @@ return {
     "nvim-treesitter/nvim-treesitter",
     opts = {
       ensure_installed = {
-        "vim",
-        "html",
-        "css",
-        "javascript",
-        "json",
-        "toml",
-        "markdown",
-        "c",
-        "bash",
-        "lua",
-        "tsx",
-        "typescript",
-        "cpp",
-        "vue",
-        "astro",
+        "vim", "html", "css", "javascript", "json", "toml", "markdown", "c",
+        "bash", "lua", "tsx", "typescript", "cpp", "vue", "astro",
       },
     },
   },
@@ -97,8 +79,8 @@ return {
     opts = {},
   },
 
-  --------------------------------------------- custom plugins ----------------------------------------------
-  -- smooth scroll
+  --------------------------------------- Custom Plugins -----------------------------------------
+
   {
     "karb94/neoscroll.nvim",
     keys = { "<C-d>", "<C-u>" },
@@ -118,13 +100,11 @@ return {
           override_file_sorter = true,
           case_mode = "smart_case",
         },
-
         media = {
           backend = "ueberzug",
         },
       },
     },
-
     dependencies = {
       { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
       "2kabhishek/nerdy.nvim",
@@ -157,33 +137,13 @@ return {
     opts = { border = true, size = { h = 80, w = 90 } },
   },
 
-  -- { "nvchad/ui", dev=true },
-  -- { "nvchad/base46", dev = true },
   { import = "nvchad.blink.lazyspec" },
 
   {
-    "saghen/blink.cmp",
-    dependencies = {
-      {
-        "supermaven-inc/supermaven-nvim",
-        opts = {},
-        cmd = "SupermavenUseFree",
-      },
-
-      "huijiro/blink-cmp-supermaven",
-    },
-    opts = {
-      sources = {
-        default = { "lsp", "snippets", "buffer", "path", "supermaven" },
-        providers = {
-          supermaven = {
-            name = "supermaven",
-            module = "blink-cmp-supermaven",
-            async = true,
-          },
-        },
-      },
-    },
+    "supermaven-inc/supermaven-nvim",
+    cmd = "SupermavenUseFree",
+    opts = {},
+    dependencies = { "huijiro/blink-cmp-supermaven" },
   },
 
   {
@@ -202,4 +162,43 @@ return {
     "esmuellert/codediff.nvim",
     cmd = "CodeDiff",
   },
-}
+
+    --------------------------------------- NvimTree (Fixado à esquerda) ---------------------------------------
+  {
+    "nvim-tree/nvim-tree.lua",
+    lazy = false,
+    cmd = { "NvimTreeToggle", "NvimTreeFocus" },
+    keys = {
+      { "<C-n>", "<cmd>NvimTreeToggle<CR>", desc = "Toggle NvimTree" },
+    },
+    opts = {
+      view = {
+        width = 35,
+        side = "left",
+      },
+      filters = {
+        dotfiles = false,
+      },
+      renderer = {
+        root_folder_label = false,
+      },
+      update_focused_file = {
+        enable = true,
+        update_cwd = true,
+      },
+      actions = {
+        open_file = {
+          quit_on_open = false,
+        },
+      },
+    },
+    -- Faz ele abrir automaticamente assim que o Neovim inicia
+    config = function(_, opts)
+      require("nvim-tree").setup(opts)
+      vim.api.nvim_create_autocmd("VimEnter", {
+        callback = function()
+          vim.cmd("NvimTreeOpen")
+        end,
+      })
+    end,
+  },}
