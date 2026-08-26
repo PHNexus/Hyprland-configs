@@ -6,9 +6,9 @@ require("zen-mode").setup {
   },
   plugins = {
     options = {
-      showcmd = true, -- disables the command in the last line of the screen
+      showcmd = true,
     },
-    twilight = { enabled = false }, -- enable to start Twilight when zen mode opens
-    gitsigns = { enabled = true }, -- disables git signs
+    twilight = { enabled = false },
+    gitsigns = { enabled = true },
   },
 }

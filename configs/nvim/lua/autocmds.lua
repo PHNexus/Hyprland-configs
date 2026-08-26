@@ -1,39 +1,48 @@
-require "nvchad.autocmds"
+local create_cmd = vim.api.nvim_create_user_command
 
-local autocmd = vim.api.nvim_create_autocmd
-local replace_word = require("nvchad.utils").replace_word
+local function clear_cmdarea()
+  vim.defer_fn(function()
+    vim.api.nvim_echo({}, false, {})
+  end, 800)
+end
 
--- just dynamically se the padding of alacritty | I use it on mac
--- autocmd({ "VimEnter", "VimLeave" }, {
---   callback = function(args)
---     if args.event == "VimEnter" then
---       vim.cmd "silent !alacritty msg config window.padding.x=0 window.padding.y=0"
---     else
---       vim.cmd "silent !alacritty msg config window.padding.x=20 window.padding.y=20"
---     end
---   end,
--- })
+local echo = function(txts)
+  vim.api.nvim_echo(txts, false, {})
+end
 
+vim.api.nvim_create_autocmd({ "InsertLeave", "TextChanged" }, {
+  nested = true,
+  callback = function()
+    if vim.g.autosave and #vim.api.nvim_buf_get_name(0) ~= 0 and vim.bo.buflisted and vim.bo.buftype ~= "terminal" then
+      vim.cmd "silent w"
 
-------------------------------------- st terminal dynamic padding -----------------------------------------------
--- Dynamic terminal padding with/without nvim (for siduck's st only)
+      echo { { "󰄳", "String" }, { " saved at " .. os.date "%I:%M %p" } }
 
-autocmd({ "VimEnter", "VimLeave" }, {
-  callback = function(args)
-    local oldword = args.event == "VimEnter" and 20 or 0
-    local newword = args.event == "VimEnter" and 0 or 20
-
-    replace_word("st.borderpx: " .. oldword, "st.borderpx: " .. newword, "/home/siduck/.Xresources")
-    vim.cmd "silent !xrdb -merge ~/.Xresources"
-    vim.cmd "silent !kill -USR1 $(xprop -id $(xdotool getwindowfocus) | grep '_NET_WM_PID' | grep -oE '[[:digit:]]*$')"
-
-    replace_word("st.borderpx: 0", "st.borderpx: 20", "/home/siduck/.Xresources")
-    vim.cmd "silent !xrdb -merge ~/.Xresources"
-
-    if args.event == "VimLeave" then
-      vim.api.nvim_del_autocmd(args.id)
+      clear_cmdarea()
     end
   end,
 })
 
-vim.g.neovide_cursor_vfx_mode = "railgun"
+create_cmd("AsToggle", function()
+  vim.g.autosave = not vim.g.autosave
+
+  local enabledTxt = { { "󰆓 autosave enabled", "String" } }
+  local disabledTxt = { { "  autosave disabled", "NvimInternalError" } }
+
+  echo(vim.g.autosave and enabledTxt or disabledTxt)
+
+  clear_cmdarea()
+end, {})
+
+create_cmd('NvThemeReload', function()
+  require('nvchad.utils').reload()
+end, {})
+
+vim.api.nvim_create_user_command("Timer", function()
+  vim.o.showtabline = 0
+  vim.o.laststatus = 0
+  vim.wo.number = false
+  vim.o.scl = "no"
+  vim.o.cmdheight = 0
+  vim.cmd "TimerlyToggle"
+end, {})

@@ -1,0 +1,13 @@
+neovim
+git
+base-devel
+tree-sitter-cli
+jdk-openjdk
+nodejs
+npm
+lua-language-server
+stylua
+jdtls
+kotlin-language-server
+google-java-format
+shfmt

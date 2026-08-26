@@ -1,8 +1,6 @@
 local options = {
   formatters_by_ft = {
     lua = { "stylua" },
-
-    -- webdev
     javascript = { "biome" },
     javascriptreact = { "biome" },
     typescript = { "biome" },
@@ -15,14 +13,9 @@ local options = {
     svelte = { "deno_fmt" },
     sh = { "shfmt" },
     yaml = { "yamlfmt" },
-    astro = {"deno_fmt"},
-    toml = {"tombi"}
+    astro = { "deno_fmt" },
+    toml = { "tombi" },
   },
-
-  -- format_on_save = {
-  --   -- These options will be passed to conform.format()
-  --   timeout_ms = 500,
-  -- },
 }
 
 return options
