@@ -63,15 +63,18 @@ return {
     end,
   },
 
-  {
-    "nvim-treesitter/nvim-treesitter",
-    opts = {
-      ensure_installed = {
-        "vim", "html", "css", "javascript", "json", "toml", "markdown", "c",
-        "bash", "lua", "tsx", "typescript", "cpp", "vue", "astro",
-      },
+ {
+  "nvim-treesitter/nvim-treesitter",
+  lazy = false,
+  build = ":TSUpdate",
+  opts = {
+    ensure_installed = {
+      "vim", "html", "css", "javascript", "json", "toml", "markdown", "c",
+      "bash", "lua", "tsx", "typescript", "cpp", "vue", "astro",
+      "java", "kotlin"
     },
   },
+},
 
   {
     "windwp/nvim-ts-autotag",
@@ -163,7 +166,7 @@ return {
     cmd = "CodeDiff",
   },
 
-    --------------------------------------- NvimTree (Fixado à esquerda) ---------------------------------------
+  --------------------------------------- NvimTree (Fixado à esquerda) ---------------------------------------
   {
     "nvim-tree/nvim-tree.lua",
     lazy = false,
@@ -192,7 +195,6 @@ return {
         },
       },
     },
-    -- Faz ele abrir automaticamente assim que o Neovim inicia
     config = function(_, opts)
       require("nvim-tree").setup(opts)
       vim.api.nvim_create_autocmd("VimEnter", {
@@ -201,4 +203,5 @@ return {
         end,
       })
     end,
-  },}
+  },
+}
