@@ -30,8 +30,6 @@ I use these configs daily
 ## [Dependencies](packages.txt)
 
 
-<img width="1919" height="1080" alt="2026-08-23-135743_hyprshot" src="https://github.com/user-attachments/assets/fd92a3ea-8a8e-4047-bf96-77a200b990da" />
-
 ## Keybinds
 
 Modifier key (`$mainMod`) is **SUPER** (Windows key).
