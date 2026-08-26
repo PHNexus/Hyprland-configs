@@ -13,8 +13,38 @@ vim.lsp.config("basedpyright", {
   },
 })
 
-local servers = { "html", "cssls", "jsonls", "unocss", "tailwindcss", "svelte", "basedpyright", "ruff" , "astro" }
+vim.lsp.config("kotlin_language_server", {
+  settings = {
+    kotlin = {
+      diagnostics = {
+        enabled = true,
+      },
+    },
+  },
+})
 
+-- Configuração do jdtls (Java) usando o caminho do sistema
+vim.lsp.config("jdtls", {
+  cmd = { "/usr/bin/jdtls" }, -- <-- TROQUEI PARA O CAMINHO DO SISTEMA
+  root_dir = vim.fs.root(0, { ".git", "pom.xml", "build.gradle", "build.gradle.kts" }),
+  settings = {
+    java = {
+      home = "/usr/lib/jvm/java-26-openjdk",
+      configuration = {
+        updateBuildConfiguration = "automatic",
+        runtimes = {
+          {
+            name = "JavaSE-26",
+            path = "/usr/lib/jvm/java-26-openjdk",
+            default = true,
+          },
+        },
+      },
+    },
+  },
+})
+
+local servers = { "html", "cssls", "jsonls", "unocss", "tailwindcss", "svelte", "basedpyright", "ruff", "astro", "kotlin_language_server", "jdtls" }
 vim.lsp.enable(servers)
 
 local vue_language_server_path = vim.fn.stdpath "data"
