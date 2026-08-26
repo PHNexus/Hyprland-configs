@@ -5,7 +5,6 @@ I use these configs daily
 
 ## Screenshots
 |<img width="1923" height="1081" alt="2026-08-26-160349_hyprshot" src="https://github.com/user-attachments/assets/c0dd9a64-1091-4d79-955d-e26a99139a7c" />| <img width="1920" height="1080" alt="hyprlock_screenshot" src="https://github.com/user-attachments/assets/e8fb7175-7bde-407e-b4b1-6f2a7a824320" />
-|
 |---|---|
 |<img width="1922" height="1077" alt="2026-08-26-160431_hyprshot" src="https://github.com/user-attachments/assets/6e72dc0f-accd-4f37-b089-083f43a7720e" /> | <img width="1920" height="1080" alt="2026-08-23-142231_hyprshot" src="https://github.com/user-attachments/assets/da4b0ac9-2d28-4ca3-9746-3ae4d7bbfae4" /> 
 
