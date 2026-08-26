@@ -23,9 +23,9 @@ vim.lsp.config("kotlin_language_server", {
   },
 })
 
--- Configuração do jdtls (Java) usando o caminho do sistema
+-- Configuração do jdtls (USANDO O PACOTE DO AUR, NÃO O MASON)
 vim.lsp.config("jdtls", {
-  cmd = { "/usr/bin/jdtls" }, -- <-- TROQUEI PARA O CAMINHO DO SISTEMA
+  cmd = { "/usr/bin/jdtls" },
   root_dir = vim.fs.root(0, { ".git", "pom.xml", "build.gradle", "build.gradle.kts" }),
   settings = {
     java = {
