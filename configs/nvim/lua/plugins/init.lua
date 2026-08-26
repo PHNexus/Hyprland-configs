@@ -63,18 +63,18 @@ return {
     end,
   },
 
- {
-  "nvim-treesitter/nvim-treesitter",
-  lazy = false,
-  build = ":TSUpdate",
-  opts = {
-    ensure_installed = {
-      "vim", "html", "css", "javascript", "json", "toml", "markdown", "c",
-      "bash", "lua", "tsx", "typescript", "cpp", "vue", "astro",
-      "java", "kotlin"
+  {
+    "nvim-treesitter/nvim-treesitter",
+    lazy = false,
+    build = ":TSUpdate",
+    opts = {
+      ensure_installed = {
+        "vim", "html", "css", "javascript", "json", "toml", "markdown", "c",
+        "bash", "lua", "tsx", "typescript", "cpp", "vue", "astro",
+        "java", "kotlin"
+      },
     },
   },
-},
 
   {
     "windwp/nvim-ts-autotag",
