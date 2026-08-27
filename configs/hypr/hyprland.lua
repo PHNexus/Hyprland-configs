@@ -191,7 +191,6 @@ hl.bind(mainMod .. " + k", hl.dsp.focus({ direction = "d" }))
 
 hl.bind(mainMod .. " + f", hl.dsp.layout("fit active"))
 
-
 hl.bind(mainMod .. " + left", hl.dsp.layout("consume_or_expel prev"))
 hl.bind(mainMod .. " + right", hl.dsp.layout("consume_or_expel next"))
 
@@ -232,6 +231,7 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl s 5%-"), { locke
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -o ~/Pictures/Screenshots -c --notify"))
 
 -- AUTOSTART
+
 hl.on("hyprland.start", function()
     hl.exec_cmd("hyprctl dispatch 'hl.dsp.focus({ workspace = 1 })'")
     hl.exec_cmd("hyprctl setcursor Bibata-Modern-Ice 24")
