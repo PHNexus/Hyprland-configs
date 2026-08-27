@@ -27,7 +27,7 @@ I use these configs daily
 ## [Dependencies](packages.txt)
 
 
-## Keybinds
+# Keybinds
 
 Modifier key (`$mainMod`) is **SUPER** (Windows key).
 
@@ -39,6 +39,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + Space` | App launcher (wofi) |
 | `SUPER + E` | File manager (thunar) |
 | `SUPER + C` | Open VS Code (code) |
+| `SUPER + B` | Open browser (helium-browser) |
 | `SUPER + V` | Clipboard history (cliphist) |
 | `SUPER + L` | Lock screen (hyprlock) |
 | `SUPER + SHIFT + R` | Set random wallpaper |
@@ -53,9 +54,14 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + SHIFT + W` | Toggle Waybar |
 | `SUPER + F` | Toggle floating + center + resize 1000x600 |
 | `SUPER + M` | Exit Hyprland |
-| `SUPER + ← / → / ↑ / ↓` | Move focus |
-| `SUPER + LMB drag` | Move window |
-| `SUPER + RMB drag` | Resize window |
+| `SUPER + D` | Move column (move +col) |
+| `SUPER + A` | Move column (move -col) |
+| `SUPER + equal` | Resize column (+conf) |
+| `SUPER + minus` | Resize column (-conf) |
+| `SUPER + l / j / i / k` | Move focus |
+| `SUPER + left / right` | Consume or expel window |
+| `SUPER + mouse:272` | Move window |
+| `SUPER + mouse:273` | Resize window |
 
 ### Workspaces
 
@@ -64,8 +70,8 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + [1-4]` | Switch to workspace |
 | `SUPER + SHIFT + [1-4]` | Move window to workspace |
 | `SUPER + Tab` | Previous workspace |
-| `SUPER + ALT + ← / →` | Cycle workspaces |
-| `SUPER + SHIFT + ← / →` | Move window to adjacent workspace |
+| `SUPER + ALT + left / right` | Cycle workspaces |
+| `SUPER + SHIFT + left / right` | Move window to adjacent workspace |
 | `SUPER + mouse_down` | Scroll to next workspace |
 | `SUPER + mouse_up` | Scroll to previous workspace |
 
