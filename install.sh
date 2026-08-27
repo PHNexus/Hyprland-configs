@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
 # ============================================
 # Hyprland-configs Installer
@@ -44,17 +44,20 @@ echo "Installing Arch Linux dependencies from packages.txt..."
 if [[ -f "$REPO_DIR/packages.txt" ]]; then
     packages=$(grep -Ev '^[[:space:]]*(#|$)' "$REPO_DIR/packages.txt")
     
-    echo "Installing official packages via pacman..."
-    sudo pacman -S --needed $(echo "$packages" | grep -v '\-bin$' | tr '\n' ' ')
+    mapfile -t official_packages < <(printf '%s\n' "$packages" | grep -v '\-bin$' || true)
+    if [[ ${#official_packages[@]} -gt 0 ]]; then
+        echo "Installing official packages via pacman..."
+        sudo pacman -S --needed "${official_packages[@]}"
+    fi
     
-    aur_packages=$(echo "$packages" | grep '\-bin$' || true)
-    if [[ -n "$aur_packages" ]]; then
+    mapfile -t aur_packages < <(printf '%s\n' "$packages" | grep '\-bin$' || true)
+    if [[ ${#aur_packages[@]} -gt 0 ]]; then
         if command -v yay &>/dev/null; then
             echo "Installing AUR packages via yay..."
-            yay -S --needed $(echo "$aur_packages" | tr '\n' ' ')
+            yay -S --needed "${aur_packages[@]}"
         elif command -v paru &>/dev/null; then
             echo "Installing AUR packages via paru..."
-            paru -S --needed $(echo "$aur_packages" | tr '\n' ' ')
+            paru -S --needed "${aur_packages[@]}"
         else
             echo "Neither yay nor paru is installed, skipping AUR packages (-bin)."
         fi
@@ -197,5 +200,9 @@ echo
 echo "Installation complete!"
 echo
 echo "Log out and back into Hyprland to apply the configuration."
+echo
+echo "To verify everything is working, run:"
+echo "  hyprctl version"
+echo "  waybar --version"
 echo
 echo "Enjoy your setup!"
