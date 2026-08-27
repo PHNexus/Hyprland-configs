@@ -8,7 +8,7 @@ hyprland
 waybar
 wofi
 hyprlock
-hyprdle
+hypridle
 wlogout
 nwg-look
 quickshell
