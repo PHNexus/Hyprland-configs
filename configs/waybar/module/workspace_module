@@ -6,7 +6,7 @@
             "1": "󰻠",
             "2": "󰈹",
             "3": "󰨞",
-            "4": "󰝚",
+            "4": "󰝚"
         },
         "sort-by-number": true,
         "on-click": "activate",
