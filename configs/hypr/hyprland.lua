@@ -4,7 +4,6 @@
 hl.monitor({ output = "DP-1", mode = "1920x1080@180", position = "0x0", scale = 1 })
 hl.monitor({ output = "HDMI-A-1", mode = "1366x768@60", position = "-1366x0", scale = 1 })
 -- WORKSPACE
-hl.env("QT_QPA_PLATFORM", "wayland")
 -- DP-1 (primary monitor)
 hl.workspace_rule({ workspace = 1, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
@@ -250,8 +249,6 @@ hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "r" }))
 -- Scroll through workspaces
 hl.bind(mainMod .. " + mouse_down", hl.dsp.exec_cmd("hyprctl dispatch workspace e+1"))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.exec_cmd("hyprctl dispatch workspace e-1"))
-hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + M", hl.dsp.exit())
 -- Move/resize windows with mous
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true, floating = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true, floating = true })
