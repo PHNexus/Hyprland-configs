@@ -61,10 +61,10 @@ hl.config({
 
     },
     cursor = {
-		inactive_timeout = 7,
-		no_warps = true,
-		enable_hyprcursor = true,
-	},
+        inactive_timeout = 7,
+        no_warps = true,
+        enable_hyprcursor = true,
+    },
 })
 hl.device({ name = "epic-mouse-v1", sensitivity = -0.5 })
 
@@ -217,6 +217,7 @@ hl.bind("SUPER + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
+hl.bind("ALT + TAB", hl.dsp.exec_cmd("qs ipc -c overview call overview toggle"))
 --hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-wallpaper.sh"))
 hl.bind(mainMod .. " + W",
     hl.dsp.exec_cmd("pgrep -x quickshell >/dev/null && pkill -x quickshell || quickshell -c hyprquickpaper"))
@@ -301,6 +302,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("sleep 1 && waybar")
     hl.exec_cmd("hypridle")
     os.execute("nvibrant 0 512 512 0 >/dev/null 2>&1 &")
+    hl.exec_cmd("quickshell -c overview")
     hl.exec_cmd(
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
     hl.exec_cmd("awww-daemon")
