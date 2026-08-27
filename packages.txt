@@ -93,7 +93,7 @@ blueman
 wlogout
 nwg-look
 quickshell
-whitesur-icon-theme
+whitesur-icon-theme-git
 bibata-cursor-theme
 helium-browser-bin
 visual-studio-code-bin
