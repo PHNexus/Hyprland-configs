@@ -97,4 +97,4 @@ whitesur-icon-theme-git
 bibata-cursor-theme
 helium-browser-bin
 visual-studio-code-bin
-nvibrant
+nvibrant-bin
