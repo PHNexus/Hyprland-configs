@@ -22,7 +22,7 @@
     ],
     "modules-center": [
         "clock",
-        "group/media",
+        "group/media"
        
     ],
     "modules-right": [
