@@ -1,9 +1,8 @@
-# mark/dotfiles
+
 # Arch Linux packages required for the Hyprland setup
 
-# --------------------------------------------------
+
 # Hyprland / desktop
-# --------------------------------------------------
 
 hyprland
 waybar
@@ -17,9 +16,8 @@ xdg-desktop-portal-hyprland
 xorg-xwayland
 swaync
 
-# --------------------------------------------------
+
 # Themes / Icons / Cursors
-# --------------------------------------------------
 
 # GTK Themes
 materia-gtk-theme
@@ -31,9 +29,7 @@ papirus-icon-theme
 # Cursor Themes
 bibata-cursor-theme
 
-# --------------------------------------------------
 # Wallpaper / screenshots / Recorder
-# --------------------------------------------------
 
 awww
 hyprshot
@@ -41,16 +37,12 @@ grim
 slurp
 wf-recorder
 
-# --------------------------------------------------
 # Clipboard
-# --------------------------------------------------
 
 cliphist
 wl-clipboard
 
-# --------------------------------------------------
 # Audio
-# --------------------------------------------------
 
 pipewire
 wireplumber
@@ -63,9 +55,7 @@ pavucontrol
 qpwgraph
 easyeffects
 
-# --------------------------------------------------
 # Terminal / applications
-# --------------------------------------------------
 
 kitty
 fastfetch
@@ -74,16 +64,14 @@ starship
 helium-browser-bin
 visual-studio-code-bin
 thunar
-gvfs
-tumbler
 thunar-volman
 thunar-archive-plugin
 thunar-media-tags-plugin
+tumbler
+gvfs
 catfish
 
-# --------------------------------------------------
 # Fonts
-# --------------------------------------------------
 
 ttf-jetbrains-mono-nerd
 ttf-font-awesome
@@ -95,9 +83,9 @@ noto-fonts-cjk
 noto-fonts-extra
 ttf-cascadia-code-nerd
 
-# --------------------------------------------------
+
 # Utilities
-# --------------------------------------------------
+
 nvibrant
 fisher
 btop
