@@ -68,7 +68,7 @@ hl.config({
         border_size = 0,
         resize_on_border = true,
         allow_tearing = true,
-        layout = "dwindle",
+        layout = "scrolling",
         col = {
             active_border = "rgb(bbbbbb)",
             inactive_border = "rgb(666666)",
@@ -76,7 +76,17 @@ hl.config({
     },
 })
 
-hl.config({ dwindle = { preserve_split = true } })
+hl.config({
+    scrolling = {
+       column_width = 0.5,
+       direction = "right",
+       fullscreen_on_one_column = true,
+       focus_fit_method = 1,
+       explicit_column_widths = "0.333,0.5,0.667, 1.0",
+       follow_focus = true,
+    },
+})
+--hl.config({ dwindle = { preserve_split = true } })
 
 -- DECORATION
 hl.config({
@@ -155,24 +165,35 @@ hl.bind(mainMod .. " + W",
 hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai"))
 
 -- Toggle waybar
-hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
+hl.bind(mainMod .. " + SHIFT + W",
+hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
 
 -- Toggle floating
-hl.bind(mainMod .. " + F", function()
+hl.bind(mainMod .. " + h", function()
     hl.dispatch(hl.dsp.window.float())
     hl.dispatch(hl.dsp.window.center())
     hl.dispatch(hl.dsp.window.resize({ x = 1000, y = 600 }))
 end)
-
 -- Window control
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + M", hl.dsp.exit())
 
+hl.bind(mainMod .. " + D", hl.dsp.layout("move +col"))
+hl.bind(mainMod .. " + A", hl.dsp.layout("move -col"))
+
+hl.bind(mainMod .. " + equal", hl.dsp.layout("colresize +conf"))
+hl.bind(mainMod .. " + minus", hl.dsp.layout("colresize -conf"))
 -- Window focus
-hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "l" }))
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "r" }))
-hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "u" }))
-hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "d" }))
+hl.bind(mainMod .. " + l", hl.dsp.focus({ direction = "l" }))
+hl.bind(mainMod .. " + j", hl.dsp.focus({ direction = "r" }))
+hl.bind(mainMod .. " + i", hl.dsp.focus({ direction = "u" }))
+hl.bind(mainMod .. " + k", hl.dsp.focus({ direction = "d" }))
+
+hl.bind(mainMod .. " + f", hl.dsp.layout("fit active"))
+
+
+hl.bind(mainMod .. " + left", hl.dsp.layout("consume_or_expel prev"))
+hl.bind(mainMod .. " + right", hl.dsp.layout("consume_or_expel next"))
 
 -- Switch workspaces
 hl.bind(mainMod .. " + 1", hl.dsp.focus({ workspace = 1 }))
