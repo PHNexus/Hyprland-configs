@@ -59,7 +59,6 @@ hl.config({
     input = {
         kb_layout = "us",
         kb_options = "grp:win_space_toggle",
-        follow_mouse = 1,
         accel_profile = "flat",
         scroll_method = 2,
         sensitivity = 0,
