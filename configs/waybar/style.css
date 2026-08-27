@@ -87,17 +87,16 @@ window#waybar {
     background-color: rgb(10, 10, 10);   
     border-radius: 7px; 
     padding: 0 6px;
-    margin: 2ypx 2px;
+    margin: 3px 2px;
     min-width: 12px; 
     min-height: 0;
     opacity: 0.6;
-    
 }
 
 #workspaces button.active {
     background-color: rgb(40, 40, 40); 
     min-width: 30px; 
-    opacity: 1;
+    font-size: 13px;
 }
 
 #workspaces button.empty {
