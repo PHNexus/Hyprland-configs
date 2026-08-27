@@ -189,8 +189,8 @@ hl.bind(mainMod .. " + j", hl.dsp.focus({ direction = "r" }))
 hl.bind(mainMod .. " + i", hl.dsp.focus({ direction = "u" }))
 hl.bind(mainMod .. " + k", hl.dsp.focus({ direction = "d" }))
 
-hl.bind(mainMod .. " + f", hl.dsp.layout("fit active"))
-
+--hl.bind(mainMod .. " + f", hl.dsp.layout("fit active"))
+hl.bind(mainMod .. " + f", hl.dsp.layout("colresize +conf"))
 hl.bind(mainMod .. " + left", hl.dsp.layout("consume_or_expel prev"))
 hl.bind(mainMod .. " + right", hl.dsp.layout("consume_or_expel next"))
 
