@@ -4,13 +4,13 @@
     "separator": " "
   },
   "logo": {
-    "source": "~/.config/fastfetch/logo/pochita.icon",
+    "source": "~/.config/fastfetch/logo/felix.png",
     "position": "left",
-    "width": 35,
+    "width": 25,
     "padding": {
-      "top": 1,
+      "top": 3,
       "left": 1,
-      "right": 1
+      "right": 2
     }
   },
   "modules": [
