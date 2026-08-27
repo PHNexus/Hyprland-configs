@@ -217,16 +217,12 @@ hl.bind("SUPER + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
-hl.bind("ALT + TAB", hl.dsp.exec_cmd("qs ipc -c overview call overview toggle"))
-
 --hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-wallpaper.sh"))
 hl.bind(mainMod .. " + W",
     hl.dsp.exec_cmd("pgrep -x quickshell >/dev/null && pkill -x quickshell || quickshell -c hyprquickpaper"))
-
-
-
+ 
+   
     hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai"))
-
 -- Toggle waybar
 hl.bind(mainMod .. " + SHIFT + W",
     hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
@@ -277,6 +273,8 @@ hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "r" }))
 -- Scroll through workspaces
 hl.bind(mainMod .. " + mouse_down", hl.dsp.exec_cmd("hyprctl dispatch workspace e+1"))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.exec_cmd("hyprctl dispatch workspace e-1"))
+hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+hl.bind(mainMod .. " + M", hl.dsp.exit())
 
 -- Move/resize windows with mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true, floating = true })
@@ -306,7 +304,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("sleep 1 && waybar")
     hl.exec_cmd("hypridle")
     os.execute("nvibrant 0 512 512 0 >/dev/null 2>&1 &")
-  hl.exec_cmd("quickshell")
     hl.exec_cmd(
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
     hl.exec_cmd("awww-daemon")
