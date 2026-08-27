@@ -6,7 +6,8 @@ I use these configs daily
 ## Screenshots
 | <img width="1931" height="1080" alt="2026-08-27-193258_hyprshot" src="https://github.com/user-attachments/assets/62afe7ea-2722-48ea-8449-d5451486c6f1" />| <img width="1922" height="1081" alt="2026-08-27-192953_hyprshot" src="https://github.com/user-attachments/assets/a3858eb4-66c7-4c66-9007-5b8018b70ce0" />|
 |---|---|
-| <img width="1925" height="1080" alt="2026-08-27-193007_hyprshot" src="https://github.com/user-attachments/assets/3cc43026-5fd4-483a-b02d-370b17e490ff" /> | <img width="1920" height="1080" alt="hyprlock_screenshot" src="https://github.com/user-attachments/assets/e8fb7175-7bde-407e-b4b1-6f2a7a824320" /> 
+| <img width="1925" height="1080" alt="2026-08-27-193007_hyprshot" src="https://github.com/user-attachments/assets/3cc43026-5fd4-483a-b02d-370b17e490ff" /> | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" />
+
 
 | Component | Program |
 |---|---|
