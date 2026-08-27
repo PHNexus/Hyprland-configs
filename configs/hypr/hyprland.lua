@@ -111,10 +111,10 @@ hl.config({
         column_width = 0.5,
         direction = "right",
         fullscreen_on_one_column = true,
-        focus_fit_method = 1,
+        focus_fit_method = 0,
         explicit_column_widths = "0.333,0.5,0.667, 1.0",
         follow_focus = true,
-        follow_min_visible = 0.0,
+        follow_min_visible = 0.4,
 
     },
 })
@@ -191,10 +191,10 @@ hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai")
 hl.bind(mainMod .. " + SHIFT + W",
     hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
 -- Toggle floating
-hl.bind(mainMod .. " + h", function()
+hl.bind(mainMod .. " + s", function()
     hl.dispatch(hl.dsp.window.float())
     hl.dispatch(hl.dsp.window.center())
-    hl.dispatch(hl.dsp.window.resize({ x = 1000, y = 600 }))
+  hl.dispatch(hl.dsp.window.resize({ x = 1000, y = 600 }))
 end)
 -- Window control
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
