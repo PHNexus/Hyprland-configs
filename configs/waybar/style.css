@@ -67,7 +67,8 @@ window#waybar {
     font-size: 14px;
 }
 #custom-logo {
-    padding: 2px 16px;
+    padding: 0px 16px 2px 11px ;
+     font-size: 13px;
 }
 
 /* ============================================================================== */
