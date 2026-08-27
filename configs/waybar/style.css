@@ -39,6 +39,7 @@ window#waybar {
     color: @accent_color;
     text-shadow: 0px 0px 5px @accent_color; 
     box-shadow: 0 0 0px #000000;
+    font-size: 13px;
 }
 #custom-notification {
     background-color: rgb(0, 0, 0);
@@ -134,6 +135,7 @@ window#waybar {
     padding: 0 7px; 
     min-width: 15px; 
     text-shadow: 0px 0px 5px @accent_color;
+    font-size: 13px;
 }
 
 /* ============================================================================== */
