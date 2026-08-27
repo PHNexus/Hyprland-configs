@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+
+set -e
+
+# ============================================
+# Hyprland-configs Installer
+# Arch Linux + Hyprland
+# ============================================
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_DIR="$HOME/.config"
+PICTURES_DIR="$HOME/Pictures"
+
+echo "Welcome to Hyprland-configs Installer!"
+echo
+
+# --------------------------------------------
+# Check OS
+# --------------------------------------------
+
+if [[ ! -f /etc/arch-release ]]; then
+    echo "This installer is designed for Arch Linux."
+    exit 1
+fi
+
+echo "Arch Linux detected."
+
+# --------------------------------------------
+# Check sudo
+# --------------------------------------------
+
+if ! sudo -v; then
+    echo "sudo access is required."
+    exit 1
+fi
+
+# --------------------------------------------
+# Dependencies from packages.txt
+# --------------------------------------------
+
+echo
+echo "Installing Arch Linux dependencies from packages.txt..."
+
+if [[ -f "$REPO_DIR/packages.txt" ]]; then
+    packages=$(grep -v '^#' "$REPO_DIR/packages.txt" | grep -v '^[[:space:]]*$')
+    
+    echo "Installing official packages via pacman..."
+    sudo pacman -S --needed $(echo "$packages" | grep -v '\-bin$' | tr '\n' ' ')
+    
+    aur_packages=$(echo "$packages" | grep '\-bin$' || true)
+    if [[ -n "$aur_packages" ]]; then
+        if command -v yay &>/dev/null; then
+            echo "Installing AUR packages via yay..."
+            yay -S --needed $(echo "$aur_packages" | tr '\n' ' ')
+        elif command -v paru &>/dev/null; then
+            echo "Installing AUR packages via paru..."
+            paru -S --needed $(echo "$aur_packages" | tr '\n' ' ')
+        else
+            echo "Neither yay nor paru is installed, skipping AUR packages (-bin)."
+        fi
+    fi
+else
+    echo "packages.txt not found in repository root."
+fi
+
+echo "Dependencies installation step finished."
+
+# --------------------------------------------
+# Backup existing configurations & Wallpapers
+# --------------------------------------------
+
+echo
+echo "Checking for existing configurations and wallpapers..."
+
+configs=(
+    btop
+    cava
+    fastfetch
+    fish
+    hypr
+    kitty
+    quickshell
+    swaync
+    waybar
+    wofi
+    xdg-desktop-portal
+)
+
+existing_configs=()
+
+for config in "${configs[@]}"; do
+    if [[ -e "$CONFIG_DIR/$config" ]]; then
+        existing_configs+=("$config")
+    fi
+done
+
+if [[ -e "$HOME/.config/starship.toml" ]]; then
+    existing_configs+=("starship.toml")
+fi
+
+if [[ -d "$PICTURES_DIR/Wallpapers" ]]; then
+    existing_configs+=("Pictures/Wallpapers")
+fi
+
+if [[ ${#existing_configs[@]} -gt 0 ]]; then
+    echo
+    echo "The following existing configurations/folders will be replaced:"
+    echo
+
+    for config in "${existing_configs[@]}"; do
+        echo "  • ~/.config/$config (or ~/$config)"
+    done
+
+    echo
+    read -rp "Would you like to back them up first? [Y/n]: " backup_choice
+    backup_choice="${backup_choice:-Y}"
+
+    if [[ "$backup_choice" =~ ^[Yy]$ ]]; then
+        BACKUP_DIR="$CONFIG_DIR/backup/hyprland-configs-$(date +%Y%m%d-%H%M%S)"
+        mkdir -p "$BACKUP_DIR"
+
+        echo
+        echo "Creating backup..."
+
+        for config in "${existing_configs[@]}"; do
+            if [[ "$config" == "Pictures/Wallpapers" ]]; then
+                if [[ -d "$PICTURES_DIR/Wallpapers" ]]; then
+                    mkdir -p "$BACKUP_DIR/Pictures"
+                    cp -r "$PICTURES_DIR/Wallpapers" "$BACKUP_DIR/Pictures/"
+                    echo "  - Backed up Pictures/Wallpapers"
+                fi
+            elif [[ "$config" == "starship.toml" ]]; then
+                if [[ -f "$CONFIG_DIR/starship.toml" ]]; then
+                    cp "$CONFIG_DIR/starship.toml" "$BACKUP_DIR/"
+                    echo "  - Backed up starship.toml"
+                fi
+            else
+                if [[ -e "$CONFIG_DIR/$config" ]]; then
+                    cp -r "$CONFIG_DIR/$config" "$BACKUP_DIR/"
+                    echo "  - Backed up $config"
+                fi
+            fi
+        done
+
+        echo
+        echo "Backup complete!"
+        echo "Your backup is located at:"
+        echo "   $BACKUP_DIR"
+    else
+        echo
+        echo "Skipping backup."
+    fi
+else
+    echo "  - No conflicting existing configurations found."
+fi
+
+# --------------------------------------------
+# Install configurations & Wallpapers
+# --------------------------------------------
+
+echo
+echo "Installing dotfiles configurations..."
+
+mkdir -p "$CONFIG_DIR"
+
+for config in "${configs[@]}"; do
+    if [[ -d "$REPO_DIR/configs/$config" ]]; then
+        rm -rf "$CONFIG_DIR/$config"
+        cp -r "$REPO_DIR/configs/$config" "$CONFIG_DIR/"
+        echo "  - Installed config: $config"
+    fi
+done
+
+if [[ -f "$REPO_DIR/configs/starship.toml" ]]; then
+    cp -f "$REPO_DIR/configs/starship.toml" "$CONFIG_DIR/"
+    echo "  - Installed file: starship.toml"
+fi
+
+if [[ -d "$REPO_DIR/Wallpapers" ]]; then
+    mkdir -p "$PICTURES_DIR/Wallpapers"
+    cp -r "$REPO_DIR/Wallpapers/." "$PICTURES_DIR/Wallpapers/"
+    echo "  - Installed Wallpapers to Pictures/Wallpapers"[cite: 1]
+fi
+
+# --------------------------------------------
+# Done
+# --------------------------------------------
+
+echo
+echo "Installation complete!"
+echo
+echo "Log out and back into Hyprland to apply the configuration."
+echo
+echo "Enjoy your setup!"
