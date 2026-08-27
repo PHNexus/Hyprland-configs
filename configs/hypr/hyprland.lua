@@ -9,8 +9,9 @@ hl.env("QT_QPA_PLATFORM", "wayland")
 hl.workspace_rule({ workspace = 1, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
 -- HDMI-A-1 (secondary monitor)
-hl.workspace_rule({ workspace = 3, monitor = "HDMI-A-1", persistent = true })
+hl.workspace_rule({ workspace = 3, monitor = "DP-1",  persistent = true })
 hl.workspace_rule({ workspace = 4, monitor = "HDMI-A-1", persistent = true })
+
 -- ENVIRONMENT VARIABLES
 hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
 hl.env("XCURSOR_SIZE", "24")
@@ -215,10 +216,28 @@ hl.bind(mainMod .. " + f", hl.dsp.layout("colresize +conf"))
 hl.bind(mainMod .. " + left", hl.dsp.layout("consume_or_expel prev"))
 hl.bind(mainMod .. " + right", hl.dsp.layout("consume_or_expel next"))
 -- Switch workspaces
-hl.bind(mainMod .. " + 1", hl.dsp.focus({ workspace = 1 }))
-hl.bind(mainMod .. " + 2", hl.dsp.focus({ workspace = 2 }))
-hl.bind(mainMod .. " + 3", hl.dsp.focus({ workspace = 3 }))
-hl.bind(mainMod .. " + 4", hl.dsp.focus({ workspace = 4 }))
+-- Workspaces 1-4
+for i = 1, 4 do
+    -- Focar workspace
+    hl.bind(
+        mainMod .. " + " .. i,
+        hl.dsp.focus({
+            workspace = i
+        })
+    )
+
+    -- Mover janela pro workspace
+    hl.bind(
+        mainMod .. " + SHIFT + " .. i,
+        hl.dsp.window.move({
+            workspace = i
+        })
+    )
+end
+--hl.bind(mainMod .. " + 1", hl.dsp.focus({ workspace = 1 }))
+--hl.bind(mainMod .. " + 2", hl.dsp.focus({ workspace = 2 }))
+--hl.bind(mainMod .. " + 3", hl.dsp.focus({ workspace = 3 }))
+--hl.bind(mainMod .. " + 4", hl.dsp.focus({ workspace = 4 }))
 hl.bind(mainMod .. " + Tab", hl.dsp.focus({ workspace = "previous" }))
 hl.bind(mainMod .. " + ALT + left", hl.dsp.exec_cmd("hyprctl dispatch workspace m-1"))
 hl.bind(mainMod .. " + ALT + right", hl.dsp.exec_cmd("hyprctl dispatch workspace m+1"))
