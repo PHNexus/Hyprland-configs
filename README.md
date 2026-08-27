@@ -25,6 +25,14 @@ I use these configs daily
 | Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
 
 
+### Installation
+Clone the repository and run the installation script to automatically set up the dependencies and configuration files:
+
+git clone https://github.com/PHNexus/Hyprland-configs.git
+cd Hyprland-configs
+chmod +x install.sh
+./install.sh
+
 ## [Dependencies](packages.txt)
 
 
