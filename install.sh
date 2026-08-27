@@ -42,15 +42,18 @@ echo
 echo "Installing Arch Linux dependencies from packages.txt..."
 
 if [[ -f "$REPO_DIR/packages.txt" ]]; then
-    packages=$(grep -Ev '^[[:space:]]*(#|$)' "$REPO_DIR/packages.txt")
+    packages_content=$(grep -Ev '^[[:space:]]*$' "$REPO_DIR/packages.txt")
     
-    mapfile -t official_packages < <(printf '%s\n' "$packages" | grep -v '\-bin$' || true)
+    official_packages_raw=$(echo "$packages_content" | sed '/^#AUR/,$d' | grep -Ev '^[[:space:]]*#')
+    aur_packages_raw=$(echo "$packages_content" | sed -n '/^#AUR/,$p' | grep -Ev '^[[:space:]]*#')
+    
+    mapfile -t official_packages < <(printf '%s\n' "$official_packages_raw" | grep -Ev '^[[:space:]]*$' || true)
     if [[ ${#official_packages[@]} -gt 0 ]]; then
         echo "Installing official packages via pacman..."
         sudo pacman -S --needed "${official_packages[@]}"
     fi
     
-    mapfile -t aur_packages < <(printf '%s\n' "$packages" | grep '\-bin$' || true)
+    mapfile -t aur_packages < <(printf '%s\n' "$aur_packages_raw" | grep -Ev '^[[:space:]]*$' || true)
     if [[ ${#aur_packages[@]} -gt 0 ]]; then
         if command -v yay &>/dev/null; then
             echo "Installing AUR packages via yay..."
@@ -59,7 +62,7 @@ if [[ -f "$REPO_DIR/packages.txt" ]]; then
             echo "Installing AUR packages via paru..."
             paru -S --needed "${aur_packages[@]}"
         else
-            echo "Neither yay nor paru is installed, skipping AUR packages (-bin)."
+            echo "Neither yay nor paru is installed, skipping AUR packages."
         fi
     fi
 else
