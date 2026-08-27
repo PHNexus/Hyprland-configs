@@ -30,7 +30,7 @@ I use these configs daily
 Clone the repository and run the installation script to automatically set up the dependencies and configuration files:
 
 ```bash
-git clone [https://github.com/PHNexus/Hyprland-configs.git](https://github.com/PHNexus/Hyprland-configs.git)
+git clone https://github.com/PHNexus/Hyprland-configs.git
 cd Hyprland-configs
 chmod +x install.sh
 ./install.sh.shl.sh
