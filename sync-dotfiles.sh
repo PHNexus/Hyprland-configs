@@ -5,9 +5,9 @@ REPO_DIR="$HOME/Documents/GitHub/Hyprland-configs"
 CONFIG_DIR="$REPO_DIR/configs"
 
 CONFIG_FOLDERS=(
-    "btop" "nvim" "cava" "fastfetch" "fish" "gtk-3.0" "gtk-4.0"
+    "btop" "nvim" "cava" "fastfetch" "fish"
     "hypr" "kitty" "quickshell" "swaync" "waybar" "wofi"
-    "xdg-desktop-portal" "xfce4" "stellar"
+    "xdg-desktop-portal"
 )
 
 msg()  { echo -e "\033[1;34m[INFO]\033[0m $1"; }
@@ -50,13 +50,6 @@ done
 
 # Individual config files
 mkdir -p "$CONFIG_DIR"
-
-if [[ -f "$HOME/.config/user-dirs.dirs" ]]; then
-    cp -f "$HOME/.config/user-dirs.dirs" "$CONFIG_DIR/"
-    ok "File: user-dirs.dirs"
-else
-    warn "File not found: user-dirs.dirs"
-fi
 
 if [[ -f "$HOME/.config/starship.toml" ]]; then
     cp -fL "$HOME/.config/starship.toml" "$CONFIG_DIR/"
