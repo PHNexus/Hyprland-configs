@@ -12,7 +12,7 @@ hl.monitor({ output = "HDMI-A-1", mode = "1366x768@60", position = "-1366x0", sc
 -- WORKSPACEShl.env("QT_QPA_PLATFORM", "wayland")
 -- DP-1 (primary monitor)
 
-hl.workspace_rule({ workspace = 1, monitor = "DP-1", default = true, persistent = true })
+hl.workspace_rule({ workspace = 1, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
 
 -- HDMI-A-1 (secondary monitor)
