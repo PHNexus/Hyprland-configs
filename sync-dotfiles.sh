@@ -25,7 +25,7 @@ msg "Starting sync..."
 
 # Wallpapers
 if [[ -d "$HOME/Pictures/Wallpapers" ]]; then
-    mkdir -p "$REPO_DIR/wallpapers"
+    mkdir -p "$REPO_DIR/Wallpapers"
     rsync -a --delete "$HOME/Pictures/Wallpapers/" "$REPO_DIR/wallpapers/"
     ok "Wallpapers synced"
 else
