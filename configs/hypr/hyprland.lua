@@ -53,6 +53,8 @@ hl.config({
         sensitivity = 0,
         natural_scroll = false,
         scroll_factor = 1,
+        follow_mouse = true,
+
     },
 })
 hl.device({ name = "epic-mouse-v1", sensitivity = -0.5 })
@@ -84,6 +86,8 @@ hl.config({
        focus_fit_method = 1,
        explicit_column_widths = "0.333,0.5,0.667, 1.0",
        follow_focus = true,
+       follow_min_visible = 0.0,
+  
     },
 })
 --hl.config({ dwindle = { preserve_split = true } })
