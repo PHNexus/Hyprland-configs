@@ -155,7 +155,6 @@ hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity 
 hl.window_rule({ name = "center_float", match = { float = 1 }, center = true })
 hl.window_rule({
     name = "float-pavucontrol",
-    -- Removemos o ^ e $ para que ele encontre a palavra em qualquer lugar do nome da classe
     match = { class = ".*pavucontrol.*" },
     float = true,
     size = "1000 600",
