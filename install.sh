@@ -42,7 +42,7 @@ echo
 echo "Installing Arch Linux dependencies from packages.txt..."
 
 if [[ -f "$REPO_DIR/packages.txt" ]]; then
-    packages=$(grep -v '^#' "$REPO_DIR/packages.txt" | grep -v '^[[:space:]]*$')
+    packages=$(grep -Ev '^[[:space:]]*(#|$)' "$REPO_DIR/packages.txt")
     
     echo "Installing official packages via pacman..."
     sudo pacman -S --needed $(echo "$packages" | grep -v '\-bin$' | tr '\n' ' ')
@@ -108,7 +108,13 @@ if [[ ${#existing_configs[@]} -gt 0 ]]; then
     echo
 
     for config in "${existing_configs[@]}"; do
-        echo "  • ~/.config/$config (or ~/$config)"
+        if [[ "$config" == "Pictures/Wallpapers" ]]; then
+            echo "  • ~/Pictures/Wallpapers"
+        elif [[ "$config" == "starship.toml" ]]; then
+            echo "  • ~/.config/starship.toml"
+        else
+            echo "  • ~/.config/$config"
+        fi
     done
 
     echo
@@ -177,9 +183,10 @@ if [[ -f "$REPO_DIR/configs/starship.toml" ]]; then
 fi
 
 if [[ -d "$REPO_DIR/Wallpapers" ]]; then
+    rm -rf "$PICTURES_DIR/Wallpapers"
     mkdir -p "$PICTURES_DIR/Wallpapers"
     cp -r "$REPO_DIR/Wallpapers/." "$PICTURES_DIR/Wallpapers/"
-    echo "  - Installed Wallpapers to Pictures/Wallpapers"[cite: 1]
+    echo "  - Installed Wallpapers to Pictures/Wallpapers"
 fi
 
 # --------------------------------------------
