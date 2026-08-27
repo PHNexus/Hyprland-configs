@@ -34,6 +34,7 @@ git clone [https://github.com/PHNexus/Hyprland-configs.git](https://github.com/P
 cd Hyprland-configs
 chmod +x install.sh
 ./install.sh.shl.sh
+```
 
 ## [Dependencies](packages.txt)
 
