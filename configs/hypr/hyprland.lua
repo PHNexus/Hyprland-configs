@@ -56,6 +56,11 @@ hl.config({
         follow_mouse = true,
 
     },
+    cursor = {
+		inactive_timeout = 7,
+		no_warps = true,
+		enable_hyprcursor = true,
+	},
 })
 hl.device({ name = "epic-mouse-v1", sensitivity = -0.5 })
 
@@ -91,11 +96,11 @@ hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 1.79, bezier = "al
 hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 1.39, bezier = "almostlinear" })
 hl.animation({ leaf = "workspaces", enabled = true, speed = 4.6, bezier = "workspaceslide", style = "slidefade 25%" })
 hl.animation({
-	leaf = "specialWorkspace",
-	enabled = true,
-	speed = 9,
-	spring = "boing",
-	style = "slidefadevert 50%",
+    leaf = "specialWorkspace",
+    enabled = true,
+    speed = 9,
+    spring = "boing",
+    style = "slidefadevert 50%",
 })
 hl.animation({ leaf = "fade", enabled = true, speed = 3, bezier = "standard" })
 hl.animation({ leaf = "fadeDim", enabled = true, speed = 6, bezier = "standard" })
@@ -123,14 +128,14 @@ hl.config({
 
 hl.config({
     scrolling = {
-       column_width = 0.5,
-       direction = "right",
-       fullscreen_on_one_column = true,
-       focus_fit_method = 1,
-       explicit_column_widths = "0.333,0.5,0.667, 1.0",
-       follow_focus = true,
-       follow_min_visible = 0.0,
-  
+        column_width = 0.5,
+        direction = "right",
+        fullscreen_on_one_column = true,
+        focus_fit_method = 1,
+        explicit_column_widths = "0.333,0.5,0.667, 1.0",
+        follow_focus = true,
+        follow_min_visible = 0.0,
+
     },
 })
 --hl.config({ dwindle = { preserve_split = true } })
@@ -197,12 +202,14 @@ hl.window_rule({
 })
 -- KEYBINDINGS
 local mainMod = "SUPER"
-
+local terminal = "uwsm-app -- kitty"
+local browser = "uwsm-app -- helium-browser"
 -- Apps
-hl.bind(mainMod .. " + T", hl.dsp.exec_cmd("kitty"))
+hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("pgrep -x wofi >/dev/null && pkill -x wofi || wofi --show drun"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("thunar"))
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"))
+hl.bind("SUPER + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
@@ -213,7 +220,7 @@ hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("firefox https://claude.ai")
 
 -- Toggle waybar
 hl.bind(mainMod .. " + SHIFT + W",
-hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
+    hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
 
 -- Toggle floating
 hl.bind(mainMod .. " + h", function()
