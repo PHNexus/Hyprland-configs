@@ -318,7 +318,7 @@ hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -o ~/Pict
 -- AUTOSTART
 
 hl.on("hyprland.start", function()
-    hl.exec_cmd("hyprctl dispatch 'hl.dsp.focus({ workspace = 1 })'")
+    hl.dispatch(hl.dsp.focus({ workspace = 1 }))
     hl.exec_cmd("hyprctl setcursor Bibata-Modern-Ice 24")
     hl.exec_cmd("hypridle")
     hl.exec_cmd("swaync")
@@ -327,7 +327,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("xrandr --output DP-1 --primary")
     hl.exec_cmd("sleep 1 && waybar")
-    hl.exec_cmd("hypridle")
     os.execute("nvibrant 0 512 512 0 >/dev/null 2>&1 &")
     hl.exec_cmd(
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
