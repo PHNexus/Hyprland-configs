@@ -56,6 +56,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + M` | Exit Hyprland |
 | `SUPER + D` | Move column (move +col) |
 | `SUPER + A` | Move column (move -col) |
+| `SUPER + R` | Move window to second monitor  |
 | `SUPER + equal` | Resize column (+conf) |
 | `SUPER + minus` | Resize column (-conf) |
 | `SUPER + l / j / i / k` | Move focus |
