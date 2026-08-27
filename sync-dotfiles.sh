@@ -65,15 +65,6 @@ else
     warn "File not found: starship.toml"
 fi
 
-# Home dotfiles
-msg "Copying home dotfiles..."
-for file in .bashrc .zshrc; do
-    if [[ -f "$HOME/$file" ]]; then
-        cp -f "$HOME/$file" "$REPO_DIR/"
-        ok "File: $file"
-    fi
-done
-
 # Git sync
 msg "Pushing to GitHub..."
 if git diff --quiet && git diff --cached --quiet; then
