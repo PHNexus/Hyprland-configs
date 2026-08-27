@@ -1,4 +1,3 @@
-
 # Arch Linux packages required for the Hyprland setup
 
 
@@ -9,9 +8,6 @@ waybar
 wofi
 hyprlock
 hypridle
-wlogout
-nwg-look
-quickshell
 xdg-desktop-portal-hyprland
 xorg-xwayland
 swaync
@@ -21,13 +17,8 @@ swaync
 
 # GTK Themes
 materia-gtk-theme
-
-# Icon Themes
-whitesur-icon-theme
 papirus-icon-theme
 
-# Cursor Themes
-bibata-cursor-theme
 
 # Wallpaper / screenshots / Recorder
 
@@ -61,8 +52,6 @@ kitty
 fastfetch
 fish
 starship
-helium-browser-bin
-visual-studio-code-bin
 thunar
 thunar-volman
 thunar-archive-plugin
@@ -86,7 +75,6 @@ ttf-cascadia-code-nerd
 
 # Utilities
 
-nvibrant
 fisher
 btop
 cava
@@ -99,3 +87,14 @@ wine
 bluez
 bluez-utils
 blueman
+
+
+#AUR
+wlogout
+nwg-look
+quickshell
+whitesur-icon-theme
+bibata-cursor-theme
+helium-browser-bin
+visual-studio-code-bin
+nvibrant
