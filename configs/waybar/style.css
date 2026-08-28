@@ -86,7 +86,7 @@ window#waybar {
 #workspaces button {
     background-color: rgb(34, 33, 33);   
     border-radius: 5px; 
-    padding: 1.5px 10px 2px 5px ;
+    padding: 1.5px 10px 2px 7px ;
     margin: 2px 5px 0px 0 ;
     min-width: 12px; 
     min-height: 0;
@@ -95,7 +95,7 @@ window#waybar {
 
 #workspaces button.active {
     background-color: rgb(49, 49, 49); 
-    min-width: 25px; 
+    min-width: 25px ; 
     opacity: 1;
 }
 
