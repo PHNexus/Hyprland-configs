@@ -3,7 +3,7 @@
 /* ============================================================================== */
 * {
     font-weight: bold;
-    font-size: 14px;
+    font-size: 16px;
     transition: all 0.5s cubic-bezier(0, 0.5, 0.35, 1);
 }
 
@@ -80,14 +80,14 @@ window#waybar {
 }
 
 #workspaces {
-    padding: 6px;
+    padding: 8px;
 }
 
 #workspaces button {
     background-color: rgb(10, 10, 10);   
-    border-radius: 4px; 
-    padding: 0 3px;
-    margin: 3px 7px;
+    border-radius: 5px; 
+    padding: 0px 3px ;
+    margin: 1px 7px -0px 0;
     min-width: 12px; 
     min-height: 0;
     opacity: 0.6;
@@ -102,7 +102,7 @@ window#waybar {
 #workspaces button.empty {
     background-color: rgb(20, 20, 20);
     opacity: 0.2; 
-    min-width: 12px;
+    min-width: 15px;
 }
 
 #workspaces button.empty.active {
