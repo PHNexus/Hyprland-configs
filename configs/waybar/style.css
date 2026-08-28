@@ -86,13 +86,13 @@ window#waybar {
 }
 
 #workspaces button {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(255, 255, 255, 0.096);
     border-radius: 5px; 
     padding: 1.5px 7px 2px 3px;
     margin: 0 -2px 0 5;
     min-width: 20px;
     min-height: 0;
-    opacity: 0.2;
+    opacity: 1.2;
 }
 
 #workspaces button.active {
@@ -103,8 +103,8 @@ window#waybar {
 }
 
 #workspaces button.empty {
-    background-color: rgba(255, 255, 255, 0.15);
-    opacity: 0.2; 
+    background-color: rgba(255, 255, 255, 0.055);
+    opacity: 1.2; 
     padding: 1.5px 8px 2px 5px;
     min-width: 15px;
 }
