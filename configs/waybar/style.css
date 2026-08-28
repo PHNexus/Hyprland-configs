@@ -51,7 +51,7 @@ window#waybar {
     box-shadow: 0 0 0px #000000;
     min-width: 28px;
     font-family: monospace;
-    font-size: 14px;
+    font-size: 13px;
 }
 #custom-power {
     background-color: rgb(0, 0, 0);
@@ -63,7 +63,7 @@ window#waybar {
     box-shadow: 0 0 0px #000000;
     min-width: 28px;
     font-family: monospace;
-    font-size: 14px;
+    font-size: 13px;
 }
 #custom-logo {
     padding: 0px 18px 2px 15px;
