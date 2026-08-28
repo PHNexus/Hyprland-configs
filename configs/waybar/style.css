@@ -38,7 +38,7 @@ window#waybar {
     background-color: rgb(0, 0, 0);
     border-radius: 9px; 
     padding: 1px 11px 1px 13; 
-    margin: 2px 4px 2px 8px; 
+    margin: 2px 4px 2px 1px; 
     color: @accent_color;
     text-shadow: 0px 0px 5px @accent_color; 
     box-shadow: 0 0 0px #000000;
@@ -83,28 +83,28 @@ window#waybar {
 }
 
 #workspaces {
-    padding: 8px;
+    padding: 8px 7px 10px 0px;
 }
 
 #workspaces button {
-    background-color: rgba(65, 63, 63, 0.384);
+    background-color: rgba(255, 255, 255, 0.1);
     border-radius: 8px; 
     padding: 1.5px 7px 2px 3px;
-    margin: 0 -2px 0 5 ;
+    margin: 0 -2px 0 5  ;
     min-width: 20px;
-    min-height: 0;
+    min-height:0;
     opacity: 0.6;
 }
 
 #workspaces button.active {
     background-color:rgba(255, 255, 255, 0.1); 
-     padding: 1.5px 7px 2px 5px;
+    padding: 1.5px 7px 2px 5px;
     min-width: 35px;
     opacity: 1;
 }
 
 #workspaces button.empty {
-    background-color: rgba(87, 83, 83, 0.507);
+    background-color: rgba(255, 255, 255, 0.205);
     opacity: 0.2; 
      padding: 1.5px 8px 2px 5px;
     min-width: 15px ;
