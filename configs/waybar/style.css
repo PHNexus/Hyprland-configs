@@ -3,7 +3,7 @@
 /* ============================================================================== */
 * {
     font-weight: bold;
-    font-size: 12px;
+    font-size: 14px;
     transition: all 0.5s cubic-bezier(0, 0.5, 0.35, 1);
 }
 
@@ -85,8 +85,8 @@ window#waybar {
 
 #workspaces button {
     background-color: rgb(10, 10, 10);   
-    border-radius: 7px; 
-    padding: 0 6px;
+    border-radius: 4px; 
+    padding: 0 7px;
     margin: 3px 2px;
     min-width: 12px; 
     min-height: 0;
