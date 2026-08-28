@@ -48,7 +48,7 @@ window#waybar {
     background-color: rgb(0, 0, 0);
     border-radius: 9px; 
     padding: 2px 7px 2px 5px; 
-    margin: 2px 0px 2px 5px; 
+    margin: 2px 0px 2px 1px; 
     color: @accent_color;
     text-shadow: 0px 0px 5px @accent_color; 
     box-shadow: 0 0 0px #000000;
@@ -60,7 +60,7 @@ window#waybar {
     background-color: rgb(0, 0, 0);
     border-radius: 9px; 
     padding: 2px 8px 2px 4px; 
-    margin: 2px 4px 2px 8px; 
+    margin: 2px 4px 2px 5px; 
     color: @accent_color;
     text-shadow: 0px 0px 5px @accent_color; 
     box-shadow: 0 0 0px #000000;
