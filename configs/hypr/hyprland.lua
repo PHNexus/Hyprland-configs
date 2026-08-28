@@ -215,7 +215,7 @@ hl.bind(mainMod .. " + right", hl.dsp.layout("consume_or_expel next"))
 -- Switch workspaces
 -- Workspaces 1-4
 for i = 1, 4 do
-    -- Focar workspace
+    -- Focus workspace
     hl.bind(
         mainMod .. " + " .. i,
         hl.dsp.focus({
@@ -223,7 +223,7 @@ for i = 1, 4 do
         })
     )
 
-    -- Mover janela pro workspace
+    -- Move window to workspace
     hl.bind(
         mainMod .. " + SHIFT + " .. i,
         hl.dsp.window.move({
@@ -243,7 +243,20 @@ hl.bind(mainMod .. " + SHIFT + 1", hl.dsp.window.move({ workspace = 1 }))
 hl.bind(mainMod .. " + SHIFT + 2", hl.dsp.window.move({ workspace = 2 }))
 hl.bind(mainMod .. " + SHIFT + 3", hl.dsp.window.move({ workspace = 3 }))
 hl.bind(mainMod .. " + SHIFT + 4", hl.dsp.window.move({ workspace = 4 }))
-hl.bind(mainMod .. " + R", hl.dsp.window.move({ workspace = 6 }))
+--hl.bind(mainMod .. " + R", hl.dsp.window.move({ workspace = 6 }))
+hl.bind(mainMod .. " + R", function()
+    local window = hl.get_active_window()
+    if window == nil then return end
+
+    -- Check if window is currently on workspace 6
+    if window.workspace.id == 6 then
+        -- Send back to the primary workspace on monitor 1
+        hl.dispatch(hl.dsp.window.move({ workspace = 1 }))
+    else
+        -- Move over to workspace 6 on monitor 2
+        hl.dispatch(hl.dsp.window.move({ workspace = 6 }))
+    end
+end)
 hl.bind(mainMod .. " + SHIFT + left", hl.dsp.window.move({ direction = "l" }))
 hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "r" }))
 -- Scroll through workspaces
