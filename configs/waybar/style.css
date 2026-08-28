@@ -83,12 +83,12 @@ window#waybar {
 }
 
 #workspaces {
-    padding: 8px 9px 10px 3px;
+    padding: 8px 9px 8px 2px;
 }
 
 #workspaces button {
     background-color: rgba(255, 255, 255, 0.11);
-    border-radius: 8px; 
+    border-radius: 5px; 
     padding: 1.5px 7px 2px 3px;
     margin: 0 -2px 0 5  ;
     min-width: 20px;
@@ -97,7 +97,7 @@ window#waybar {
 }
 
 #workspaces button.active {
-     background-color:rgba(255, 255, 255, 0.1); 
+    background-color:rgba(255, 255, 255, 0.1); 
     padding: 1.5px 7px 2px 5px;
     min-width: 35px;
     opacity: 1;
@@ -106,7 +106,7 @@ window#waybar {
 #workspaces button.empty {
     background-color: rgba(255, 255, 255, 0.1);
     opacity: 0.2; 
-     padding: 1.5px 8px 2px 5px;
+    padding: 1.5px 8px 2px 5px;
     min-width: 15px ;
 }
 
