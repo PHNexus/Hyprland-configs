@@ -83,7 +83,7 @@ window#waybar {
 }
 
 #workspaces {
-    padding: 8px 7px 10px 0px;
+    padding: 8px 9px 10px 3px;
 }
 
 #workspaces button {
