@@ -72,7 +72,6 @@ window#waybar {
     padding: 0px 17px 2px 15px;
     font-size: 13px;
 }
-
 /* ============================================================================== */
 /* WORKSPACES */
 /* ============================================================================== */
@@ -87,41 +86,45 @@ window#waybar {
 }
 
 #workspaces button {
-    background-color: rgba(255, 255, 255, 0.11);
+    background-color: rgba(255, 255, 255, 0.15);
     border-radius: 5px; 
     padding: 1.5px 7px 2px 3px;
-    margin: 0 -2px 0 5  ;
+    margin: 0 -2px 0 5;
     min-width: 20px;
-    min-height:0;
-    opacity: 0.6;
+    min-height: 0;
+    opacity: 0.2;
 }
 
 #workspaces button.active {
-    background-color:rgba(255, 255, 255, 0.1); 
+    background-color: rgba(54, 53, 53, 0.616); 
     padding: 1.5px 7px 2px 5px;
     min-width: 35px;
     opacity: 1;
 }
 
 #workspaces button.empty {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.15);
     opacity: 0.2; 
     padding: 1.5px 8px 2px 5px;
-    min-width: 15px ;
+    min-width: 15px;
 }
 
 #workspaces button.empty.active {
-    background-color: rgba(255, 255, 255, 0.274);
-    opacity: 0.6;
+    background-color: #ffffff;
+    opacity: 1;
     min-width: 40px;
 }
 
 #workspaces button.overview {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.15);
     min-width: 40px;
+    opacity: 0.4;
 }
 
-
+#workspaces button.overview.active {
+    background-color: #ffffff;
+    opacity: 1;
+}
 /* ============================================================================== */
 /* MODULES INSIDE GROUPS                                                          */
 /* ============================================================================== */
@@ -143,7 +146,6 @@ window#waybar {
     text-shadow: 0px 0px 5px @accent_color;
     font-size: 12px;
 }
-
 /* ============================================================================== */
 /* SLIDERS                                                                        */
 /* ============================================================================== */
