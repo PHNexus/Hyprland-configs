@@ -34,7 +34,7 @@ window#waybar {
 #media {
     background-color: rgb(0, 0, 0);
     border-radius: 9px; 
-    padding: 2px 8px; 
+    padding: 2px 11px; 
     margin: 2px 4px 2px 8px; 
     color: @accent_color;
     text-shadow: 0px 0px 5px @accent_color; 
@@ -132,7 +132,7 @@ window#waybar {
     background-color: transparent;
     color: @accent_color;
     margin: -1px;
-    padding: 0 7px; 
+    padding: 0 3px; 
     min-width: 15px; 
     text-shadow: 0px 0px 5px @accent_color;
     font-size: 12px;
