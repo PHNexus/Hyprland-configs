@@ -84,35 +84,35 @@ window#waybar {
 }
 
 #workspaces button {
-    background-color: rgb(10, 10, 10);   
+    background-color: rgb(34, 33, 33);   
     border-radius: 5px; 
-    padding: 0px 10px 2px 5px ;
-    margin: 2px 7px 0px 0 ;
+    padding: 1.5px 10px 2px 5px ;
+    margin: 2px 5px 0px 0 ;
     min-width: 12px; 
     min-height: 0;
     opacity: 0.6;
 }
 
 #workspaces button.active {
-    background-color: rgb(40, 40, 40); 
+    background-color: rgb(49, 49, 49); 
     min-width: 25px; 
     opacity: 1;
 }
 
 #workspaces button.empty {
-    background-color: rgb(63, 60, 60);
+    background-color: rgb(49, 49, 49);
     opacity: 0.2; 
     min-width: 15px;
 }
 
 #workspaces button.empty.active {
-    background-color: rgb(40, 40, 40);
+    background-color: rgb(49, 49, 49);
     opacity: 0.6;
     min-width: 30px;
 }
 
 #workspaces button.overview {
-    background-color: rgb(25, 20, 20);
+    background-color: rgb(49, 49, 49);
     min-width: 30px;
 }
 
