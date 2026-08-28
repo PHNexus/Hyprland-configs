@@ -3,7 +3,7 @@
 /* ============================================================================== */
 * {
     font-weight: bold;
-    font-size: 15px;
+     font-size: 15px;
     transition: all 0.5s cubic-bezier(0, 0.5, 0.35, 1);
 }
 
@@ -22,6 +22,9 @@ window#waybar {
     background-color: transparent; 
 }
 
+/* ============================================================================== */
+/* SOLID BLACK BLOCKS WITH GLOWING ACCENT TEXT                                    */
+/* ============================================================================== */
 /* ============================================================================== */
 /* SOLID BLACK BLOCKS WITH GLOWING ACCENT TEXT                                    */
 /* ============================================================================== */
@@ -71,8 +74,9 @@ window#waybar {
 }
 
 /* ============================================================================== */
-/* WORKSPACES                                                                     */
+/* WORKSPACES */
 /* ============================================================================== */
+
 #hworkspaces {
     margin: 0;
     padding: 0;
@@ -84,36 +88,38 @@ window#waybar {
 }
 
 #workspaces button {
-    background-color: rgb(34, 33, 33);   
-    border-radius: 5px; 
-    padding: 1.5px 10px 2px 7px ;
-    margin: 2px 5px 0px 0 ;
-    min-width: 12px; 
+    background-color: rgba(65, 63, 63, 0.384);
+    border-radius: 8px; 
+    padding: 1.5px 8px 2px 5px;
+    margin: 0 2px;
+    min-width: 20px;
     min-height: 0;
     opacity: 0.6;
 }
 
 #workspaces button.active {
-    background-color: rgb(49, 49, 49); 
-    min-width: 25px ; 
+    background-color:rgba(255, 255, 255, 0.1); 
+   
+    min-width: 35px;
     opacity: 1;
 }
 
 #workspaces button.empty {
-    background-color: rgb(49, 49, 49);
+    background-color: rgba(87, 83, 83, 0.507);
     opacity: 0.2; 
-    min-width: 15px;
+     padding: 1.5px 8px 2px 5px;
+    min-width: 20px ;
 }
 
 #workspaces button.empty.active {
-    background-color: rgb(49, 49, 49);
+    background-color:rgba(255, 255, 255, 0.1);
     opacity: 0.6;
-    min-width: 30px;
+    min-width: 40px;
 }
 
 #workspaces button.overview {
-    background-color: rgb(49, 49, 49);
-    min-width: 30px;
+    background-color: rgba(255, 255, 255, 0.1);
+    min-width: 40px;
 }
 
 /* ============================================================================== */
