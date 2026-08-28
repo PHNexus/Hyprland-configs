@@ -1,6 +1,3 @@
-@import url("../../.local/state/haku_theme/colors.css");
-@import url("../../.local/state/haku_theme/fonts.css");
-
 .notification-row {
     transition: all 300ms ease;
     outline: none;
@@ -172,6 +169,8 @@
 }
 
 .widget-inhibitors,
+.notification-row {
+
 .widget-inhibitors * {
     color: #ffffff;
 }
@@ -211,4 +210,4 @@
 .widget-dnd > switch:hover {
     background: rgba(255, 255, 255, 0.293);
     transition: all 400ms ease;
-}
+} }
