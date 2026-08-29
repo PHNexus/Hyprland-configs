@@ -217,7 +217,6 @@ for i = 1, 4 do
             workspace = i
         })
     )
-
     -- Move window to workspace
     hl.bind(
         mainMod .. " + SHIFT + " .. i,
@@ -246,7 +245,6 @@ hl.bind(mainMod .. " + SHIFT + 4", hl.dsp.window.move({ workspace = 4 }))
 hl.bind(mainMod .. " + R", function()
     local window = hl.get_active_window()
     if window == nil then return end
-
     -- Check if window is currently on workspace 6
     if window.workspace.id == 6 then
         -- Send back to the primary workspace on monitor 1
