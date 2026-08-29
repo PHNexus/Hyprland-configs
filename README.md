@@ -3,7 +3,7 @@
 Welcome to my Hyprland Rice configuration! This setup is designed to provide a clean, efficient, and visually appealing desktop environment.
 I use these configs daily 
 
-| Scrolling Mode|looks like Niri |
+| Scrolling mode | [| Terminal | looks like Niri]  |
 
 
 ## Screenshots
