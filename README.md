@@ -2,7 +2,10 @@
 ## Hyprland Rice
 Welcome to my Hyprland Rice configuration! This setup is designed to provide a clean, efficient, and visually appealing desktop environment.
 I use these configs daily 
-| Scrolling Mode | looks like Niri |
+
+| Scrolling Mode|looks like Niri |
+
+
 ## Screenshots
 | <img width="1922" height="1080" alt="2026-08-29-024824_hyprshot" src="https://github.com/user-attachments/assets/8bd07e4c-788a-4d68-936c-8aac5a750f16" />| <img width="1922" height="1080" alt="2026-08-29-024535_hyprshot" src="https://github.com/user-attachments/assets/0256a665-87bf-4372-8fd8-39ce62e93d69" />|
 |---|---|
