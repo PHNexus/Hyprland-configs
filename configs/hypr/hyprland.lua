@@ -146,7 +146,6 @@ hl.config({ misc = { force_default_wallpaper = -1, disable_hyprland_logo = true 
 -- XWAYLAND
 hl.config({ xwayland = { force_zero_scaling = true } })
 -- WINDOW RULES
--- Default opacity for all windows
 --hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "1 0.7" })
 -- Kitty fully opaque
 hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity = "0.85 0.85" })
