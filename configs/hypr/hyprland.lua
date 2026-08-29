@@ -11,6 +11,7 @@ hl.workspace_rule({ workspace = 3, monitor = "DP-1",  persistent = true })
 hl.workspace_rule({ workspace = 4, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 6, monitor = "HDMI-A-1", persistent = true, default = true })
 -- ENVIRONMENT VARIABLES
+hl.env("WLR_NO_HARDWARE_CURSORS", "1") 
 hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
@@ -45,11 +46,6 @@ hl.config({
         scroll_factor = 1,
         follow_mouse = true,
 
-    },
-    cursor = {
-        inactive_timeout = 7,
-        no_warps = true,
-        enable_hyprcursor = true,
     },
 })
 hl.device({ name = "epic-mouse-v1", sensitivity = -0.5 })
