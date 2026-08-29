@@ -30,7 +30,7 @@ I use these configs daily
 
 ## Installation
 
-Clone the repository and run the installation script to automatically set up the dependencies and configuration files: 
+Clone the repository and run the installation script to automatically set up the dependencies and configuration files:                                          
 You will have to edit some things like HyprquickPaper for your user
 
 ```bash
