@@ -36,7 +36,7 @@ Clone the repository and run the installation script to automatically set up the
 git clone https://github.com/PHNexus/Hyprland-configs.git
 cd Hyprland-configs
 chmod +x install.sh
-./install.sh.shl.sh
+./install.sh
 ```
 
 ## [Dependencies](packages.txt)
