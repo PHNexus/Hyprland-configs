@@ -175,7 +175,7 @@
     },
 
    "custom/logo": { 
-    "format": "󰇄",
+    "format": "󰋜",
     "tooltip-format": "Have a nice day!", 
     "tooltip": true, 
     "on-click": "wofi"
