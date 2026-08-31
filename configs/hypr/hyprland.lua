@@ -47,6 +47,9 @@ hl.config({
         follow_mouse = true,
 
     },
+    render = {
+        direct_scanout = true,
+    },
 })
 hl.device({ name = "epic-mouse-v1", sensitivity = -0.5 })
 -- ANIMATIONS
