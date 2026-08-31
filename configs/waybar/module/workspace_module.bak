@@ -1,7 +1,15 @@
 {
     "hyprland/workspaces": {
         "all-outputs": true,
-        "format": "",
+        "format": "{icon}",
+        "format-icons": {
+            "1": "󰨞",
+            "2": "󰆍",
+            "3": "󰊖",
+            "4": "󰝚",
+            "5": "󰍹",
+            "default": "󰍹"
+        },
         "sort-by-number": true,
         "on-click": "activate",
         "hide-empty": false,
@@ -10,10 +18,3 @@
         }
     }
 }
-
-
-"1": "󰻠",
-            "2": "󰈹",
-            "3": "󰨞",
-            "4": "󰝚",
-            "5": "󰍹",
