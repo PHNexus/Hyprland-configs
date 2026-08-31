@@ -11,3 +11,5 @@ alias sync-dotfiles="bash ~/Documents/GitHub/Hyprland-configs/sync-dotfiles.sh"
 alias freeram "sync && sudo sysctl vm.drop_caches=3"
 alias xdg-open-appstream="gio open"
 set -gx PATH $HOME/.local/bin $PATH
+set -gx __GL_YIELD USLEEP
+set -gx __GL_THREADED_OPTIMIZATIONS 1
