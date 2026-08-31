@@ -60,7 +60,6 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + L` | Lock screen (hyprlock) |
 | `SUPER + SHIFT + R` | Set random wallpaper |
 | `SUPER + W` | Wallpaper picker |
-| `SUPER + SHIFT + code:201` | Open Claude in Firefox |
 
 ### Window Management
 
