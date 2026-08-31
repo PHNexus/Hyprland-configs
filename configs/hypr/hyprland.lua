@@ -225,6 +225,8 @@ for i = 1, 4 do
         })
     )
 end
+hl.bind(mainMod .. " + mouse_down", hl.dsp.exec_cmd("hyprctl dispatch workspace e+1"))
+hl.bind(mainMod .. " + mouse_up", hl.dsp.exec_cmd("hyprctl dispatch workspace e-1"))
 hl.bind(mainMod .. " + Tab", hl.dsp.focus({ workspace = "previous" }))
 hl.bind("ALT + Tab", function()
    hl.dispatch(hl.dsp.window.cycle_next())
