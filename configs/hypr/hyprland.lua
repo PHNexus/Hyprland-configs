@@ -5,13 +5,13 @@ hl.monitor({ output = "DP-1", mode = "1920x1080@180", position = "0x0", scale = 
 hl.monitor({ output = "HDMI-A-1", mode = "1366x768@60", position = "-1366x0", scale = 1 })
 -- WORKSPACE
 -- DP-1 (primary monitor)
-hl.workspace_rule({ workspace = 1, monitor = "DP-1", persistent = true , default = true })
+hl.workspace_rule({ workspace = 1, monitor = "DP-1", persistent = true})
 hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
-hl.workspace_rule({ workspace = 3, monitor = "DP-1",  persistent = true })
+hl.workspace_rule({ workspace = 3, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 4, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 6, monitor = "HDMI-A-1", persistent = true, default = true })
 -- ENVIRONMENT VARIABLES
-hl.env("WLR_NO_HARDWARE_CURSORS", "1") 
+hl.env("WLR_NO_HARDWARE_CURSORS", "1")
 hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
@@ -166,6 +166,12 @@ hl.window_rule({
     match = { class = "^(blueman-manager)$" },
     float = true,
 })
+hl.window_rule({
+    name = "lunar-fullscreen",
+    match = { class = "^Lunar Client.*$" },
+    fullscreen = true,
+    immediate = true,
+})
 -- KEYBINDINGS
 local mainMod = "SUPER"
 -- Apps
@@ -179,7 +185,7 @@ hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
 --hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-wallpaper.sh"))
 hl.bind(mainMod .. " + W",
- hl.dsp.exec_cmd("pgrep -x quickshell >/dev/null && pkill -x quickshell || quickshell -c hyprquickpaper"))
+    hl.dsp.exec_cmd("pgrep -x quickshell >/dev/null && pkill -x quickshell || quickshell -c hyprquickpaper"))
 -- Toggle waybar
 hl.bind(mainMod .. " + SHIFT + W",
     hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
@@ -187,7 +193,7 @@ hl.bind(mainMod .. " + SHIFT + W",
 hl.bind(mainMod .. " + s", function()
     hl.dispatch(hl.dsp.window.float())
     hl.dispatch(hl.dsp.window.center())
-  hl.dispatch(hl.dsp.window.resize({ x = 1000, y = 600 }))
+    hl.dispatch(hl.dsp.window.resize({ x = 1000, y = 600 }))
 end)
 -- Window control
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
@@ -229,8 +235,8 @@ hl.bind(mainMod .. " + mouse_down", hl.dsp.exec_cmd("hyprctl dispatch workspace 
 hl.bind(mainMod .. " + mouse_up", hl.dsp.exec_cmd("hyprctl dispatch workspace e-1"))
 hl.bind(mainMod .. " + Tab", hl.dsp.focus({ workspace = "previous" }))
 hl.bind("ALT + Tab", function()
-   hl.dispatch(hl.dsp.window.cycle_next())
-   hl.dispatch(hl.dsp.window.bring_to_top())
+    hl.dispatch(hl.dsp.window.cycle_next())
+    hl.dispatch(hl.dsp.window.bring_to_top())
 end)
 hl.bind("ALT + SHIFT + Tab", function()
     hl.dispatch(hl.dsp.window.cycle_next({ prev = true }))
