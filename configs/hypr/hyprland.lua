@@ -148,6 +148,7 @@ hl.config({ xwayland = { force_zero_scaling = true } })
 --hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "1 0.7" })
 -- Kitty fully opaque
 hl.window_rule({ name = "opacity_kitty", match = { class = "^kitty$" }, opacity = "0.85 0.85" })
+-- Center floating windows
 hl.window_rule({ name = "center_float", match = { float = 1 }, center = true })
 hl.window_rule({
     name = "float-pavucontrol",
