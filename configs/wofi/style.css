@@ -1,22 +1,22 @@
 window {
   margin: 0px;
-  border: 2px solid #000000;
-  border-radius: 10px;
-  background-color: #000000;
+  border: none;
+  border-radius: 12px;
+  background-color: #0d0d0d;
   font-family: "Fira Code", "JetBrains Mono", monospace;
   color: #f3f3f3;
 }
 
 #input {
-  margin: 2px;
+  margin: 6px 8px;
   border: none;
   color: #ffffff;
-  background-color: #000000;
-  padding: 3px;
-  border-radius: 0px;
+  background-color: transparent;
+  padding: 6px;
   font-size: 13px;
-  min-height: 26px;
   font-weight: 500;
+  box-shadow: none;
+  outline: none;
 }
 
 #input::placeholder {
@@ -24,139 +24,77 @@ window {
   font-style: italic;
 }
 
-#input:focus {
-  color: #ffffff;
-  border: none;
-  background-color: #000000;
-}
-
-#input prompt {
-  color: #ffffff;
-  font-weight: bold;
-}
-
-#input image {
-  color: transparent;
-  min-width: 0px;
-  min-height: 0px;
-}
-
 #prompt {
   color: transparent;
 }
 
 #inner-box {
-  margin: 3px;
+  margin: 2px 4px;
   border: none;
-  color: #ffffff;
   padding: 0px;
 }
 
 #outer-box {
-  margin: 3px;
+  margin: 2px;
   border: none;
-  padding: 3px;
+  padding: 2px;
 }
 
 #scroll {
   margin: 0px;
   border: none;
   background: none;
-  scroll-behavior: smooth;
 }
 
-#scrollbar {
-  background: transparent;
+scrollbar, scrollbar trough, scrollbar slider {
+  opacity: 0;
   border: none;
+  background: transparent;
   width: 0px;
-  min-width: 0px;
 }
 
-#scrollbar slider {
-  background: transparent;
-  border: none;
-  min-width: 0px;
-  min-height: 0px;
-  margin: 0px;
-  padding: 0px;
-}
-
-#scrollbar trough {
-  background: transparent;
-  border: none;
-  min-width: 0px;
-}
-
-#scrollbar thumb {
-  background: transparent;
-  border: none;
-  min-width: 0px;
+#entry label {
+  max-width: 130px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #text {
-  margin: 5px;
+  margin: 2px 4px;
   border: none;
   color: #d4d4d4;
   font-size: 14px;
   font-weight: 400;
-  letter-spacing: 0.3px;
-  transition: all 0.15s ease;
-}
-
-#entry.activatable #text {
-  color: #ffffff;
-}
-
-#entry > * {
-  color: #d4d4d4;
-}
-
-#entry:selected {
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  margin: 2px 4px;
-  border: 1px solid #333333;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
-  transition: all 0.2s ease;
-}
-
-#entry:selected #text {
-  font-weight: 600;
-  color: #ffffff;
-  letter-spacing: 0.5px;
-}
-
-#entry:hover {
-  background-color: #141414;
-  border-radius: 8px;
-  margin: 2px 4px;
-  border: 1px solid #2a2a2a;
-  transition: all 0.2s ease;
-}
-
-#entry:hover #text {
-  color: #ffffff;
-  font-weight: 500;
 }
 
 #entry {
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   background: none;
-  margin: 2px 4px;
-  transition: all 0.1s ease-in-out;
+  margin: 2px;
+  padding: 4px 6px;
+  max-width: 210px;
+}
+
+#entry:selected {
+  background-color: #a3be8c;
+  border-radius: 12px;
+}
+
+#entry:selected #text {
+  font-weight: 600;
+  color: #1e1e1e;
+}
+
+#entry:hover {
+  background-color: #1a1a1a;
+  border-radius: 12px;
+}
+
+#entry:hover #text {
+  color: #ffffff;
 }
 
 #entry image {
-  color: transparent;
-  border: none;
-  background: none;
-}
-
-#entry:selected image {
-  color: transparent;
-}
-#scroll {
-  scroll-behavior: smooth;
-  transition: all 0.15s ease;
+  margin-right: 6px;
 }
