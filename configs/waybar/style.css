@@ -69,8 +69,8 @@ window#waybar {
     font-size: 13px;
 }
 #custom-logo {
-    padding: 0px 17px 2px 15px;
-    font-size: 14px;
+    padding: 0px 17px 1px 15px;
+    font-size: 15px;
 }
 /* ============================================================================== */
 /* WORKSPACES */
