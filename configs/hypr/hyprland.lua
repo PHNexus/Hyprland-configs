@@ -167,6 +167,12 @@ hl.window_rule({
     float = true,
 })
 hl.window_rule({
+    name = "AppManager",
+    match = { class = "^(com.github.AppManager)$" },
+    float = true,
+     size = "700 900",
+})
+hl.window_rule({
     name = "lunar-fullscreen",
     match = { class = "^Lunar Client.*$" },
     fullscreen = true,
