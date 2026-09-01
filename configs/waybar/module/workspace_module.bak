@@ -3,12 +3,12 @@
         "all-outputs": true,
         "format": "{icon}",
         "format-icons": {
-            "1": "󰨞",
-            "2": "󰆍",
-            "3": "󰊖",
-            "4": "󰝚",
-            "5": "󰍹",
-            "default": "󰍹"
+            "1": "일",
+            "2": "이",
+            "3": "삼",
+            "4": "사",
+            "5": "오",
+            "default": "육"
         },
         "sort-by-number": true,
         "on-click": "activate",
