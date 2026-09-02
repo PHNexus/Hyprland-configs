@@ -48,7 +48,7 @@ hl.config({
 
     },
     render = {
-        direct_scanout = true,
+        direct_scanout = false,
     },
 })
 hl.device({ name = "epic-mouse-v1", sensitivity = -0.5 })
@@ -169,6 +169,19 @@ hl.window_rule({
     name = "lunar-fullscreen",
     match = { class = "^Lunar Client.*$" },
     fullscreen = true,
+    immediate = true,
+})
+-- for sober remove if you want
+hl.window_rule({
+    name = "sober",
+    match = { class = "^org.vinegarhq.Sober.*$" },
+    fullscreen = true,
+    immediate = true,
+})
+-- for cs2 remove if you want
+hl.window_rule({
+    name = "Counter Strike 2",
+    match = { class = "^cs2*$" },
     immediate = true,
 })
 -- KEYBINDINGS
