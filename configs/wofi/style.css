@@ -2,7 +2,7 @@ window {
   margin: 0px;
   border: none;
   border-radius: 12px;
-  background-color: #0d0d0d;
+  background-color: transparent;
   font-family: "Fira Code", "JetBrains Mono", monospace;
   color: #f3f3f3;
 }
@@ -38,6 +38,8 @@ window {
   margin: 2px;
   border: none;
   padding: 2px;
+  background-color: #0d0d0d;
+  border-radius: 12px;
 }
 
 #scroll {
