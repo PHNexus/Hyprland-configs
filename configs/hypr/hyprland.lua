@@ -129,12 +129,12 @@ hl.config({
             enabled = true,
             size = 6,   --3
             passes = 2, --2
-            vibrancy = 0.2,
+            vibrancy = 0.35,
             brightness = 0.9,
-            noise = 0.00,
+            noise = 0.0,
             ignore_opacity = true,
-            contrast = 1.5,
-            vibrancy_darkness = 0.0,
+            contrast = 2,
+            vibrancy_darkness = 0.35,
             xray = true,
             new_optimizations = true
         },
