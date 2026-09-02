@@ -5,7 +5,7 @@ hl.monitor({ output = "DP-1", mode = "1920x1080@180", position = "0x0", scale = 
 hl.monitor({ output = "HDMI-A-1", mode = "1366x768@60", position = "-1366x0", scale = 1 })
 -- WORKSPACE
 -- DP-1 (primary monitor)
-hl.workspace_rule({ workspace = 1, monitor = "DP-1", persistent = true})
+hl.workspace_rule({ workspace = 1, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 3, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 4, monitor = "DP-1", persistent = true })
@@ -170,8 +170,9 @@ hl.window_rule({
     name = "AppManager",
     match = { class = "^(com.github.AppManager)$" },
     float = true,
-     size = "700 900",
+    size = "700 900",
 })
+-- for lunar client remove if you want
 hl.window_rule({
     name = "lunar-fullscreen",
     match = { class = "^Lunar Client.*$" },
@@ -241,8 +242,8 @@ hl.bind(mainMod .. " + mouse_down", hl.dsp.exec_cmd("hyprctl dispatch workspace 
 hl.bind(mainMod .. " + mouse_up", hl.dsp.exec_cmd("hyprctl dispatch workspace e-1"))
 hl.bind(mainMod .. " + Tab", hl.dsp.focus({ workspace = "previous" }))
 hl.bind("ALT + Tab", function()
-  hl.dispatch(hl.dsp.window.cycle_next())
-  hl.dispatch(hl.dsp.window.bring_to_top())
+    hl.dispatch(hl.dsp.window.cycle_next())
+    hl.dispatch(hl.dsp.window.bring_to_top())
 end)
 hl.bind("ALT + SHIFT + Tab", function()
     hl.dispatch(hl.dsp.window.cycle_next({ prev = true }))
