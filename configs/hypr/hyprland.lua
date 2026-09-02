@@ -149,6 +149,12 @@ hl.config({ xwayland = { force_zero_scaling = true } })
 -- Kitty fully opaque
 hl.window_rule({ name = "opacity_kitty", match = { class = "^(kitty)$" }, opacity = "0.85 0.85" })
 hl.window_rule({
+    name = "float-pavucontrol",
+    match = { class = ".*pavucontrol.*" },
+    float = true,
+    size = "1000 600",
+})  
+hl.window_rule({
     name = "float-nm-connection-editor",
     match = { class = "^(nm-connection-editor)$" },
     float = true,
