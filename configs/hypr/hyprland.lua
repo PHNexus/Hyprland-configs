@@ -113,7 +113,6 @@ hl.config({
         explicit_column_widths = "0.333,0.5,0.667, 1.0",
         follow_focus = true,
         follow_min_visible = 0.0,
-
     },
 })
 --hl.config({ dwindle = { preserve_split = true } })
@@ -136,7 +135,7 @@ hl.config({
             contrast = 2,
             vibrancy_darkness = 0.35,
             xray = true,
-            new_optimizations = true
+            new_optimizations = true,
         },
     }
 })

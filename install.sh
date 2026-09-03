@@ -35,6 +35,23 @@ if ! sudo -v; then
 fi
 
 # --------------------------------------------
+# Ensure base-devel and an AUR helper (yay) exist
+# --------------------------------------------
+
+echo
+echo "Ensuring base-devel and git are installed..."
+sudo pacman -S --needed --noconfirm base-devel git
+
+if ! command -v yay &>/dev/null && ! command -v paru &>/dev/null; then
+    echo "AUR helper not found. Installing yay automatically..."
+    git clone https://aur.archlinux.org/yay.git /tmp/yay
+    cd /tmp/yay
+    makepkg -si --noconfirm
+    cd "$REPO_DIR"
+    rm -rf /tmp/yay
+fi
+
+# --------------------------------------------
 # Dependencies from packages.txt
 # --------------------------------------------
 
