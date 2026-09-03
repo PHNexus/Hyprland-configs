@@ -17,8 +17,6 @@ swaync
 
 # GTK Themes
 materia-gtk-theme
-papirus-icon-theme
-
 
 # Wallpaper / screenshots / Recorder
 
