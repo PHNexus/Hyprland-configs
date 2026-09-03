@@ -1,5 +1,5 @@
 # Arch Linux packages required for the Hyprland setup
-
+#If you want to remove something you don't want install.sh to install remove it here
 
 # Hyprland / desktop
 
