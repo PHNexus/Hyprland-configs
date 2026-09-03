@@ -152,7 +152,7 @@ hl.window_rule({
     match = { class = ".*pavucontrol.*" },
     float = true,
     size = "1000 600",
-})  
+})
 hl.window_rule({
     name = "float-nm-connection-editor",
     match = { class = "^(nm-connection-editor)$" },
