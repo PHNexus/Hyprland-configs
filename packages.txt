@@ -87,7 +87,7 @@ wine
 bluez
 bluez-utils
 blueman
-
+nvim
 
 #AUR
 wlogout
@@ -95,6 +95,3 @@ nwg-look
 quickshell
 whitesur-icon-theme-git
 bibata-cursor-theme
-helium-browser-bin
-visual-studio-code-bin
-nvibrant-bin
