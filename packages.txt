@@ -92,6 +92,7 @@ rsync
 seahorse
 
 #AUR
+github-desktop-bin
 imagemagick 
 zen-browser-bin
 visual-studio-code-bin
