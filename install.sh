@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # ============================================
-# Hyprland-configs Installer
+# Hyprland-configs Installer (Fully Automated)
 # Arch Linux + Hyprland
 # ============================================
 
@@ -34,6 +34,9 @@ if ! sudo -v; then
     exit 1
 fi
 
+# Keep-alive sudo privileges in the background
+while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+
 # --------------------------------------------
 # Ensure base-devel and an AUR helper (yay) exist
 # --------------------------------------------
@@ -46,7 +49,7 @@ if ! command -v yay &>/dev/null && ! command -v paru &>/dev/null; then
     echo "AUR helper not found. Installing yay automatically..."
     git clone https://aur.archlinux.org/yay.git /tmp/yay
     cd /tmp/yay
-    makepkg -si --noconfirm
+    makepkg -si --noconfirm --needed
     cd "$REPO_DIR"
     rm -rf /tmp/yay
 fi
@@ -89,17 +92,17 @@ if [[ -f "$REPO_DIR/packages.txt" ]]; then
     mapfile -t official_packages < <(printf '%s\n' "$official_packages_raw" | grep -Ev '^[[:space:]]*$' || true)
     if [[ ${#official_packages[@]} -gt 0 ]]; then
         echo "Installing official packages via pacman..."
-        sudo pacman -S --needed "${official_packages[@]}"
+        sudo pacman -S --needed --noconfirm "${official_packages[@]}"
     fi
     
     mapfile -t aur_packages < <(printf '%s\n' "$aur_packages_raw" | grep -Ev '^[[:space:]]*$' || true)
     if [[ ${#aur_packages[@]} -gt 0 ]]; then
         if command -v yay &>/dev/null; then
             echo "Installing AUR packages via yay..."
-            yay -S --needed "${aur_packages[@]}"
+            yay -S --needed --noconfirm "${aur_packages[@]}"
         elif command -v paru &>/dev/null; then
             echo "Installing AUR packages via paru..."
-            paru -S --needed "${aur_packages[@]}"
+            paru -S --needed --noconfirm "${aur_packages[@]}"
         else
             echo "Neither yay nor paru is installed, skipping AUR packages."
         fi
@@ -133,7 +136,7 @@ if command -v xdg-mime &>/dev/null; then
 fi
 
 # --------------------------------------------
-# Backup existing configurations & Wallpapers
+# Backup existing configurations & Wallpapers (Automatic)
 # --------------------------------------------
 
 echo
@@ -179,66 +182,37 @@ if [[ -d "$PICTURES_DIR/Wallpapers" ]]; then
 fi
 
 if [[ ${#existing_configs[@]} -gt 0 ]]; then
-    echo
-    echo "The following existing configurations/folders will be replaced:"
-    echo
+    BACKUP_DIR="$CONFIG_DIR/backup/hyprland-configs-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$BACKUP_DIR"
+
+    echo "Creating automatic backup of existing configurations..."
 
     for config in "${existing_configs[@]}"; do
         if [[ "$config" == "Pictures/Wallpapers" ]]; then
-            echo "  • ~/Pictures/Wallpapers"
+            if [[ -d "$PICTURES_DIR/Wallpapers" ]]; then
+                mkdir -p "$BACKUP_DIR/Pictures"
+                cp -r "$PICTURES_DIR/Wallpapers" "$BACKUP_DIR/Pictures/"
+                echo "  - Backed up Pictures/Wallpapers"
+            fi
         elif [[ "$config" == "starship.toml" ]]; then
-            echo "  • ~/.config/starship.toml"
+            if [[ -f "$CONFIG_DIR/starship.toml" ]]; then
+                cp "$CONFIG_DIR/starship.toml" "$BACKUP_DIR/"
+                echo "  - Backed up starship.toml"
+            fi
         elif [[ "$config" == ".gtkrc-2.0" ]]; then
-            echo "  • ~/.gtkrc-2.0"
+            if [[ -f "$HOME/.gtkrc-2.0" ]]; then
+                cp "$HOME/.gtkrc-2.0" "$BACKUP_DIR/"
+                echo "  - Backed up .gtkrc-2.0"
+            fi
         else
-            echo "  • ~/.config/$config"
+            if [[ -e "$CONFIG_DIR/$config" ]]; then
+                cp -r "$CONFIG_DIR/$config" "$BACKUP_DIR/"
+                echo "  - Backed up $config"
+            fi
         fi
     done
 
-    echo
-    read -rp "Would you like to back them up first? [Y/n]: " backup_choice
-    backup_choice="${backup_choice:-Y}"
-
-    if [[ "$backup_choice" =~ ^[Yy]$ ]]; then
-        BACKUP_DIR="$CONFIG_DIR/backup/hyprland-configs-$(date +%Y%m%d-%H%M%S)"
-        mkdir -p "$BACKUP_DIR"
-
-        echo
-        echo "Creating backup..."
-
-        for config in "${existing_configs[@]}"; do
-            if [[ "$config" == "Pictures/Wallpapers" ]]; then
-                if [[ -d "$PICTURES_DIR/Wallpapers" ]]; then
-                    mkdir -p "$BACKUP_DIR/Pictures"
-                    cp -r "$PICTURES_DIR/Wallpapers" "$BACKUP_DIR/Pictures/"
-                    echo "  - Backed up Pictures/Wallpapers"
-                fi
-            elif [[ "$config" == "starship.toml" ]]; then
-                if [[ -f "$CONFIG_DIR/starship.toml" ]]; then
-                    cp "$CONFIG_DIR/starship.toml" "$BACKUP_DIR/"
-                    echo "  - Backed up starship.toml"
-                fi
-            elif [[ "$config" == ".gtkrc-2.0" ]]; then
-                if [[ -f "$HOME/.gtkrc-2.0" ]]; then
-                    cp "$HOME/.gtkrc-2.0" "$BACKUP_DIR/"
-                    echo "  - Backed up .gtkrc-2.0"
-                fi
-            else
-                if [[ -e "$CONFIG_DIR/$config" ]]; then
-                    cp -r "$CONFIG_DIR/$config" "$BACKUP_DIR/"
-                    echo "  - Backed up $config"
-                fi
-            fi
-        done
-
-        echo
-        echo "Backup complete!"
-        echo "Your backup is located at:"
-        echo "   $BACKUP_DIR"
-    else
-        echo
-        echo "Skipping backup."
-    fi
+    echo "Backup complete! Location: $BACKUP_DIR"
 else
     echo "  - No conflicting existing configurations found."
 fi
@@ -301,29 +275,28 @@ fi
 # Set default monitor configuration right below '-- MONITORS' in hyprland.lua
 HYPR_LUA_CONFIG="$CONFIG_DIR/hypr/hyprland.lua"
 if [[ -f "$HYPR_LUA_CONFIG" ]]; then
-    # Removes all existing hl.monitor lines
     sed -i '/hl\.monitor/d' "$HYPR_LUA_CONFIG"
-
-    # Inserts lines strictly below '-- MONITORS' using standard POSIX sed multiline append
     sed -i '/-- MONITORS/a \
 -- Change this to your monitor configurations\
 hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
-
     echo "  - Replaced monitor configs right below '-- MONITORS' in hyprland.lua"
 fi
 
 # --------------------------------------------
-# Done
+# Done & Reboot Option
 # --------------------------------------------
 
 echo
 echo "Installation complete!"
+echo "You need to restart your system to apply all changes properly."
 echo
-echo "Log out and back into Hyprland to apply the configuration."
-echo
-echo "To verify everything is working, run:"
-echo "  hyprctl version"
-echo "  waybar --version"
-echo "  xdg-mime query default inode/directory"
-echo
-echo "Enjoy your setup!"
+
+read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
+reboot_choice="${reboot_choice:-Y}"
+
+if [[ "$reboot_choice" =~ ^[Yy]$ ]]; then
+    echo "Rebooting system..."
+    sudo reboot
+else
+    echo "Reboot skipped. Please remember to restart your system later to finalize setup."
+fi
