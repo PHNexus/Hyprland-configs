@@ -121,6 +121,7 @@ configs=(
     quickshell
     swaync
     waybar
+    wlogout
     wofi
     xdg-desktop-portal
 )
@@ -248,6 +249,7 @@ if [[ -f "$WLOGOUT_STYLE" ]]; then
     sed -i "s|/home/[^/]*|$HOME|g" "$WLOGOUT_STYLE"
     echo "  - Updated user paths in wlogout style.css"
 fi
+
 # Set default monitor configuration right below '-- MONITORS' in hyprland.lua
 HYPR_LUA_CONFIG="$CONFIG_DIR/hypr/hyprland.lua"
 if [[ -f "$HYPR_LUA_CONFIG" ]]; then
