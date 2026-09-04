@@ -20,7 +20,6 @@ materia-gtk-theme
 
 # Wallpaper / screenshots / Recorder
 
-awww
 hyprshot
 grim
 slurp
@@ -59,7 +58,6 @@ gvfs
 catfish
 ffmpegthumbnailer
 
-
 # Fonts
 
 ttf-jetbrains-mono-nerd
@@ -72,8 +70,8 @@ noto-fonts-cjk
 noto-fonts-extra
 ttf-cascadia-code-nerd
 
-
 # Utilities
+
 gnome-keyring
 fisher
 btop
@@ -93,6 +91,7 @@ rsync
 seahorse
 
 #AUR
+awww
 bitwarden-bin 
 github-desktop-bin
 imagemagick 
