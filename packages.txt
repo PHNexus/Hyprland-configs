@@ -87,6 +87,7 @@ bluez-utils
 blueman
 nvim
 ksshaskpass
+rsync
 
 #AUR
 zen-browser-bin
