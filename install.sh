@@ -171,7 +171,7 @@ if [[ ${#existing_configs[@]} -gt 0 ]]; then
             cp -r "$PICTURES_DIR/Wallpapers" "$BACKUP_DIR/Pictures/"
         elif [[ "$item" == "starship.toml" ]]; then
             cp "$CONFIG_DIR/starship.toml" "$BACKUP_DIR/"
-        elif [[ "$item" == ".gtkrc-2.0" ]]; then
+        elif [[ "$item" == ".gtkrc-2.0" ]]
             cp "$HOME/.gtkrc-2.0" "$BACKUP_DIR/"
         else
             cp -r "$CONFIG_DIR/$item" "$BACKUP_DIR/"
@@ -230,7 +230,7 @@ fi
 HYPR_LUA_CONFIG="$CONFIG_DIR/hypr/hyprland.lua"
 if [[ -f "$HYPR_LUA_CONFIG" ]]; then
     sed -i '/hl\.monitor/d' "$HYPR_LUA_CONFIG"
-    sed -i '/-- MONITORS/a hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
+    sed -i '/-- MONITORS/i hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
 fi
 
 echo
