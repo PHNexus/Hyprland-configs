@@ -52,6 +52,28 @@ if ! command -v yay &>/dev/null && ! command -v paru &>/dev/null; then
 fi
 
 # --------------------------------------------
+# Uninstall unwanted packages (htop, vim, dolphin)
+# --------------------------------------------
+
+echo
+echo "Checking for packages to remove (htop, vim, dolphin)..."
+
+packages_to_remove=()
+for pkg in htop vim dolphin; do
+    if pacman -Qi "$pkg" &>/dev/null; then
+        packages_to_remove+=("$pkg")
+    fi
+done
+
+if [[ ${#packages_to_remove[@]} -gt 0 ]]; then
+    echo "Removing unwanted packages: ${packages_to_remove[*]}..."
+    sudo pacman -Rns --noconfirm "${packages_to_remove[@]}"
+    echo "  - Packages successfully uninstalled."
+else
+    echo "  - None of the specified packages (htop, vim, dolphin) are installed."
+fi
+
+# --------------------------------------------
 # Dependencies from packages.txt
 # --------------------------------------------
 
@@ -89,7 +111,7 @@ fi
 echo "Dependencies installation step finished."
 
 # --------------------------------------------
-# Update XDG User Directories
+# Update XDG User Directories & Defaults
 # --------------------------------------------
 
 echo
@@ -102,6 +124,12 @@ else
     sudo pacman -S --needed --noconfirm xdg-user-dirs
     xdg-user-dirs-update
     echo "  - XDG user directories updated successfully."
+fi
+
+echo "Setting Thunar as default file manager..."
+if command -v xdg-mime &>/dev/null; then
+    xdg-mime default thunar.desktop inode/directory
+    echo "  - Thunar set as default file manager via xdg-mime."
 fi
 
 # --------------------------------------------
@@ -278,5 +306,6 @@ echo
 echo "To verify everything is working, run:"
 echo "  hyprctl version"
 echo "  waybar --version"
+echo "  xdg-mime query default inode/directory"
 echo
 echo "Enjoy your setup!"
