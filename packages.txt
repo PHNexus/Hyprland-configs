@@ -72,7 +72,7 @@ ttf-cascadia-code-nerd
 
 
 # Utilities
-
+gnome-keyring
 fisher
 btop
 cava
@@ -88,6 +88,7 @@ blueman
 nvim
 
 #AUR
+nvibrant-bin
 wlogout
 nwg-look
 quickshell
