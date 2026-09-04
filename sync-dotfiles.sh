@@ -7,7 +7,7 @@ CONFIG_DIR="$REPO_DIR/configs"
 CONFIG_FOLDERS=(
     "btop" "nvim" "cava" "fastfetch" "fish"
     "hypr" "kitty" "quickshell" "swaync" "waybar" "gtk-3.0" "gtk-4.0" "wlogout" "wofi"
-    "xdg-desktop-portal"
+    "xdg-desktop-portal" "Thunar" "xsettingsd"
 )
 
 msg()  { echo -e "\033[1;34m[INFO]\033[0m $1"; }
@@ -56,6 +56,13 @@ if [[ -f "$HOME/.config/starship.toml" ]]; then
     ok "File: starship.toml"
 else
     warn "File not found: starship.toml"
+fi
+
+if [[ -f "$HOME/.gtkrc-2.0" ]]; then
+    cp -fL "$HOME/.gtkrc-2.0" "$CONFIG_DIR/"
+    ok "File: .gtkrc-2.0"
+else
+    warn "File not found: .gtkrc-2.0"
 fi
 
 # Git sync
