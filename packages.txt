@@ -58,7 +58,7 @@ tumbler
 gvfs
 catfish
 ffmpegthumbnailer
-bitwarden-bin 
+
 
 # Fonts
 
@@ -93,6 +93,7 @@ rsync
 seahorse
 
 #AUR
+bitwarden-bin 
 github-desktop-bin
 imagemagick 
 zen-browser-bin
