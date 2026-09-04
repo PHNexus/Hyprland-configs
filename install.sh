@@ -242,6 +242,12 @@ if [[ -f "$HYPRQUICKPAPER_CONFIG" ]]; then
     echo "  - Updated user paths in hyprquickpaper config.json"
 fi
 
+# Update user paths dynamically in wlogout style.css
+WLOGOUT_STYLE="$CONFIG_DIR/wlogout/style.css"
+if [[ -f "$WLOGOUT_STYLE" ]]; then
+    sed -i "s|/home/[^/]*|$HOME|g" "$WLOGOUT_STYLE"
+    echo "  - Updated user paths in wlogout style.css"
+fi
 # Set default monitor configuration right below '-- MONITORS' in hyprland.lua
 HYPR_LUA_CONFIG="$CONFIG_DIR/hypr/hyprland.lua"
 if [[ -f "$HYPR_LUA_CONFIG" ]]; then
