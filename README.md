@@ -31,7 +31,7 @@ I use these configs daily
 ## Installation
 
 Clone the repository and run the installation script to automatically set up the dependencies and configuration files:                                          
-You'll have to edit some things like monitors config
+### You'll have to edit some things like monitors config
 
 ```bash
 git clone https://github.com/PHNexus/Hyprland-configs.git
