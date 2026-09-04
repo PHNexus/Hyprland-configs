@@ -89,6 +89,22 @@ fi
 echo "Dependencies installation step finished."
 
 # --------------------------------------------
+# Update XDG User Directories
+# --------------------------------------------
+
+echo
+echo "Updating XDG user directories..."
+if command -v xdg-user-dirs-update &>/dev/null; then
+    xdg-user-dirs-update
+    echo "  - XDG user directories updated successfully."
+else
+    echo "  - xdg-user-dirs-update command not found. Installing xdg-user-dirs..."
+    sudo pacman -S --needed --noconfirm xdg-user-dirs
+    xdg-user-dirs-update
+    echo "  - XDG user directories updated successfully."
+fi
+
+# --------------------------------------------
 # Backup existing configurations & Wallpapers
 # --------------------------------------------
 

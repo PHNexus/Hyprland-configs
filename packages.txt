@@ -11,7 +11,7 @@ hypridle
 xdg-desktop-portal-hyprland
 xorg-xwayland
 swaync
-
+xdg-user-dirs
 
 # Themes / Icons / Cursors
 
