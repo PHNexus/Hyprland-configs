@@ -58,6 +58,7 @@ tumbler
 gvfs
 catfish
 ffmpegthumbnailer
+bitwarden-bin 
 
 # Fonts
 
