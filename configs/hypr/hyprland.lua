@@ -298,7 +298,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("xrandr --output DP-1 --primary")
-    hl.exec_cmd("sleep 1 && waybar")
+    hl.exec_cmd("waybar")
     os.execute("nvibrant 0 512 512 0 >/dev/null 2>&1 &")
     hl.exec_cmd(
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")
