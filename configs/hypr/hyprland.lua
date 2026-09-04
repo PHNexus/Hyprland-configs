@@ -19,14 +19,12 @@ hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("QT_QPA_PLATFORM", "wayland")
 hl.env("MOZ_ENABLE_WAYLAND", "1")
 hl.env("GTK_USE_PORTAL", "1")
-hl.env("GDK_DEBUG", "portals")
 -- Flatpak
 hl.env("XDG_DATA_DIRS",
     os.getenv("HOME") .. "/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share")
 -- NVIDIA
 hl.env("LIBVA_DRIVER_NAME", "nvidia")
 hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
-hl.env("GBM_BACKEND", "nvidia-drm")
 -- Wayland
 hl.env("OZONE_PLATFORM", "wayland")
 hl.env("ELECTRON_OZONE_PLATFORM_HINT", "wayland")
@@ -249,8 +247,6 @@ for i = 1, 4 do
         })
     )
 end
-hl.bind(mainMod .. " + mouse_down", hl.dsp.exec_cmd("hyprctl dispatch workspace e+1"))
-hl.bind(mainMod .. " + mouse_up", hl.dsp.exec_cmd("hyprctl dispatch workspace e-1"))
 hl.bind(mainMod .. " + Tab", hl.dsp.focus({ workspace = "previous" }))
 hl.bind("ALT + Tab", function()
     hl.dispatch(hl.dsp.window.cycle_next())
@@ -262,12 +258,6 @@ hl.bind("ALT + SHIFT + Tab", function()
 end)
 hl.bind(mainMod .. " + ALT + left", hl.dsp.exec_cmd("hyprctl dispatch workspace m-1"))
 hl.bind(mainMod .. " + ALT + right", hl.dsp.exec_cmd("hyprctl dispatch workspace m+1"))
--- Move windows to workspaces
-hl.bind(mainMod .. " + SHIFT + 1", hl.dsp.window.move({ workspace = 1 }))
-hl.bind(mainMod .. " + SHIFT + 2", hl.dsp.window.move({ workspace = 2 }))
-hl.bind(mainMod .. " + SHIFT + 3", hl.dsp.window.move({ workspace = 3 }))
-hl.bind(mainMod .. " + SHIFT + 4", hl.dsp.window.move({ workspace = 4 }))
---hl.bind(mainMod .. " + R", hl.dsp.window.move({ workspace = 6 }))
 hl.bind(mainMod .. " + R", function()
     local window = hl.get_active_window()
     if window == nil then return end
