@@ -226,19 +226,18 @@ if [[ -f "$HYPRQUICKPAPER_CONFIG" ]]; then
     echo "  - Updated user paths in hyprquickpaper config.json"
 fi
 
-# Set default monitor configuration in hyprland.lua
+# Set default monitor configuration right below '-- MONITORS' in hyprland.lua
 HYPR_LUA_CONFIG="$CONFIG_DIR/hypr/hyprland.lua"
 if [[ -f "$HYPR_LUA_CONFIG" ]]; then
-    # Remove qualquer linha de hl.monitor que veio no arquivo original
+    # Removes all existing hl.monitor lines
     sed -i '/hl\.monitor/d' "$HYPR_LUA_CONFIG"
 
-    # Adiciona a configuracao padrao generica no final do arquivo
-    cat << 'EOF' >> "$HYPR_LUA_CONFIG"
+    # Inserts lines strictly below '-- MONITORS' using standard POSIX sed multiline append
+    sed -i '/-- MONITORS/a \
+-- Change this to your monitor configurations\
+hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
 
--- Change this to your monitor configurations
-hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })
-EOF
-    echo "  - Replaced monitor configs with default settings in hyprland.lua"
+    echo "  - Replaced monitor configs right below '-- MONITORS' in hyprland.lua"
 fi
 
 # --------------------------------------------
