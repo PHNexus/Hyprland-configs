@@ -90,6 +90,7 @@ blueman
 nvim
 ksshaskpass
 rsync
+seahorse
 
 #AUR
 zen-browser-bin
