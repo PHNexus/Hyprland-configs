@@ -143,7 +143,6 @@ hl.config({ misc = { force_default_wallpaper = -1, disable_hyprland_logo = true 
 -- XWAYLAND
 hl.config({ xwayland = { force_zero_scaling = true } })
 -- WINDOW RULES
---hl.window_rule({ name = "opacity_default", match = { class = ".*" }, opacity = "1 0.7" })
 -- Kitty fully opaque
 hl.window_rule({ name = "opacity_kitty", match = { class = "^(kitty)$" }, opacity = "0.85 0.85" })
 hl.window_rule({
@@ -214,10 +213,8 @@ end)
 -- Window control
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + M", hl.dsp.exit())
-
 hl.bind(mainMod .. " + D", hl.dsp.layout("move +col"))
 hl.bind(mainMod .. " + A", hl.dsp.layout("move -col"))
-
 hl.bind(mainMod .. " + equal", hl.dsp.layout("colresize +conf"))
 hl.bind(mainMod .. " + minus", hl.dsp.layout("colresize -conf"))
 -- Window focus
@@ -225,7 +222,6 @@ hl.bind(mainMod .. " + l", hl.dsp.focus({ direction = "l" }))
 hl.bind(mainMod .. " + j", hl.dsp.focus({ direction = "r" }))
 hl.bind(mainMod .. " + i", hl.dsp.focus({ direction = "u" }))
 hl.bind(mainMod .. " + k", hl.dsp.focus({ direction = "d" }))
---hl.bind(mainMod .. " + f", hl.dsp.layout("fit active"))
 hl.bind(mainMod .. " + f", hl.dsp.layout("colresize +conf"))
 hl.bind(mainMod .. " + left", hl.dsp.layout("consume_or_expel prev"))
 hl.bind(mainMod .. " + right", hl.dsp.layout("consume_or_expel next"))
@@ -273,7 +269,6 @@ end)
 hl.bind(mainMod .. " + SHIFT + left", hl.dsp.window.move({ direction = "l" }))
 hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "r" }))
 -- Scroll through workspaces
-
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 -- Move/resize windows with mous
