@@ -19,7 +19,7 @@ echo
 # --------------------------------------------
 
 if [[ ! -f /etc/arch-release ]]; then
-    echo "This installer is designed for Arch Linux."
+    echo "Error: This installer is designed for Arch Linux."
     exit 1
 fi
 
@@ -30,7 +30,7 @@ echo "Arch Linux detected."
 # --------------------------------------------
 
 if ! sudo -v; then
-    echo "sudo access is required."
+    echo "Error: sudo access is required."
     exit 1
 fi
 
@@ -119,15 +119,12 @@ echo "Dependencies installation step finished."
 
 echo
 echo "Updating XDG user directories..."
-if command -v xdg-user-dirs-update &>/dev/null; then
-    xdg-user-dirs-update
-    echo "  - XDG user directories updated successfully."
-else
+if ! command -v xdg-user-dirs-update &>/dev/null; then
     echo "  - xdg-user-dirs-update command not found. Installing xdg-user-dirs..."
     sudo pacman -S --needed --noconfirm xdg-user-dirs
-    xdg-user-dirs-update
-    echo "  - XDG user directories updated successfully."
 fi
+xdg-user-dirs-update
+echo "  - XDG user directories updated successfully."
 
 echo "Setting Thunar as default file manager..."
 if command -v xdg-mime &>/dev/null; then
@@ -136,7 +133,7 @@ if command -v xdg-mime &>/dev/null; then
 fi
 
 # --------------------------------------------
-# Backup existing configurations & Wallpapers (Automatic)
+# Backup existing configurations & Wallpapers (Timestamped)
 # --------------------------------------------
 
 echo
@@ -183,10 +180,11 @@ if [[ -d "$PICTURES_DIR/Wallpapers" ]]; then
 fi
 
 if [[ ${#existing_configs[@]} -gt 0 ]]; then
-    BACKUP_DIR="$CONFIG_DIR/backups"
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    BACKUP_DIR="$CONFIG_DIR/backups/backup_$TIMESTAMP"
     mkdir -p "$BACKUP_DIR"
 
-    echo "Creating automatic backup of existing configurations..."
+    echo "Creating automatic backup at: $BACKUP_DIR"
 
     for config in "${existing_configs[@]}"; do
         if [[ "$config" == "Pictures/Wallpapers" ]]; then
@@ -213,7 +211,7 @@ if [[ ${#existing_configs[@]} -gt 0 ]]; then
         fi
     done
 
-    echo "Backup complete! Location: $BACKUP_DIR"
+    echo "Backup complete!"
 else
     echo "  - No conflicting existing configurations found."
 fi
@@ -246,9 +244,8 @@ if [[ -f "$REPO_DIR/configs/.gtkrc-2.0" ]]; then
 fi
 
 if [[ -d "$REPO_DIR/Wallpapers" ]]; then
-    rm -rf "$PICTURES_DIR/Wallpapers"
     mkdir -p "$PICTURES_DIR/Wallpapers"
-    cp -r "$REPO_DIR/Wallpapers/." "$PICTURES_DIR/Wallpapers/"
+    cp -ru "$REPO_DIR/Wallpapers/." "$PICTURES_DIR/Wallpapers/"
     echo "  - Installed Wallpapers to Pictures/Wallpapers"
 fi
 
