@@ -57,6 +57,8 @@ thunar-media-tags-plugin
 tumbler
 gvfs
 catfish
+imagemagick 
+ffmpegthumbnailer
 
 # Fonts
 
