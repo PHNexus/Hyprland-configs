@@ -144,6 +144,7 @@ echo "Checking for existing configurations and wallpapers..."
 
 configs=(
     btop
+    nvim
     cava
     fastfetch
     fish
