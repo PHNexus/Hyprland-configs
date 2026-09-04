@@ -182,7 +182,7 @@ if [[ -d "$PICTURES_DIR/Wallpapers" ]]; then
 fi
 
 if [[ ${#existing_configs[@]} -gt 0 ]]; then
-    BACKUP_DIR="$CONFIG_DIR/backup/hyprland-configs-$(date +%Y%m%d-%H%M%S)"
+    BACKUP_DIR="$CONFIG_DIR/backups"
     mkdir -p "$BACKUP_DIR"
 
     echo "Creating automatic backup of existing configurations..."
