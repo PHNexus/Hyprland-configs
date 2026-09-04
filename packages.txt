@@ -89,6 +89,7 @@ nvim
 ksshaskpass
 
 #AUR
+zen-browser-bin
 visual-studio-code-bin
 nvibrant-bin
 wlogout
