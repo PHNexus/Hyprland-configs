@@ -26,7 +26,7 @@ fi
 echo "Arch Linux detected."
 
 # --------------------------------------------
-# Check sudo
+# Check sudo access
 # --------------------------------------------
 
 if ! sudo -v; then
@@ -34,25 +34,26 @@ if ! sudo -v; then
     exit 1
 fi
 
-# Keep-alive sudo privileges in the background
-while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
-
 # --------------------------------------------
-# Ensure base-devel and an AUR helper (yay) exist
+# Ensure base-devel and select AUR helper
 # --------------------------------------------
 
 echo
 echo "Ensuring base-devel and git are installed..."
 sudo pacman -S --needed --noconfirm base-devel git
 
-if ! command -v yay &>/dev/null && ! command -v paru &>/dev/null; then
+AUR_HELPER=""
+
+if command -v yay &>/dev/null; then
+    AUR_HELPER="yay"
+elif command -v paru &>/dev/null; then
+    AUR_HELPER="paru"
+else
     echo "AUR helper not found. Installing yay automatically..."
     rm -rf /tmp/yay
     git clone https://aur.archlinux.org/yay.git /tmp/yay
     cd /tmp/yay
     
-    # makepkg NAO pode rodar como root/sudo
-    # Garante que seja executado pelo usuário não-root
     if [[ "$EUID" -eq 0 ]]; then
         su "$SUDO_USER" -c "makepkg -si --noconfirm --needed"
     else
@@ -61,10 +62,13 @@ if ! command -v yay &>/dev/null && ! command -v paru &>/dev/null; then
     
     cd "$REPO_DIR"
     rm -rf /tmp/yay
+    AUR_HELPER="yay"
 fi
 
+echo "Using AUR helper: $AUR_HELPER"
+
 # --------------------------------------------
-# Uninstall unwanted packages (htop, vim, dolphin)
+# Uninstall unwanted packages
 # --------------------------------------------
 
 echo
@@ -93,28 +97,42 @@ echo
 echo "Installing Arch Linux dependencies from packages.txt..."
 
 if [[ -f "$REPO_DIR/packages.txt" ]]; then
-    packages_content=$(grep -Ev '^[[:space:]]*$' "$REPO_DIR/packages.txt")
-    
-    official_packages_raw=$(echo "$packages_content" | sed '/^#AUR/,$d' | grep -Ev '^[[:space:]]*#')
-    aur_packages_raw=$(echo "$packages_content" | sed -n '/^#AUR/,$p' | grep -Ev '^[[:space:]]*#')
-    
-    mapfile -t official_packages < <(printf '%s\n' "$official_packages_raw" | grep -Ev '^[[:space:]]*$' || true)
+    official_packages=()
+    aur_packages=()
+    is_aur_section=0
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        # Strip leading/trailing whitespaces
+        line="$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        
+        # Skip empty lines
+        [[ -z "$line" ]] && continue
+
+        # Detect AUR section marker
+        if [[ "$line" =~ ^#AUR ]]; then
+            is_aur_section=1
+            continue
+        fi
+
+        # Skip comment lines
+        [[ "$line" =~ ^# ]] && continue
+
+        # Separate official vs AUR
+        if [[ $is_aur_section -eq 0 ]]; then
+            official_packages+=("$line")
+        else
+            aur_packages+=("$line")
+        fi
+    done < "$REPO_DIR/packages.txt"
+
     if [[ ${#official_packages[@]} -gt 0 ]]; then
         echo "Installing official packages via pacman..."
         sudo pacman -S --needed --noconfirm "${official_packages[@]}"
     fi
-    
-    mapfile -t aur_packages < <(printf '%s\n' "$aur_packages_raw" | grep -Ev '^[[:space:]]*$' || true)
+
     if [[ ${#aur_packages[@]} -gt 0 ]]; then
-        if command -v yay &>/dev/null; then
-            echo "Installing AUR packages via yay..."
-            yay -S --needed --noconfirm "${aur_packages[@]}"
-        elif command -v paru &>/dev/null; then
-            echo "Installing AUR packages via paru..."
-            paru -S --needed --noconfirm "${aur_packages[@]}"
-        else
-            echo "Neither yay nor paru is installed, skipping AUR packages."
-        fi
+        echo "Installing AUR packages via $AUR_HELPER..."
+        "$AUR_HELPER" -S --needed --noconfirm "${aur_packages[@]}"
     fi
 else
     echo "packages.txt not found in repository root."
@@ -142,7 +160,7 @@ if command -v xdg-mime &>/dev/null; then
 fi
 
 # --------------------------------------------
-# Backup existing configurations & Wallpapers (Timestamped)
+# Backup existing configurations & Wallpapers
 # --------------------------------------------
 
 echo
@@ -176,7 +194,7 @@ for config in "${configs[@]}"; do
     fi
 done
 
-if [[ -e "$HOME/.config/starship.toml" ]]; then
+if [[ -e "$CONFIG_DIR/starship.toml" ]]; then
     existing_configs+=("starship.toml")
 fi
 
@@ -265,21 +283,21 @@ fi
 echo
 echo "Applying post-installation adjustments..."
 
-# Update user paths dynamically in hyprquickpaper config.json
+# Escaped home path for sed safety
+ESCAPED_HOME=$(printf '%s\n' "$HOME" | sed 's/[&/\]/\\&/g')
+
 HYPRQUICKPAPER_CONFIG="$CONFIG_DIR/quickshell/hyprquickpaper/config.json"
 if [[ -f "$HYPRQUICKPAPER_CONFIG" ]]; then
-    sed -i "s|/home/[^/]*|$HOME|g" "$HYPRQUICKPAPER_CONFIG"
+    sed -i "s|/home/[^/]*|${ESCAPED_HOME}|g" "$HYPRQUICKPAPER_CONFIG"
     echo "  - Updated user paths in hyprquickpaper config.json"
 fi
 
-# Update user paths dynamically in wlogout style.css
 WLOGOUT_STYLE="$CONFIG_DIR/wlogout/style.css"
 if [[ -f "$WLOGOUT_STYLE" ]]; then
-    sed -i "s|/home/[^/]*|$HOME|g" "$WLOGOUT_STYLE"
+    sed -i "s|/home/[^/]*|${ESCAPED_HOME}|g" "$WLOGOUT_STYLE"
     echo "  - Updated user paths in wlogout style.css"
 fi
 
-# Set default monitor configuration right below '-- MONITORS' in hyprland.lua
 HYPR_LUA_CONFIG="$CONFIG_DIR/hypr/hyprland.lua"
 if [[ -f "$HYPR_LUA_CONFIG" ]]; then
     sed -i '/hl\.monitor/d' "$HYPR_LUA_CONFIG"
