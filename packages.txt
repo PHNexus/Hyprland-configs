@@ -57,7 +57,6 @@ thunar-media-tags-plugin
 tumbler
 gvfs
 catfish
-imagemagick 
 ffmpegthumbnailer
 
 # Fonts
@@ -93,6 +92,7 @@ rsync
 seahorse
 
 #AUR
+imagemagick 
 zen-browser-bin
 visual-studio-code-bin
 nvibrant-bin
