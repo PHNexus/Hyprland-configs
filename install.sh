@@ -47,9 +47,18 @@ sudo pacman -S --needed --noconfirm base-devel git
 
 if ! command -v yay &>/dev/null && ! command -v paru &>/dev/null; then
     echo "AUR helper not found. Installing yay automatically..."
+    rm -rf /tmp/yay
     git clone https://aur.archlinux.org/yay.git /tmp/yay
     cd /tmp/yay
-    makepkg -si --noconfirm --needed
+    
+    # makepkg NAO pode rodar como root/sudo
+    # Garante que seja executado pelo usuário não-root
+    if [[ "$EUID" -eq 0 ]]; then
+        su "$SUDO_USER" -c "makepkg -si --noconfirm --needed"
+    else
+        makepkg -si --noconfirm --needed
+    fi
+    
     cd "$REPO_DIR"
     rm -rf /tmp/yay
 fi
@@ -274,9 +283,7 @@ fi
 HYPR_LUA_CONFIG="$CONFIG_DIR/hypr/hyprland.lua"
 if [[ -f "$HYPR_LUA_CONFIG" ]]; then
     sed -i '/hl\.monitor/d' "$HYPR_LUA_CONFIG"
-    sed -i '/-- MONITORS/a \
--- Change this to your monitor configurations\
-hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
+    sed -i '/-- MONITORS/a -- Change this to your monitor configurations\nhl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
     echo "  - Replaced monitor configs right below '-- MONITORS' in hyprland.lua"
 fi
 
