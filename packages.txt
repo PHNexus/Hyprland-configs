@@ -86,6 +86,7 @@ bluez
 bluez-utils
 blueman
 nvim
+ksshaskpass
 
 #AUR
 visual-studio-code-bin
