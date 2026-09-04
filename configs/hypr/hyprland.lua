@@ -314,6 +314,3 @@ end)
 hl.on("hyprland.shutdown", function()
     os.execute("kill -9 -1")
 end)
-
--- Change this to your monitor configurations
-hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })
