@@ -122,6 +122,8 @@ configs=(
     swaync
     waybar
     wlogout
+    gtk-3.0
+    gtk-4.0
     wofi
     xdg-desktop-portal
 )
