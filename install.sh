@@ -154,6 +154,8 @@ configs=(
     gtk-4.0
     wofi
     xdg-desktop-portal
+    Thunar
+    xsettingsd
 )
 
 existing_configs=()
@@ -166,6 +168,10 @@ done
 
 if [[ -e "$HOME/.config/starship.toml" ]]; then
     existing_configs+=("starship.toml")
+fi
+
+if [[ -e "$HOME/.gtkrc-2.0" ]]; then
+    existing_configs+=(".gtkrc-2.0")
 fi
 
 if [[ -d "$PICTURES_DIR/Wallpapers" ]]; then
@@ -182,6 +188,8 @@ if [[ ${#existing_configs[@]} -gt 0 ]]; then
             echo "  • ~/Pictures/Wallpapers"
         elif [[ "$config" == "starship.toml" ]]; then
             echo "  • ~/.config/starship.toml"
+        elif [[ "$config" == ".gtkrc-2.0" ]]; then
+            echo "  • ~/.gtkrc-2.0"
         else
             echo "  • ~/.config/$config"
         fi
@@ -209,6 +217,11 @@ if [[ ${#existing_configs[@]} -gt 0 ]]; then
                 if [[ -f "$CONFIG_DIR/starship.toml" ]]; then
                     cp "$CONFIG_DIR/starship.toml" "$BACKUP_DIR/"
                     echo "  - Backed up starship.toml"
+                fi
+            elif [[ "$config" == ".gtkrc-2.0" ]]; then
+                if [[ -f "$HOME/.gtkrc-2.0" ]]; then
+                    cp "$HOME/.gtkrc-2.0" "$BACKUP_DIR/"
+                    echo "  - Backed up .gtkrc-2.0"
                 fi
             else
                 if [[ -e "$CONFIG_DIR/$config" ]]; then
@@ -250,6 +263,11 @@ done
 if [[ -f "$REPO_DIR/configs/starship.toml" ]]; then
     cp -f "$REPO_DIR/configs/starship.toml" "$CONFIG_DIR/"
     echo "  - Installed file: starship.toml"
+fi
+
+if [[ -f "$REPO_DIR/configs/.gtkrc-2.0" ]]; then
+    cp -f "$REPO_DIR/configs/.gtkrc-2.0" "$HOME/"
+    echo "  - Installed file: .gtkrc-2.0"
 fi
 
 if [[ -d "$REPO_DIR/Wallpapers" ]]; then
