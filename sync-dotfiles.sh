@@ -6,7 +6,7 @@ CONFIG_DIR="$REPO_DIR/configs"
 
 CONFIG_FOLDERS=(
     "btop" "nvim" "cava" "fastfetch" "fish"
-    "hypr" "kitty" "quickshell" "swaync" "waybar" "wlogout" "wofi"
+    "hypr" "kitty" "quickshell" "swaync" "waybar" "gtk-3.0" "gtk-4.0" "wlogout" "wofi"
     "xdg-desktop-portal"
 )
 
