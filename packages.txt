@@ -58,6 +58,7 @@ gvfs
 catfish
 ffmpegthumbnailer
 fuse2
+flatpak
 
 # Fonts
 
