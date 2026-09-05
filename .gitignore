@@ -1,0 +1,5 @@
+configs/fish/conf.d/nvm.fish
+configs/fish/completions/nvm.fish
+configs/fish/completions/fisher.fish
+configs/fish/functions/nvm.fish
+configs/fish/functions/_nvm_*.fish
