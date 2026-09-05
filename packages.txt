@@ -57,6 +57,7 @@ tumbler
 gvfs
 catfish
 ffmpegthumbnailer
+fuse2
 
 # Fonts
 
