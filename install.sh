@@ -237,6 +237,43 @@ if [[ -f "$HYPR_LUA_CONFIG" ]]; then
 fi
 
 # --------------------------------------------
+# Configure Desktop Entries for Terminal Apps (btop & nvim)
+# --------------------------------------------
+echo
+echo "Configuring local desktop entries for btop and nvim..."
+
+DESKTOP_DIR="$HOME/.local/share/applications"
+mkdir -p "$DESKTOP_DIR"
+
+if [[ -f /usr/share/applications/btop.desktop ]]; then
+    cp /usr/share/applications/btop.desktop "$DESKTOP_DIR/"
+    if grep -q "^Exec=" "$DESKTOP_DIR/btop.desktop"; then
+        sed -i 's|^Exec=.*|Exec=kitty -e btop|' "$DESKTOP_DIR/btop.desktop"
+    else
+        echo "Exec=kitty -e btop" >> "$DESKTOP_DIR/btop.desktop"
+    fi
+    echo "  - Configured btop.desktop"
+fi
+
+NVIM_DESKTOP=""
+if [[ -f /usr/share/applications/nvim.desktop ]]; then
+    NVIM_DESKTOP="nvim.desktop"
+elif [[ -f /usr/share/applications/neovim.desktop ]]; then
+    NVIM_DESKTOP="neovim.desktop"
+fi
+
+if [[ -n "$NVIM_DESKTOP" ]]; then
+    cp "/usr/share/applications/$NVIM_DESKTOP" "$DESKTOP_DIR/nvim.desktop"
+    sed -i 's|^Exec=.*|Exec=kitty -e nvim %F|' "$DESKTOP_DIR/nvim.desktop"
+    echo "  - Configured nvim.desktop"
+fi
+
+if command -v update-desktop-database &>/dev/null; then
+    update-desktop-database "$DESKTOP_DIR"
+    echo "  - Desktop database updated."
+fi
+
+# --------------------------------------------
 # Install Flatpak Apps (Bazaar)
 # --------------------------------------------
 echo
