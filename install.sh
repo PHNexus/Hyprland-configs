@@ -324,6 +324,34 @@ else
     echo "  - Flatpak is not installed, skipping Bazaar installation."
 fi
 
+# --------------------------------------------
+# Enable EasyEffects User Service
+# --------------------------------------------
+echo
+echo "Configuring EasyEffects systemd user service..."
+
+EASYEFFECTS_SERVICE_DIR="$CONFIG_DIR/systemd/user"
+mkdir -p "$EASYEFFECTS_SERVICE_DIR"
+
+cat << 'EOF' > "$EASYEFFECTS_SERVICE_DIR/easyeffects.service"
+[Unit]
+Description=Easyeffects Daemon
+Wants=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/easyeffects --gapplication-service
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable --now easyeffects.service
+echo "  - EasyEffects service successfully configured and started."
+
 echo
 echo "Installation complete!"
 read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
