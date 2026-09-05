@@ -236,6 +236,19 @@ if [[ -f "$HYPR_LUA_CONFIG" ]]; then
     sed -i '/-- MONITORS/a -- Change this to your monitor configurations\nhl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
 fi
 
+# --------------------------------------------
+# Install Flatpak Apps (Bazaar)
+# --------------------------------------------
+echo
+echo "Configuring Flathub and installing Bazaar..."
+if command -v flatpak &>/dev/null; then
+    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    flatpak install -y flathub io.github.kolunmi.Bazaar
+    echo "  - Bazaar successfully installed."
+else
+    echo "  - Flatpak is not installed, skipping Bazaar installation."
+fi
+
 echo
 echo "Installation complete!"
 read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
