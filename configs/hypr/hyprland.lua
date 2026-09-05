@@ -2,7 +2,7 @@
 ---@module 'hl'
 -- MONITORS
 -- Change this to your monitor configurations
-hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })
+hl.monitor({ output = "DP-1", mode = "1920x1080@180", position = "0x0", scale = 1 })
 -- WORKSPACE
 -- DP-1 (primary monitor)
 hl.workspace_rule({ workspace = 1, monitor = "DP-1", persistent = true })
