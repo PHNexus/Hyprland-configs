@@ -143,7 +143,7 @@ echo "Checking for existing configurations and wallpapers..."
 configs=(
     btop nvim cava fastfetch fish hypr kitty
     quickshell swaync waybar wlogout gtk-3.0
-    gtk-4.0 wofi xdg-desktop-portal Thunar xsettingsd
+    gtk-4.0 wofi xdg-desktop-portal
 )
 
 existing_configs=()
