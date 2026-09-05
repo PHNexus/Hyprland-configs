@@ -274,7 +274,7 @@ create_desktop_entry() {
         echo "Exec=$exec_cmd" >> "$local_file"
     fi
     
-    # Force Terminal=false (important for apps that launch their own terminal)
+    # Force Terminal=false
     if grep -q "^Terminal=" "$local_file"; then
         sed -i "s|^Terminal=.*|Terminal=false|" "$local_file"
     else
@@ -288,15 +288,14 @@ create_desktop_entry() {
     return 0
 }
 
-# Configure btop (no shell needed)
+# Configure btop
 create_desktop_entry "/usr/share/applications/btop.desktop" "btop.desktop" "kitty -e btop"
 
-# Configure nvim with interactive shell for environment variables
-USER_SHELL=$(basename "$SHELL")
+# Configure nvim
 if [[ -f "/usr/share/applications/nvim.desktop" ]]; then
-    create_desktop_entry "/usr/share/applications/nvim.desktop" "nvim.desktop" "kitty -e $USER_SHELL -ic \"nvim %F\""
+    create_desktop_entry "/usr/share/applications/nvim.desktop" "nvim.desktop" "kitty -e nvim %F"
 elif [[ -f "/usr/share/applications/neovim.desktop" ]]; then
-    create_desktop_entry "/usr/share/applications/neovim.desktop" "nvim.desktop" "kitty -e $USER_SHELL -ic \"nvim %F\""
+    create_desktop_entry "/usr/share/applications/neovim.desktop" "nvim.desktop" "kitty -e nvim %F"
 else
     echo "  Warning: nvim.desktop not found, skipping..."
 fi
