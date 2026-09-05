@@ -162,8 +162,11 @@ hl.window_rule({
     float = true,
 })
 hl.window_rule({
-    name = "openfile",
-    match = { class = ".*xdg-desktop-portal-gtk*" },
+    name = "file-dialogs",
+    match = {
+        class = "^(xdg-desktop-portal-gtk)$",
+        title = "^(Open|Save|Choose|Select).*$"
+    },
     float = true,
     size = "1000 600",
 })
@@ -179,12 +182,6 @@ hl.window_rule({
     match = { class = "^Lunar Client.*$" },
     fullscreen = true,
     immediate = true,
-})
--- all float center
-hl.window_rule({
-    name = "center-all-floats",
-    match = { float = true },
-    center = true,
 })
 -- for sober remove if you want
 hl.window_rule({
