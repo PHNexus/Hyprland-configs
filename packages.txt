@@ -41,7 +41,6 @@ alsa-card-profiles
 alsa-ucm-conf
 pavucontrol
 qpwgraph
-easyeffects
 
 # Terminal / applications
 
