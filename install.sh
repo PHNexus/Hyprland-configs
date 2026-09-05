@@ -196,6 +196,11 @@ for config in "${configs[@]}"; do
     fi
 done
 
+if [[ -f "$CONFIG_DIR/fastfetch/storage.sh" ]]; then
+    chmod +x "$CONFIG_DIR/fastfetch/storage.sh"
+    echo "  - Granted execution permission to fastfetch storage.sh"
+fi
+
 if [[ -f "$REPO_DIR/configs/starship.toml" ]]; then
     cp -f "$REPO_DIR/configs/starship.toml" "$CONFIG_DIR/"
 fi

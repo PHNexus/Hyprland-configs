@@ -71,13 +71,13 @@
       "type": "command",
       "key": " │   nvm  │",
       "keyColor": "white",
-      "text": "df -h /dev/nvme0n1p2 | awk 'NR==2 {print $3 \"/\" $2}'"
+      "text": "~/.config/fastfetch/storage.sh nvme"
     },
     {
       "type": "command",
       "key": " │   ssd  │",
       "keyColor": "white",
-      "text": "df -h /dev/sda1 | awk 'NR==2 {print $3 \"/\" $2}'"
+      "text": "~/.config/fastfetch/storage.sh ssd"
     },
     {
       "type": "command",
