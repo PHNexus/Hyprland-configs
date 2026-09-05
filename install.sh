@@ -245,33 +245,66 @@ echo "Configuring local desktop entries for btop and nvim..."
 DESKTOP_DIR="$HOME/.local/share/applications"
 mkdir -p "$DESKTOP_DIR"
 
-if [[ -f /usr/share/applications/btop.desktop ]]; then
-    cp /usr/share/applications/btop.desktop "$DESKTOP_DIR/"
-    if grep -q "^Exec=" "$DESKTOP_DIR/btop.desktop"; then
-        sed -i 's|^Exec=.*|Exec=kitty -e btop|' "$DESKTOP_DIR/btop.desktop"
-    else
-        echo "Exec=kitty -e btop" >> "$DESKTOP_DIR/btop.desktop"
+# Function to create/modify .desktop files
+create_desktop_entry() {
+    local src_file="$1"
+    local dest_name="$2"
+    local exec_cmd="$3"
+    local local_file="$DESKTOP_DIR/$dest_name"
+    
+    # Check if source file exists
+    if [[ ! -f "$src_file" ]]; then
+        echo "  Warning: Source file not found: $src_file"
+        return 1
     fi
-    echo "  - Configured btop.desktop"
+    
+    # Copy the file
+    cp "$src_file" "$local_file"
+    
+    # Verify copy was successful
+    if [[ ! -f "$local_file" ]]; then
+        echo "  Error: Failed to copy $src_file"
+        return 1
+    fi
+    
+    # Replace or add the Exec= line
+    if grep -q "^Exec=" "$local_file"; then
+        # If exists, replace it
+        sed -i "s|^Exec=.*|Exec=$exec_cmd|" "$local_file"
+    else
+        # If not exists, add it
+        echo "Exec=$exec_cmd" >> "$local_file"
+    fi
+    
+    # Ensure correct permissions
+    chmod 644 "$local_file"
+    
+    echo "  Configured: $dest_name"
+    return 0
+}
+
+# Configure btop
+create_desktop_entry "/usr/share/applications/btop.desktop" "btop.desktop" "kitty -e btop"
+
+# Configure nvim (try both possible names)
+if [[ -f "/usr/share/applications/nvim.desktop" ]]; then
+    create_desktop_entry "/usr/share/applications/nvim.desktop" "nvim.desktop" "kitty -e nvim %F"
+elif [[ -f "/usr/share/applications/neovim.desktop" ]]; then
+    create_desktop_entry "/usr/share/applications/neovim.desktop" "nvim.desktop" "kitty -e nvim %F"
+else
+    echo "  Warning: nvim.desktop not found, skipping..."
 fi
 
-NVIM_DESKTOP=""
-if [[ -f /usr/share/applications/nvim.desktop ]]; then
-    NVIM_DESKTOP="nvim.desktop"
-elif [[ -f /usr/share/applications/neovim.desktop ]]; then
-    NVIM_DESKTOP="neovim.desktop"
-fi
-
-if [[ -n "$NVIM_DESKTOP" ]]; then
-    cp "/usr/share/applications/$NVIM_DESKTOP" "$DESKTOP_DIR/nvim.desktop"
-    sed -i 's|^Exec=.*|Exec=kitty -e nvim %F|' "$DESKTOP_DIR/nvim.desktop"
-    echo "  - Configured nvim.desktop"
-fi
-
+# Update desktop database cache
 if command -v update-desktop-database &>/dev/null; then
-    update-desktop-database "$DESKTOP_DIR"
-    echo "  - Desktop database updated."
+    update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
+    echo "  Desktop database updated."
 fi
+
+# verification
+echo
+echo "Desktop entries created:"
+ls -la "$DESKTOP_DIR" | grep -E "(btop|nvim)" || echo "  Warning: No desktop entries found"
 
 # --------------------------------------------
 # Install Flatpak Apps (Bazaar)
