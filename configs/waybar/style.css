@@ -7,7 +7,6 @@
     transition: all 0.5s cubic-bezier(0, 0.5, 0.35, 1);
 }
 
-/* Janela principal da Waybar com margem superior forçada (flutuante) */
 window#waybar {
     background-color: transparent;
     border-radius: 0;
@@ -25,9 +24,7 @@ window#waybar {
 /* ============================================================================== */
 /* SOLID BLACK BLOCKS WITH GLOWING ACCENT TEXT                                    */
 /* ============================================================================== */
-/* ============================================================================== */
-/* SOLID BLACK BLOCKS WITH GLOWING ACCENT TEXT                                    */
-/* ============================================================================== */
+                        
 #workspaces,
 #clock,
 #custom-logo,
