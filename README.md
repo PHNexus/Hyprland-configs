@@ -9,7 +9,7 @@ I use these configs daily
 ## Screenshots
 | <img width="1922" height="1080" alt="2026-08-31-021537_hyprshot" src="https://github.com/user-attachments/assets/4b390e12-f5fc-4b2a-bf1c-6699035bbb84" />| <img width="1922" height="1080" alt="2026-08-29-024535_hyprshot" src="https://github.com/user-attachments/assets/0256a665-87bf-4372-8fd8-39ce62e93d69" />|
 |---|---|
-| <img width="1925" height="1081" alt="2026-09-06-093439_hyprshot" src="https://github.com/user-attachments/assets/1451e5ed-4f4e-4baf-8704-d2f6736e38de" /> | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" />
+| <img width="1933" height="1081" alt="2026-09-06-093705_hyprshot" src="https://github.com/user-attachments/assets/e080904a-058e-4b62-af7c-c26f7c9a6f33" /> | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" />
 
 
 | Component | Program |
