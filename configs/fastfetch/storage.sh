@@ -1,18 +1,72 @@
 #!/bin/bash
+
 case "$1" in
-  nvme)
-    df -h / 2>/dev/null | awk 'NR==2 {print $3 "/" $2}'
-    ;;
-  ssd)
-    target=$(lsblk -o MOUNTPOINT,NAME,TYPE -rn | grep -E 'part|disk' | awk '$1 != "/" && $1 != "" {print $1; exit}')
-    if [ -n "$target" ]; then
-      df -h "$target" 2>/dev/null | awk 'NR==2 {print $3 "/" $2}'
-    fi
-    ;;
-  hd)
-    target=$(lsblk -o MOUNTPOINT,NAME,TYPE -rn | grep -E 'part|disk' | awk '$1 != "/" && $1 != "" {print $1}' | sed -n '2p')
-    if [ -n "$target" ]; then
-      df -h "$target" 2>/dev/null | awk 'NR==2 {print $3 "/" $2}'
-    fi
-    ;;
+    nvme|ssd|hd)
+
+        while read -r disk disk_type rota rm; do
+
+            # Physical disks only
+            [[ "$disk_type" == "disk" ]] || continue
+
+            # Ignore removable devices
+            [[ "$rm" == "1" ]] && continue
+
+            # Detect storage type
+            if [[ "$disk" == nvme* ]]; then
+                storage_type="nvme"
+            elif [[ "$rota" == "1" ]]; then
+                storage_type="hd"
+            else
+                storage_type="ssd"
+            fi
+
+            # Match requested type
+            [[ "$storage_type" == "$1" ]] || continue
+
+            # NVMe uses the root filesystem
+            if [[ "$storage_type" == "nvme" ]]; then
+
+                usage=$(df -h / 2>/dev/null |
+                    awk 'NR==2 {print $3 "/" $2}')
+
+                if [[ -n "$usage" ]]; then
+                    echo "$usage"
+                    exit 0
+                fi
+
+            # SSD / HDD: find a mounted partition
+            else
+
+                while read -r mountpoint; do
+
+                    [[ -n "$mountpoint" ]] || continue
+                    [[ "$mountpoint" == "[SWAP]" ]] && continue
+                    [[ "$mountpoint" == "/" ]] && continue
+
+                    usage=$(df -h "$mountpoint" 2>/dev/null |
+                        awk 'NR==2 {print $3 "/" $2}')
+
+                    if [[ -n "$usage" ]]; then
+                        echo "$usage"
+                        exit 0
+                    fi
+
+                done < <(
+                    lsblk -nr -o MOUNTPOINTS "/dev/$disk" |
+                    grep -v '^$'
+                )
+
+            fi
+
+        done < <(
+            lsblk -dnr -o NAME,TYPE,ROTA,RM
+        )
+
+        exit 0
+        ;;
+
+    *)
+        echo "Usage: $0 {nvme|ssd|hd}"
+        exit 1
+        ;;
 esac
