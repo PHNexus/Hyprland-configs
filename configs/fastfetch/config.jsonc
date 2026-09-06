@@ -81,6 +81,12 @@
     },
     {
       "type": "command",
+      "key": " │   hd   │",
+      "keyColor": "white",
+      "text": "~/.config/fastfetch/storage.sh hd"
+    },
+    {
+      "type": "command",
       "key": " │   ram  │",
       "keyColor": "white",
       "text": "free -h | awk '/^Mem:/ {print $3 \"/\" $2}'"
