@@ -238,7 +238,7 @@ if [[ -f "$HYPR_LUA_CONFIG" ]]; then
     sed -i '/-- Change this to your actual monitor configuration if needed/d' "$HYPR_LUA_CONFIG"
     sed -i '/-- Change this to your monitor configurations/d' "$HYPR_LUA_CONFIG"
     sed -i '/-- MONITORS/{n;/^$/d}' "$HYPR_LUA_CONFIG"
-    sed -i '/-- MONITORS/a -- Change this to your monitor configurations\nhl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
+    sed -i '/-- MONITORS/a -- Change this to your monitor configurations\hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
 fi
 
 # --------------------------------------------
@@ -250,53 +250,43 @@ echo "Configuring local desktop entries for btop and nvim..."
 DESKTOP_DIR="$HOME/.local/share/applications"
 mkdir -p "$DESKTOP_DIR"
 
-# Function to create/modify .desktop files
 create_desktop_entry() {
     local src_file="$1"
     local dest_name="$2"
     local exec_cmd="$3"
     local local_file="$DESKTOP_DIR/$dest_name"
     
-    # Check if source file exists
     if [[ ! -f "$src_file" ]]; then
         echo "  Warning: Source file not found: $src_file"
         return 1
     fi
     
-    # Copy the file
     cp "$src_file" "$local_file"
     
-    # Verify copy was successful
     if [[ ! -f "$local_file" ]]; then
         echo "  Error: Failed to copy $src_file"
         return 1
     fi
     
-    # Replace or add the Exec= line
     if grep -q "^Exec=" "$local_file"; then
         sed -i "s|^Exec=.*|Exec=$exec_cmd|" "$local_file"
     else
         echo "Exec=$exec_cmd" >> "$local_file"
     fi
     
-    # Force Terminal=false
     if grep -q "^Terminal=" "$local_file"; then
         sed -i "s|^Terminal=.*|Terminal=false|" "$local_file"
     else
         echo "Terminal=false" >> "$local_file"
     fi
     
-    # Ensure correct permissions
     chmod 644 "$local_file"
-    
     echo "  Configured: $dest_name"
     return 0
 }
 
-# Configure btop
 create_desktop_entry "/usr/share/applications/btop.desktop" "btop.desktop" "kitty -e btop"
 
-# Configure nvim
 if [[ -f "/usr/share/applications/nvim.desktop" ]]; then
     create_desktop_entry "/usr/share/applications/nvim.desktop" "nvim.desktop" "kitty -e nvim %F"
 elif [[ -f "/usr/share/applications/neovim.desktop" ]]; then
@@ -305,13 +295,11 @@ else
     echo "  Warning: nvim.desktop not found, skipping..."
 fi
 
-# Update desktop database cache
 if command -v update-desktop-database &>/dev/null; then
     update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
     echo "  Desktop database updated."
 fi
 
-# verification
 echo
 echo "Desktop entries created:"
 ls -la "$DESKTOP_DIR" | grep -E "(btop|nvim)" || echo "  Warning: No desktop entries found"
@@ -322,8 +310,8 @@ ls -la "$DESKTOP_DIR" | grep -E "(btop|nvim)" || echo "  Warning: No desktop ent
 echo
 echo "Configuring Flathub and installing Bazaar..."
 if command -v flatpak &>/dev/null; then
-    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    flatpak install -y flathub io.github.kolunmi.Bazaar
+    flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    flatpak install --user -y flathub io.github.kolunmi.Bazaar
     echo "  - Bazaar successfully installed."
 else
     echo "  - Flatpak is not installed, skipping Bazaar installation."
