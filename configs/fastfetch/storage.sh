@@ -61,9 +61,15 @@ case "$1" in
             lsblk -dnr -o NAME,TYPE,ROTA,RM
         )
 
-        # Print all accumulated results cleanly
+        # Print all accumulated results cleanly with proper formatting
         if [[ ${#results[@]} -gt 0 ]]; then
-            printf '%s\n' "${results[@]}"
+            for i in "${!results[@]}"; do
+                if [[ $i -eq 0 ]]; then
+                    echo "${results[$i]}"
+                else
+                    echo "│           │ ${results[$i]}"
+                fi
+            done
         fi
 
         exit 0
