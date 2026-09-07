@@ -2,6 +2,7 @@
 
 case "$1" in
     nvme|ssd|hd)
+        results=()
 
         while read -r disk disk_type rota rm; do
 
@@ -30,8 +31,7 @@ case "$1" in
                     awk 'NR==2 {print $3 "/" $2}')
 
                 if [[ -n "$usage" ]]; then
-                    echo "$usage"
-                    exit 0
+                    results+=("$usage")
                 fi
 
             # SSD / HDD: find a mounted partition
@@ -47,8 +47,7 @@ case "$1" in
                         awk 'NR==2 {print $3 "/" $2}')
 
                     if [[ -n "$usage" ]]; then
-                        echo "$usage"
-                        exit 0
+                        results+=("$usage")
                     fi
 
                 done < <(
@@ -61,6 +60,11 @@ case "$1" in
         done < <(
             lsblk -dnr -o NAME,TYPE,ROTA,RM
         )
+
+        # Print all accumulated results cleanly
+        if [[ ${#results[@]} -gt 0 ]]; then
+            printf '%s\n' "${results[@]}"
+        fi
 
         exit 0
         ;;
