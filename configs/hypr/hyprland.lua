@@ -96,7 +96,7 @@ hl.config({
         border_size = 0,
         resize_on_border = true,
         allow_tearing = true,
-        layout = "dwindle",
+        layout = "scrolling",
         col = {
             active_border = "rgb(bbbbbb)",
             inactive_border = "rgb(666666)",
