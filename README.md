@@ -55,7 +55,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + Space` | App launcher (wofi) |
 | `SUPER + E` | File manager (thunar) |
 | `SUPER + C` | Open VS Code (code) |
-| `SUPER + B` | Open browser (helium-browser) |
+| `SUPER + B` | Open browser (zen-browser) |
 | `SUPER + V` | Clipboard history (cliphist) |
 | `SUPER + L` | Lock screen (hyprlock) |
 | `SUPER + SHIFT + R` | Set random wallpaper |
