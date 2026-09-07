@@ -92,9 +92,10 @@
       "text": "free -h | awk '/^Mem:/ {print $3 \"/\" $2}'"
     },
     {
-      "type": "packages",
+      "type": "command",
       "key": " │   pkg  │",
-      "keyColor": "white"
+      "keyColor": "white",
+      "text": "echo \"$(flatpak list --system --columns=application | wc -l) (flatpak), $(pacman -Q | wc -l) (pacman)\""
     },
     {
       "type": "custom",
