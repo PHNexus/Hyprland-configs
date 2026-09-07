@@ -9,7 +9,7 @@ hl.workspace_rule({ workspace = 1, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 2, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 3, monitor = "DP-1", persistent = true })
 hl.workspace_rule({ workspace = 4, monitor = "DP-1", persistent = true })
-hl.workspace_rule({ workspace = 6, monitor = "HDMI-A-1", persistent = true, default = true })
+hl.workspace_rule({ workspace = 6, layout = "dwindle", monitor = "HDMI-A-1", persistent = true, default = true })
 -- ENVIRONMENT VARIABLES
 hl.env("WLR_NO_HARDWARE_CURSORS", "1")
 hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
@@ -96,7 +96,7 @@ hl.config({
         border_size = 0,
         resize_on_border = true,
         allow_tearing = true,
-        layout = "scrolling",
+        layout = "dwindle",
         col = {
             active_border = "rgb(bbbbbb)",
             inactive_border = "rgb(666666)",
