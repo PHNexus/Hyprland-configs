@@ -238,7 +238,7 @@ if [[ -f "$HYPR_LUA_CONFIG" ]]; then
     sed -i '/-- Change this to your actual monitor configuration if needed/d' "$HYPR_LUA_CONFIG"
     sed -i '/-- Change this to your monitor configurations/d' "$HYPR_LUA_CONFIG"
     sed -i '/-- MONITORS/{n;/^$/d}' "$HYPR_LUA_CONFIG"
-    sed -i '/-- MONITORS/a -- Change this to your monitor configurations\hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
+    sed -i '/-- MONITORS/a -- Change this to your monitor configurations\nhl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
 fi
 
 # --------------------------------------------
