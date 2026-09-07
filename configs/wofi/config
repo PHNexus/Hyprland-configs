@@ -1,12 +1,12 @@
 stylesheet=style.css
 show=drun
 columns=1
-matching=fuzzy
+matching=multi-contains
 no_actions=true
 width=330
 height=350
 always_parse_args=true
-show_all=true
+show_all=false
 print_command=true
 layer=overlay
 insensitive=true
