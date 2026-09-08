@@ -95,7 +95,7 @@
       "type": "command",
       "key": " │   pkg  │",
       "keyColor": "white",
-      "text": "echo \"$(command -v flatpak &> /dev/null && flatpak list --system --columns=application | wc -l || echo 0) (flatpak), $(command -v pacman &> /dev/null && pacman -Q | wc -l || echo 0) (pacman)\""
+      "text": "echo \"$(flatpak list --system --columns=application | wc -l) (flatpak), $(pacman -Q | wc -l) (pacman)\""
     },
     {
       "type": "custom",
