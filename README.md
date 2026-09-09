@@ -70,7 +70,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + M` | Exit Hyprland |
 | `SUPER + D` | Move column (`move +col`) |
 | `SUPER + A` | Move column (`move -col`) |
-| `SUPER + R` | Toggle window between primary monitor (workspace 1) and secondary monitor (workspace 6) |
+| `SUPER + R` | Toggle window to secondary monitor  |
 | `SUPER + equal` | Resize column (`colresize +conf`) |
 | `SUPER + minus` | Resize column (`colresize -conf`) |
 | `SUPER + f` | Resize column (`colresize +conf`) |
