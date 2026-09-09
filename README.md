@@ -7,7 +7,7 @@ I use these configs daily
 
 
 ## Screenshots
-|<img width="1939" height="1080" alt="2026-09-09-095142_hyprshot" src="https://github.com/user-attachments/assets/260686ef-4b25-4b41-8a6d-23bc4557e12b" /> | <img width="1931" height="1081" alt="2026-09-09-095518_hyprshot" src="https://github.com/user-attachments/assets/0c785c59-ba62-428e-911c-6d2c5ac97a58" /> |
+|<img width="1939" height="1080" alt="2026-09-09-095142_hyprshot" src="https://github.com/user-attachments/assets/260686ef-4b25-4b41-8a6d-23bc4557e12b" /> | <img width="1930" height="1081" alt="2026-09-09-095748_hyprshot" src="https://github.com/user-attachments/assets/b5f2844d-ad29-4245-a8b3-3157e09bf1c7" /> |
 |---|---|
 | <img width="1921" height="1081" alt="2026-09-09-094547_hyprshot" src="https://github.com/user-attachments/assets/92f08967-f092-45db-929f-5129a1345ee6" />  | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" />
 
