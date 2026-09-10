@@ -57,7 +57,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + B` | Open browser (`zen-browser`) |
 | `SUPER + V` | Clipboard history (`cliphist`) |
 | `SUPER + L` | Lock screen (`hyprlock`) |
-| `SUPER + SHIFT + R` | Set random wallpaper script |
+| `SUPER + SHIFT + R` | Set random wallpaper |
 | `SUPER + W` | Wallpaper picker |
 
 ## Window Management
@@ -66,7 +66,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 |---|---|
 | `SUPER + Q` | Close active window |
 | `SUPER + SHIFT + W` | Toggle Waybar |
-| `SUPER + S` | Toggle floating + center + resize 1000x600 |
+| `SUPER + S` | Toggle floating |
 | `SUPER + M` | Exit Hyprland |
 | `SUPER + D` | Move column (`move +col`) |
 | `SUPER + A` | Move column (`move -col`) |
@@ -87,8 +87,8 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + [1-4]` | Switch to workspace 1–4 |
 | `SUPER + SHIFT + [1-4]` | Move window to workspace 1–4 |
 | `SUPER + Tab` | Switch to previous workspace |
-| `ALT + Tab` | Cycle to next window and bring to top |
-| `ALT + SHIFT + Tab` | Cycle to previous workspace and bring to top |
+| `ALT + Tab` | Cycle to next window |
+| `ALT + SHIFT + Tab` | Cycle to previous workspace |
 | `SUPER + ALT + left / right` | Cycle workspaces (`m-1` / `m+1`) |
 | `SUPER + mouse_down` | Scroll to next workspace (`e+1`) |
 | `SUPER + mouse_up` | Scroll to previous workspace (`e-1`) |
@@ -99,8 +99,8 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 |---|---|
 | `XF86AudioRaiseVolume` | Volume up (`wpctl 5%+`) |
 | `XF86AudioLowerVolume` | Volume down (`wpctl 5%-`) |
-| `XF86AudioMute` | Toggle audio sink mute |
-| `XF86AudioMicMute` | Toggle microphone source mute |
+| `XF86AudioMute` | Toggle audio mute|
+| `XF86AudioMicMute` | Toggle microphone mute |
 | `XF86MonBrightnessUp` | Brightness up (`brightnessctl 5%+`) |
 | `XF86MonBrightnessDown` | Brightness down (`brightnessctl 5%-`) |
 
