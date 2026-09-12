@@ -375,6 +375,24 @@ cat << 'EOF' > "$CONFIG_DIR/helium-browser-flags.conf"
 EOF
 echo "  - Created helium-browser-flags.conf successfully."
 
+# --------------------------------------------
+# Configure Helium Cookie Exceptions via Policy
+# --------------------------------------------
+echo
+echo "Configuring Helium cookie exceptions..."
+sudo mkdir -p /etc/chromium/policies/managed
+sudo tee /etc/chromium/policies/managed/cookie_exceptions.json > /dev/null << 'EOF'
+{
+  "CookiesAllowedForUrls": [
+    "[*.]google.com",
+    "[*.]accounts.google.com",
+    "accounts.google.com",
+    "google.com"
+  ]
+}
+EOF
+echo "  - Cookie exceptions policy configured successfully."
+
 echo
 echo "Installation complete!"
 read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
