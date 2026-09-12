@@ -317,6 +317,50 @@ else
     echo "  - Flatpak is not installed, skipping Bazaar installation."
 fi
 
+# --------------------------------------------
+# Helium DRM Fixer Automation
+# --------------------------------------------
+echo
+echo "Starting Helium DRM Fixer setup..."
+
+# Install bun
+sudo pacman -S --needed --noconfirm bun
+
+# Prepare temporary directory
+rm -rf /tmp/helium-drm-fixer
+git clone https://github.com/vikas5914/helium-drm-fixer.git /tmp/helium-drm-fixer
+
+echo "Installing Google Chrome temporarily via $AUR_HELPER..."
+"$AUR_HELPER" -S --needed --noconfirm google-chrome
+
+# Run the DRM fix
+cd /tmp/helium-drm-fixer
+bun install
+# Note: The script might pause here if cli.ts requires (Y/n) confirmation
+bun run cli.ts
+
+echo "Uninstalling Google Chrome..."
+# Safely remove Chrome and its unused dependencies
+sudo pacman -Rns --noconfirm google-chrome
+
+echo "Cleaning up remaining Chrome traces..."
+# Remove user config and cache files
+rm -rf "$HOME/.config/google-chrome"
+rm -rf "$HOME/.cache/google-chrome"
+
+# Dynamically clear the cache for the detected AUR helper
+if [[ "$AUR_HELPER" == "yay" ]]; then
+    rm -rf "$HOME/.cache/yay/google-chrome"
+elif [[ "$AUR_HELPER" == "paru" ]]; then
+    rm -rf "$HOME/.cache/paru/clone/google-chrome"
+fi
+
+# Clean up temporary fixer repository
+rm -rf /tmp/helium-drm-fixer
+
+cd "$REPO_DIR"
+echo "Helium DRM Fixer completed successfully!"
+
 echo
 echo "Installation complete!"
 read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
