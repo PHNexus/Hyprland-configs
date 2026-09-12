@@ -393,6 +393,21 @@ sudo tee /etc/chromium/policies/managed/cookie_exceptions.json > /dev/null << 'E
 EOF
 echo "  - Cookie exceptions policy configured successfully."
 
+# --------------------------------------------
+# Set Fish as Default Shell
+# --------------------------------------------
+echo
+echo "Setting fish as the default shell..."
+if command -v fish &>/dev/null; then
+    if ! grep -q "$(which fish)" /etc/shells; then
+        echo "$(which fish)" | sudo tee -a /etc/shells
+    fi
+    sudo chsh -s "$(which fish)" "$USER"
+    echo "  - Default shell changed to fish."
+else
+    echo "  - Fish is not installed, skipping."
+fi
+
 echo
 echo "Installation complete!"
 read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
