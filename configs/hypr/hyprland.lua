@@ -221,6 +221,7 @@ hl.bind(mainMod .. " + s", function()
 end)
 -- Window control
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+hl.bind(mainMod .. " + F11", hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + M", hl.dsp.exit())
 hl.bind(mainMod .. " + D", hl.dsp.layout("move +col"))
 hl.bind(mainMod .. " + A", hl.dsp.layout("move -col"))
