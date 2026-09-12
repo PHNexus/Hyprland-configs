@@ -24,7 +24,7 @@ I use these configs daily
 | Idle Management | [Hypridle](https://github.com/hyprwm/hypridle) |
 | Screen Lock | [Hyprlock](https://github.com/hyprwm/hyprlock) |
 | Editor | [VS Code](https://code.visualstudio.com/) + [Neovim](https://neovim.io/)|
-| Browser | [Zen](https://zen-browser.app/) |
+| Browser | [Helium](https://helium.computer/) |
 | Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
 
 
