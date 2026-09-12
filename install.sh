@@ -361,6 +361,20 @@ rm -rf /tmp/helium-drm-fixer
 cd "$REPO_DIR"
 echo "Helium DRM Fixer completed successfully!"
 
+# --------------------------------------------
+# Configure Helium Browser Flags
+# --------------------------------------------
+echo
+echo "Configuring Helium browser flags..."
+mkdir -p "$CONFIG_DIR"
+cat << 'EOF' > "$CONFIG_DIR/helium-browser-flags.conf"
+--enable-features=VaapiVideoDecoder,AcceleratedVideoDecodeLinuxGL
+--ignore-gpu-blocklist
+--enable-zero-copy
+--ozone-platform=wayland
+EOF
+echo "  - Created helium-browser-flags.conf successfully."
+
 echo
 echo "Installation complete!"
 read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
