@@ -67,7 +67,7 @@ case "$1" in
                 if [[ $i -eq 0 ]]; then
                     echo "${results[$i]}"
                 else
-                    echo "│           │ ${results[$i]}"
+                    echo " │         │ ${results[$i]}"
                 fi
             done
         fi
