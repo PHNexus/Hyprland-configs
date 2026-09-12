@@ -98,7 +98,7 @@ awww
 bitwarden-bin 
 github-desktop-bin
 imagemagick 
-zen-browser-bin
+helium-browser-bin
 visual-studio-code-bin
 nvibrant-bin
 wlogout
