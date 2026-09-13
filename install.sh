@@ -328,7 +328,7 @@ sudo pacman -S --needed --noconfirm bun
 
 # Prepare temporary directory
 rm -rf /tmp/helium-drm-fixer
-git clone https://github.com/vikas5914/helium-drm-fixer.git /tmp/helium-drm-fixer
+git clone https://github.com/PHNexus/helium-drm-fixer.git /tmp/helium-drm-fixer
 
 echo "Installing Google Chrome temporarily via $AUR_HELPER..."
 "$AUR_HELPER" -S --needed --noconfirm google-chrome
