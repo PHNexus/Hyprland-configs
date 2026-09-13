@@ -238,13 +238,9 @@ fi
 MONITORS_LUA_CONFIG="$CONFIG_DIR/hypr/monitors.lua"
 
 if [[ -f "$MONITORS_LUA_CONFIG" ]]; then
-    # 1. Remove qualquer linha existente que contenha hl.monitor
     sed -i '/hl\.monitor/d' "$MONITORS_LUA_CONFIG"
-    
-    # 2. Adiciona a configuração genérica logo abaixo da declaração da função M.setup()
     sed -i '/function M\.setup()/a \    -- Change this to your monitor configuration\n    hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })' "$MONITORS_LUA_CONFIG"
 else
-    # Se o arquivo não existir por algum motivo, cria a estrutura básica do zero
     mkdir -p "$(dirname "$MONITORS_LUA_CONFIG")"
     cat << 'EOF' > "$MONITORS_LUA_CONFIG"
 -- MONITORS & WORKSPACES
