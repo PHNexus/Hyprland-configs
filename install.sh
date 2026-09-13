@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/env bash
 
 set -euo pipefail
 
@@ -73,9 +73,8 @@ done
 if [[ ${#packages_to_remove[@]} -gt 0 ]]; then
     echo "Removing unwanted packages: ${packages_to_remove[*]}..."
     sudo pacman -Rns --noconfirm "${packages_to_remove[@]}"
-    echo "  - Packages successfully uninstalled."
 else
-    echo "  - None of the specified packages (htop, vim, dolphin) are installed."
+    echo "  - None of the specified packages are installed."
 fi
 
 # --------------------------------------------
@@ -108,16 +107,14 @@ if [[ -f "$REPO_DIR/packages.txt" ]]; then
     done < "$REPO_DIR/packages.txt"
 
     if [[ ${#official_packages[@]} -gt 0 ]]; then
-        echo "Installing official packages via pacman..."
         sudo pacman -S --needed --noconfirm "${official_packages[@]}"
     fi
 
     if [[ ${#aur_packages[@]} -gt 0 ]]; then
-        echo "Installing AUR packages via $AUR_HELPER..."
         "$AUR_HELPER" -S --needed --noconfirm "${aur_packages[@]}"
     fi
 else
-    echo "packages.txt not found in repository root."
+    echo "packages.txt not found."
 fi
 
 # --------------------------------------------
@@ -138,7 +135,7 @@ fi
 # Backup existing configurations
 # --------------------------------------------
 echo
-echo "Checking for existing configurations and wallpapers..."
+echo "Checking for existing configurations..."
 
 configs=(
     btop nvim cava fastfetch fish hypr kitty
@@ -147,11 +144,8 @@ configs=(
 )
 
 existing_configs=()
-
 for config in "${configs[@]}"; do
-    if [[ -e "$CONFIG_DIR/$config" ]]; then
-        existing_configs+=("$config")
-    fi
+    [[ -e "$CONFIG_DIR/$config" ]] && existing_configs+=("$config")
 done
 
 [[ -f "$CONFIG_DIR/starship.toml" ]] && existing_configs+=("starship.toml")
@@ -162,8 +156,7 @@ if [[ ${#existing_configs[@]} -gt 0 ]]; then
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
     BACKUP_DIR="$CONFIG_DIR/backups/backup_$TIMESTAMP"
     mkdir -p "$BACKUP_DIR"
-
-    echo "Creating automatic backup at: $BACKUP_DIR"
+    echo "Creating backup at: $BACKUP_DIR"
 
     for item in "${existing_configs[@]}"; do
         if [[ "$item" == "Pictures/Wallpapers" ]]; then
@@ -176,7 +169,6 @@ if [[ ${#existing_configs[@]} -gt 0 ]]; then
         else
             cp -r "$CONFIG_DIR/$item" "$BACKUP_DIR/"
         fi
-        echo "  - Backed up $item"
     done
 fi
 
@@ -184,30 +176,22 @@ fi
 # Install configurations & Wallpapers
 # --------------------------------------------
 echo
-echo "Installing dotfiles configurations..."
-
+echo "Installing dotfiles..."
 mkdir -p "$CONFIG_DIR"
 
 for config in "${configs[@]}"; do
     if [[ -d "$REPO_DIR/configs/$config" ]]; then
         rm -rf "${CONFIG_DIR:?}/$config"
         cp -r "$REPO_DIR/configs/$config" "$CONFIG_DIR/"
-        echo "  - Installed config: $config"
     fi
 done
 
 if [[ -f "$CONFIG_DIR/fastfetch/storage.sh" ]]; then
     chmod +x "$CONFIG_DIR/fastfetch/storage.sh"
-    echo "  - Granted execution permission to fastfetch storage.sh"
 fi
 
-if [[ -f "$REPO_DIR/configs/starship.toml" ]]; then
-    cp -f "$REPO_DIR/configs/starship.toml" "$CONFIG_DIR/"
-fi
-
-if [[ -f "$REPO_DIR/configs/.gtkrc-2.0" ]]; then
-    cp -f "$REPO_DIR/configs/.gtkrc-2.0" "$HOME/"
-fi
+[[ -f "$REPO_DIR/configs/starship.toml" ]] && cp -f "$REPO_DIR/configs/starship.toml" "$CONFIG_DIR/"
+[[ -f "$REPO_DIR/configs/.gtkrc-2.0" ]] && cp -f "$REPO_DIR/configs/.gtkrc-2.0" "$HOME/"
 
 if [[ -d "$REPO_DIR/Wallpapers" ]]; then
     mkdir -p "$PICTURES_DIR/Wallpapers"
@@ -223,29 +207,33 @@ echo "Applying post-installation adjustments..."
 ESCAPED_HOME=$(printf '%s\n' "$HOME" | sed 's/[&/\]/\\&/g')
 
 HYPRQUICKPAPER_CONFIG="$CONFIG_DIR/quickshell/hyprquickpaper/config.json"
-if [[ -f "$HYPRQUICKPAPER_CONFIG" ]]; then
-    sed -i "s|/home/[^/]*|${ESCAPED_HOME}|g" "$HYPRQUICKPAPER_CONFIG"
-fi
+[[ -f "$HYPRQUICKPAPER_CONFIG" ]] && sed -i "s|/home/[^/]*|${ESCAPED_HOME}|g" "$HYPRQUICKPAPER_CONFIG"
 
 WLOGOUT_STYLE="$CONFIG_DIR/wlogout/style.css"
-if [[ -f "$WLOGOUT_STYLE" ]]; then
-    sed -i "s|/home/[^/]*|${ESCAPED_HOME}|g" "$WLOGOUT_STYLE"
-fi
+[[ -f "$WLOGOUT_STYLE" ]] && sed -i "s|/home/[^/]*|${ESCAPED_HOME}|g" "$WLOGOUT_STYLE"
 
-HYPR_LUA_CONFIG="$CONFIG_DIR/hypr/hyprland.lua"
-if [[ -f "$HYPR_LUA_CONFIG" ]]; then
-    sed -i '/hl\.monitor/d' "$HYPR_LUA_CONFIG"
-    sed -i '/-- Change this to your actual monitor configuration if needed/d' "$HYPR_LUA_CONFIG"
-    sed -i '/-- Change this to your monitor configurations/d' "$HYPR_LUA_CONFIG"
-    sed -i '/-- MONITORS/{n;/^$/d}' "$HYPR_LUA_CONFIG"
-    sed -i '/-- MONITORS/a -- Change this to your monitor configurations\nhl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })' "$HYPR_LUA_CONFIG"
+# Adjusted to target monitors.lua instead of hyprland.lua
+MONITORS_LUA_CONFIG="$CONFIG_DIR/hypr/monitors.lua"
+if [[ -f "$MONITORS_LUA_CONFIG" ]]; then
+    sed -i 's/hl\.monitor({ output = "[^"]*"/hl.monitor({ output = ""/' "$MONITORS_LUA_CONFIG"
+else
+    cat << 'EOF' > "$MONITORS_LUA_CONFIG"
+-- MONITORS & WORKSPACES
+local M = {}
+
+function M.setup()
+    hl.monitor({ output = "", mode = "preferred", position = "0x0", scale = 1 })
+end
+
+return M
+EOF
 fi
 
 # --------------------------------------------
-# Configure Desktop Entries for Terminal Apps (btop & nvim)
+# Configure Desktop Entries for Terminal Apps
 # --------------------------------------------
 echo
-echo "Configuring local desktop entries for btop and nvim..."
+echo "Configuring desktop entries for btop and nvim..."
 
 DESKTOP_DIR="$HOME/.local/share/applications"
 mkdir -p "$DESKTOP_DIR"
@@ -256,17 +244,9 @@ create_desktop_entry() {
     local exec_cmd="$3"
     local local_file="$DESKTOP_DIR/$dest_name"
     
-    if [[ ! -f "$src_file" ]]; then
-        echo "  Warning: Source file not found: $src_file"
-        return 1
-    fi
-    
+    [[ ! -f "$src_file" ]] && return 1
     cp "$src_file" "$local_file"
-    
-    if [[ ! -f "$local_file" ]]; then
-        echo "  Error: Failed to copy $src_file"
-        return 1
-    fi
+    [[ ! -f "$local_file" ]] && return 1
     
     if grep -q "^Exec=" "$local_file"; then
         sed -i "s|^Exec=.*|Exec=$exec_cmd|" "$local_file"
@@ -281,8 +261,6 @@ create_desktop_entry() {
     fi
     
     chmod 644 "$local_file"
-    echo "  Configured: $dest_name"
-    return 0
 }
 
 create_desktop_entry "/usr/share/applications/btop.desktop" "btop.desktop" "kitty -e btop"
@@ -291,18 +269,9 @@ if [[ -f "/usr/share/applications/nvim.desktop" ]]; then
     create_desktop_entry "/usr/share/applications/nvim.desktop" "nvim.desktop" "kitty -e nvim %F"
 elif [[ -f "/usr/share/applications/neovim.desktop" ]]; then
     create_desktop_entry "/usr/share/applications/neovim.desktop" "nvim.desktop" "kitty -e nvim %F"
-else
-    echo "  Warning: nvim.desktop not found, skipping..."
 fi
 
-if command -v update-desktop-database &>/dev/null; then
-    update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
-    echo "  Desktop database updated."
-fi
-
-echo
-echo "Desktop entries created:"
-ls -la "$DESKTOP_DIR" | grep -E "(btop|nvim)" || echo "  Warning: No desktop entries found"
+command -v update-desktop-database &>/dev/null && update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
 
 # --------------------------------------------
 # Install Flatpak Apps (Bazaar)
@@ -312,9 +281,6 @@ echo "Configuring Flathub and installing Bazaar..."
 if command -v flatpak &>/dev/null; then
     flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     flatpak install --user -y flathub io.github.kolunmi.Bazaar
-    echo "  - Bazaar successfully installed."
-else
-    echo "  - Flatpak is not installed, skipping Bazaar installation."
 fi
 
 # --------------------------------------------
@@ -323,49 +289,34 @@ fi
 echo
 echo "Starting Helium DRM Fixer setup..."
 
-# Install bun
 sudo pacman -S --needed --noconfirm bun
 
-# Prepare temporary directory
 rm -rf /tmp/helium-drm-fixer
 git clone https://github.com/PHNexus/helium-drm-fixer.git /tmp/helium-drm-fixer
 
-echo "Installing Google Chrome temporarily via $AUR_HELPER..."
 "$AUR_HELPER" -S --needed --noconfirm google-chrome
 
-# Run the DRM fix
 cd /tmp/helium-drm-fixer
 bun install
-# Note: The script might pause here if cli.ts requires (Y/n) confirmation
 bun run cli.ts
 
-echo "Uninstalling Google Chrome..."
-# Safely remove Chrome and its unused dependencies
 sudo pacman -Rns --noconfirm google-chrome
+rm -rf "$HOME/.config/google-chrome" "$HOME/.cache/google-chrome"
 
-echo "Cleaning up remaining Chrome traces..."
-# Remove user config and cache files
-rm -rf "$HOME/.config/google-chrome"
-rm -rf "$HOME/.cache/google-chrome"
-
-# Dynamically clear the cache for the detected AUR helper
 if [[ "$AUR_HELPER" == "yay" ]]; then
     rm -rf "$HOME/.cache/yay/google-chrome"
 elif [[ "$AUR_HELPER" == "paru" ]]; then
     rm -rf "$HOME/.cache/paru/clone/google-chrome"
 fi
 
-# Clean up temporary fixer repository
 rm -rf /tmp/helium-drm-fixer
-
 cd "$REPO_DIR"
-echo "Helium DRM Fixer completed successfully!"
 
 # --------------------------------------------
-# Configure Helium Browser Flags
+# Configure Helium Browser Flags & Policies
 # --------------------------------------------
 echo
-echo "Configuring Helium browser flags..."
+echo "Configuring Helium browser flags and policies..."
 mkdir -p "$CONFIG_DIR"
 cat << 'EOF' > "$CONFIG_DIR/helium-browser-flags.conf"
 --enable-features=VaapiVideoDecoder,AcceleratedVideoDecodeLinuxGL
@@ -373,13 +324,7 @@ cat << 'EOF' > "$CONFIG_DIR/helium-browser-flags.conf"
 --enable-zero-copy
 --ozone-platform=wayland
 EOF
-echo "  - Created helium-browser-flags.conf successfully."
 
-# --------------------------------------------
-# Configure Helium Cookie Exceptions via Policy
-# --------------------------------------------
-echo
-echo "Configuring Helium cookie exceptions..."
 sudo mkdir -p /etc/chromium/policies/managed
 sudo tee /etc/chromium/policies/managed/cookie_exceptions.json > /dev/null << 'EOF'
 {
@@ -391,7 +336,6 @@ sudo tee /etc/chromium/policies/managed/cookie_exceptions.json > /dev/null << 'E
   ]
 }
 EOF
-echo "  - Cookie exceptions policy configured successfully."
 
 # --------------------------------------------
 # Set Fish as Default Shell
@@ -403,9 +347,6 @@ if command -v fish &>/dev/null; then
         echo "$(which fish)" | sudo tee -a /etc/shells
     fi
     sudo chsh -s "$(which fish)" "$USER"
-    echo "  - Default shell changed to fish."
-else
-    echo "  - Fish is not installed, skipping."
 fi
 
 echo
