@@ -7,17 +7,20 @@ function M.setup()
         name = "float-pavucontrol",
         match = { class = ".*pavucontrol.*" },
         float = true,
+        center = true,
         size = "1000 600",
     })
     hl.window_rule({
         name = "float-nm-connection-editor",
         match = { class = "^(nm-connection-editor)$" },
         float = true,
+        center = true,
     })
     hl.window_rule({
         name = "float-blueman-manager",
         match = { class = "^(blueman-manager)$" },
         float = true,
+        center = true,
     })
     hl.window_rule({
         name = "file-dialogs",
@@ -26,12 +29,14 @@ function M.setup()
             title = "^(Open|Save|Choose|Select).*$"
         },
         float = true,
+        center = true,
         size = "1000 600",
     })
     hl.window_rule({
         name = "AppManager",
         match = { class = "^(com.github.AppManager)$" },
         float = true,
+        center = true,
         size = "700 900",
     })
     hl.window_rule({
