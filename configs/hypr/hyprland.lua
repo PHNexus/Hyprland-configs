@@ -176,13 +176,6 @@ hl.window_rule({
     float = true,
     size = "700 900",
 })
--- for lunar client remove if you want
-hl.window_rule({
-    name = "lunar-fullscreen",
-    match = { class = "^Lunar Client.*$" },
-    fullscreen = true,
-    immediate = true,
-})
 -- for sober remove if you want
 hl.window_rule({
     name = "sober",
