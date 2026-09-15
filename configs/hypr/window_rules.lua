@@ -32,6 +32,26 @@ function M.setup()
         center = true,
         size = "1000 600",
     })
+       hl.window_rule({
+        name = "file-rename",
+        match = {
+            class = "^(thunar)$",
+            title = "^(Rename).*$"
+        },
+        float = true,
+        center = true,
+        size = "600 400",
+    })
+         hl.window_rule({
+        name = "file-rename",
+        match = {
+            class = "^(thunar)$",
+            title = "^(Set Default Application|Open With).*$"
+        },
+        float = true,
+        center = true,
+        size = "400 400",
+    })
     hl.window_rule({
         name = "float-bitwarden-popup",
         match = {
