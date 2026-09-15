@@ -316,7 +316,16 @@ fi
 
 echo
 echo "Desktop entries created:"
-ls -la "$DESKTOP_DIR" | grep -E "(btop|nvim)" || echo "  Warning: No desktop entries found"
+found=0
+for entry in btop.desktop nvim.desktop; do
+    if [[ -f "$DESKTOP_DIR/$entry" ]]; then
+        ls -la "$DESKTOP_DIR/$entry"
+        found=1
+    fi
+done
+if [[ "$found" -eq 0 ]]; then
+    echo "  Warning: No desktop entries found"
+fi
 
 # --------------------------------------------
 # Install Flatpak Apps (Bazaar)
@@ -414,7 +423,7 @@ echo
 echo "Setting fish as the default shell..."
 if command -v fish &>/dev/null; then
     if ! grep -q "$(which fish)" /etc/shells; then
-        echo "$(which fish)" | sudo tee -a /etc/shells
+        which fish | sudo tee -a /etc/shells
     fi
     sudo chsh -s "$(which fish)" "$USER"
     echo "  - Default shell changed to fish."
