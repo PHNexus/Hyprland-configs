@@ -5,7 +5,7 @@ vim.g.maplocalleader = ","
 -- bootstrap lazy and all plugins
 local lazy_path = vim.fn.stdpath "data" .. "/lazy/lazy.nvim"
 
-if not vim.loop.fs_stat(lazy_path) then
+if not vim.uv.fs_stat(lazy_path) then
   local repo = "https://github.com/folke/lazy.nvim.git"
   vim.fn.system { "git", "clone", "--filter=blob:none", repo, "--branch=stable", lazy_path }
 end
