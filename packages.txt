@@ -103,6 +103,7 @@ npm
 lua-language-server
 stylua
 shfmt
+easyeffects
 
 #AUR
 awww
