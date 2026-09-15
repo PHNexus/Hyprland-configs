@@ -36,7 +36,7 @@ function M.setup()
         name = "float-bitwarden-popup",
         match = {
             class = "^(chrome-nngceckbapebfimnlniiiahkandclblb-Default)$",
-            initial_title = "^_crx_nngceckbapebfimnlniiiahkandclblb$"        },
+            initial_title = "^_crx_nngceckbapebfimnlniiiahkandclblb$"},
         float = true,
         center = true,
         size = "450 600",
