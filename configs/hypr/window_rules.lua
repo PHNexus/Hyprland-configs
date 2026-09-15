@@ -56,7 +56,7 @@ function M.setup()
     })
     hl.window_rule({
         name = "Counter Strike 2",
-        match = { class = "^cs2*$" },
+        match = { class = "^cs2.*$" },
         immediate = true,
     })
 end
