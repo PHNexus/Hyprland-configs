@@ -2,14 +2,37 @@
 local M = {}
 
 function M.setup()
+    -- Session / Desktop
+    hl.env("XDG_SESSION_TYPE", "wayland")
+    hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
+    hl.env("XDG_SESSION_DESKTOP", "Hyprland")
+
+    -- Cursor
     hl.env("WLR_NO_HARDWARE_CURSORS", "1")
     hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
     hl.env("XCURSOR_SIZE", "24")
     hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
     hl.env("HYPRCURSOR_SIZE", "24")
+
+    -- Wayland / Toolkit
     hl.env("QT_QPA_PLATFORM", "wayland")
-    hl.env("MOZ_ENABLE_WAYLAND", "1")
+    hl.env("QT_QPA_PLATFORMTHEME", "gtk3")
+    hl.env("QT_QPA_PLATFORMTHEME_QT6", "gtk3")
+    hl.env("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1")
+    hl.env("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
+    hl.env("GDK_BACKEND", "wayland,x11,*")
+    hl.env("OZONE_PLATFORM", "wayland")
+    hl.env("ELECTRON_OZONE_PLATFORM_HINT", "wayland")
+    hl.env("SDL_VIDEODRIVER", "wayland")
+    hl.env("CLUTTER_BACKEND", "wayland")
     hl.env("GTK_USE_PORTAL", "1")
+
+    -- Firefox
+    hl.env("MOZ_ENABLE_WAYLAND", "1")
+    hl.env("MOZ_DBUS_REMOTE", "1")
+
+    -- Java 
+    hl.env("_JAVA_AWT_WM_NONREPARENTING", "1")
 
     -- Flatpak
     hl.env("XDG_DATA_DIRS",
@@ -19,13 +42,8 @@ function M.setup()
     -- NVIDIA
     hl.env("LIBVA_DRIVER_NAME", "nvidia")
     hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
-
-    -- Wayland
-    hl.env("OZONE_PLATFORM", "wayland")
-    hl.env("ELECTRON_OZONE_PLATFORM_HINT", "wayland")
     hl.env("NVD_BACKEND", "direct")
-
-    -- NVIDIA Shader Cache
+    hl.env("VDPAU_DRIVER", "nvidia")
     hl.env("__GL_SHADER_DISK_CACHE", "1")
     hl.env("__GL_SHADER_DISK_CACHE_SIZE", "10737418240")
     hl.env("__GL_SYNC_TO_VBLANK", "0")
