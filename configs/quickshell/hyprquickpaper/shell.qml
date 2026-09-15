@@ -21,7 +21,7 @@ PanelWindow {
 
 	aboveWindows: true
 	exclusionMode: "Ignore"
-	exclusiveZone: 1
+	exclusiveZone: 0
 
 	WlrLayershell.layer: WlrLayer.Overlay
 	WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
@@ -59,7 +59,7 @@ PanelWindow {
 		folder: "file://" + configs.wallpaper_path
 
 		showDirs: false
-		nameFilters: ["*.png", "*.jpg"]
+		nameFilters: ["*.png", "*.jpg", "*.jpeg"]
 		sortField: FolderListModel.Name
 	}
 
@@ -261,25 +261,17 @@ PanelWindow {
 		Timer {
 			id: cacheRetryTimer
 
-			interval: 1000
+			interval: 2000
 			repeat: true
 			running: true
 
 			onTriggered: {
-				let failed = false
-
 				for (let i = 0; i < list.count; i++) {
 					const item = list.itemAtIndex(i)
 
-					if (!item)
-						continue
-
-					if (item.retryImage())
-						failed = true
+					if (item)
+						item.retryImage()
 				}
-
-				if (!failed)
-					stop()
 			}
 		}
 

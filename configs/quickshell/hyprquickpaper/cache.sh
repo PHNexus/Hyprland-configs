@@ -26,7 +26,7 @@ find "$wallpaper_path" -type f \( \
 
   echo "Generating thumbnail for $filename"
 
-  convert "$img" \
+  magick "$img" \
     -thumbnail x500 \
     -strip \
     -quality 85 \
