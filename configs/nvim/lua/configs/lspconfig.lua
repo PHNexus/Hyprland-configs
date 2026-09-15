@@ -23,18 +23,20 @@ vim.lsp.config("kotlin_language_server", {
   },
 })
 
+local java_home = vim.env.JAVA_HOME or "/usr/lib/jvm/default"
+
 vim.lsp.config("jdtls", {
-  cmd = { "/usr/sbin/jdtls" },
+  cmd = { "jdtls" },
   root_dir = vim.fs.root(0, { ".git", "pom.xml", "build.gradle", "build.gradle.kts" }),
   settings = {
     java = {
-      home = "/usr/lib/jvm/java-26-openjdk",
+      home = java_home,
       configuration = {
         updateBuildConfiguration = "automatic",
         runtimes = {
           {
-            name = "JavaSE-26",
-            path = "/usr/lib/jvm/java-26-openjdk",
+            name = "JavaSE",
+            path = java_home,
             default = true,
           },
         },

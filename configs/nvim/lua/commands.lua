@@ -10,19 +10,6 @@ local echo = function(txts)
   vim.api.nvim_echo(txts, false, {})
 end
 
-vim.api.nvim_create_autocmd({ "InsertLeave", "TextChanged" }, {
-  nested = true,
-  callback = function()
-    if vim.g.autosave and #vim.api.nvim_buf_get_name(0) ~= 0 and vim.bo.buflisted and vim.bo.buftype ~= "terminal" then
-      vim.cmd "silent w"
-
-      echo { { "󰄳", "String" }, { " saved at " .. os.date "%I:%M %p" } }
-
-      clear_cmdarea()
-    end
-  end,
-})
-
 create_cmd("AsToggle", function()
   vim.g.autosave = not vim.g.autosave
 
@@ -34,8 +21,8 @@ create_cmd("AsToggle", function()
   clear_cmdarea()
 end, {})
 
-create_cmd('NvThemeReload', function()
-  require('nvchad.utils').reload()
+create_cmd("NvThemeReload", function()
+  require("nvchad.utils").reload()
 end, {})
 
 vim.api.nvim_create_user_command("Timer", function()
