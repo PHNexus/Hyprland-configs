@@ -14,6 +14,12 @@ mkdir -p "$(dirname "$HISTORY_FILE")"
 touch "$HISTORY_FILE"
 
 FILE_LIST=$(find "$WALL_DIR" -type f \( -iname "*.png" -o -iname "*.jpg" \) -printf "%f\n" | sort)
+
+if [ -z "$FILE_LIST" ]; then
+    echo "Nenhum wallpaper encontrado em $WALL_DIR" >&2
+    exit 1
+fi
+
 AVAILABLE_LIST=$(comm -23 <(echo "$FILE_LIST") <(sort "$HISTORY_FILE"))
 
 if [ -z "$AVAILABLE_LIST" ]; then
@@ -34,5 +40,3 @@ echo "Setting wallpaper: $SELECTED_FILE"
 "$SET_SCRIPT" "$WALL"
 
 echo "All done!"
-
-

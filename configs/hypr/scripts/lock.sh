@@ -57,6 +57,7 @@ sleep 0.2
 if [[ -z "$WIDTH" || -z "$HEIGHT" ]]; then
     echo "Could not determine monitor resolution. How it could be..."
     notify-send "Lock screen" "Could not determine monitor resolution. How it could be..."
+    exit 1
 fi
 
 echo "Executing hyprlock with appropriate configuration..."
