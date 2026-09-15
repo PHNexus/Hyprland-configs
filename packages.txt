@@ -96,6 +96,16 @@ brightnessctl
 wlr-randr
 hyprpolkitagent 
 xdg-desktop-portal-gtk
+neovim
+git
+base-devel
+tree-sitter-cli
+jdk-openjdk
+nodejs
+npm
+lua-language-server
+stylua
+shfmt
 
 #AUR
 awww
@@ -110,3 +120,6 @@ nwg-look
 quickshell
 whitesur-icon-theme-git
 bibata-cursor-theme
+kotlin-language-server
+jdtls
+google-java-format
