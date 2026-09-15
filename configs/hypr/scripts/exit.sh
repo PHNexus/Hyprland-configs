@@ -11,8 +11,7 @@ EXIT_APP_LIST_DEFAULT=(
     "waybar" "dockbar" "hypridle" "swaync" "sway-audio-idle-inhibit"
     "awww-daemon" "gammastep" "polkit-mate" "hyprsunset"
 )
-APP_LIST=("${EXIT_APP_LIST_DEFAULT[@]}" "${EXIT_APP_LIST_USER[@]}" )
-APP_PATTERN=$(IFS="|" ; echo "${APP_LIST[*]}")
+APP_LIST=("${EXIT_APP_LIST_DEFAULT[@]}" "${EXIT_APP_LIST_USER[@]}")
 
 # Fallback RAM threshold if not set in main_setting.sh
 RAM_THRESHOLD_MB=${RAM_THRESHOLD_MB:-300}
@@ -37,6 +36,14 @@ get_process_list() {
     }' | sort -rn -k1,1 | cut -d'|' -f2-
 }
 
+# Kill apps by exact process name (comm is truncated to 15 chars on Linux)
+kill_apps() {
+    local sig="$1"
+    for app in "${APP_LIST[@]}"; do
+        pkill -"$sig" -x -u "$USER" "${app:0:15}" 2>/dev/null || true
+    done
+}
+
 # Rofi menu for user confirmation before proceeding with the exit sequence
 MENU_OPTIONS=$(cat <<EOF
 [!] EXIT ANYWAY (Force Close All)
@@ -59,13 +66,13 @@ fi
 
 # Main Exit Sequence
 # Graceful kill
-pkill -SIGTERM -u "$USER" -f "$APP_PATTERN" 2>/dev/null
-killall -q xdg-desktop-portal xdg-desktop-portal-hyprland xdg-desktop-portal-wlr xdg-desktop-portal-gtk xdg-desktop-portal-gnome 2>/dev/null
+kill_apps TERM
+killall -q xdg-desktop-portal xdg-desktop-portal-hyprland xdg-desktop-portal-wlr xdg-desktop-portal-gtk xdg-desktop-portal-gnome 2>/dev/null || true
 
 sleep 1.5
 
 # Force kill stubborn background processes
-pkill -9 -u "$USER" -f "$APP_PATTERN" 2>/dev/null
+kill_apps KILL
 
 # Clean sockets and lock files
 rm -f /tmp/.X11-unix/X* 2>/dev/null
