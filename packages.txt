@@ -92,6 +92,10 @@ nvim
 ksshaskpass
 rsync
 seahorse
+brightnessctl
+wlr-randr
+hyprpolkitagent 
+xdg-desktop-portal-gtk
 
 #AUR
 awww
