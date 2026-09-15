@@ -173,6 +173,9 @@
     color: #ffffff;
 }
 
+/* ============================================================================== */
+/* BUTTONS GRID (toggle buttons like wifi, bluetooth, mute)                       */
+/* ============================================================================== */
 .widget-buttons-grid flowboxchild > button {
     border-top: 3px solid rgba(255, 255, 255, 0.075);
     padding: 4px 25px;
