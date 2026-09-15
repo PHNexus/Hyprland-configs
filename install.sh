@@ -10,6 +10,41 @@ echo "Welcome to Hyprland-configs Installer!"
 echo
 
 # --------------------------------------------
+# WARNING BANNER
+# --------------------------------------------
+RED='\033[1;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo -e "${RED}╔════════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${RED}║                          ⚠  WARNING  ⚠                            ║${NC}"
+echo -e "${RED}╠════════════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${RED}║${NC} ${YELLOW}This script is designed for a FRESH Arch Linux installation.${NC}       ${RED}║${NC}"
+echo -e "${RED}║${NC}                                                                     ${RED}║${NC}"
+echo -e "${RED}║${NC} ${YELLOW}•${NC} It backs up your current configs to ${YELLOW}~/.config/backups/${NC}          ${RED}║${NC}"
+echo -e "${RED}║${NC}   but IMMEDIATELY overwrites them with the dotfiles version.       ${RED}║${NC}"
+echo -e "${RED}║${NC}                                                                     ${RED}║${NC}"
+echo -e "${RED}║${NC} ${YELLOW}•${NC} It fixes DRM (Widevine/VAAPI) for the ${YELLOW}Helium browser${NC}        ${RED}║${NC}"
+echo -e "${RED}║${NC}   and installs a policy to prevent accidental Google account       ${RED}║${NC}"
+echo -e "${RED}║${NC}   disconnections — since Helium is a privacy-focused browser.      ${RED}║${NC}"
+echo -e "${RED}║${NC}                                                                     ${RED}║${NC}"
+echo -e "${RED}║${NC} ${YELLOW}•${NC} It also removes ${YELLOW}htop, vim, and dolphin${NC} if installed,       ${RED}║${NC}"
+echo -e "${RED}║${NC}   and changes your default shell to ${YELLOW}fish${NC}.                        ${RED}║${NC}"
+echo -e "${RED}║${NC}                                                                     ${RED}║${NC}"
+echo -e "${RED}║${NC} ${YELLOW}This will overwrite your current settings (a backup of your${NC}         ${RED}║${NC}"
+echo -e "${RED}║${NC} ${YELLOW}settings will be created, but active ones are immediately${NC}          ${RED}║${NC}"
+echo -e "${RED}║${NC} ${YELLOW}replaced by the dotfiles version).${NC}                                 ${RED}║${NC}"
+echo -e "${RED}╚════════════════════════════════════════════════════════════════════╝${NC}"
+echo
+
+read -rp "Do you want to continue? [y/N]: " confirm
+if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+    echo "Installation cancelled by user."
+    exit 0
+fi
+echo
+
+# --------------------------------------------
 # Check OS & Root Execution
 # --------------------------------------------
 if [[ ! -f /etc/arch-release ]]; then
