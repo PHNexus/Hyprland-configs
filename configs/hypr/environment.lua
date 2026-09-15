@@ -2,19 +2,25 @@
 local M = {}
 
 function M.setup()
-    -- Session / Desktop
+    -- ============================================================
+    -- SESSION / DESKTOP
+    -- ============================================================
     hl.env("XDG_SESSION_TYPE", "wayland")
     hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
     hl.env("XDG_SESSION_DESKTOP", "Hyprland")
 
-    -- Cursor
+    -- ============================================================
+    -- CURSOR
+    -- ============================================================
     hl.env("WLR_NO_HARDWARE_CURSORS", "1")
     hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
     hl.env("XCURSOR_SIZE", "24")
     hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
     hl.env("HYPRCURSOR_SIZE", "24")
 
-    -- Wayland / Toolkit
+    -- ============================================================
+    -- WAYLAND / TOOLKIT
+    -- ============================================================
     hl.env("QT_QPA_PLATFORM", "wayland")
     hl.env("QT_QPA_PLATFORMTHEME", "gtk3")
     hl.env("QT_QPA_PLATFORMTHEME_QT6", "gtk3")
@@ -27,19 +33,27 @@ function M.setup()
     hl.env("CLUTTER_BACKEND", "wayland")
     hl.env("GTK_USE_PORTAL", "1")
 
-    -- Firefox
+    -- ============================================================
+    -- FIREFOX
+    -- ============================================================
     hl.env("MOZ_ENABLE_WAYLAND", "1")
     hl.env("MOZ_DBUS_REMOTE", "1")
 
-    -- Java 
+    -- ============================================================
+    -- JAVA
+    -- ============================================================
     hl.env("_JAVA_AWT_WM_NONREPARENTING", "1")
 
-    -- Flatpak
+    -- ============================================================
+    -- FLATPAK
+    -- ============================================================
     hl.env("XDG_DATA_DIRS",
         os.getenv("HOME") ..
         "/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share")
 
+    -- ============================================================
     -- NVIDIA
+    -- ============================================================
     hl.env("LIBVA_DRIVER_NAME", "nvidia")
     hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
     hl.env("NVD_BACKEND", "direct")
