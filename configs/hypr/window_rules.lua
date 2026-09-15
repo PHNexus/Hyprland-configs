@@ -43,7 +43,7 @@ function M.setup()
         size = "600 400",
     })
          hl.window_rule({
-        name = "file-rename",
+        name = "file-set",
         match = {
             class = "^(thunar)$",
             title = "^(Set Default Application|Open With).*$"
