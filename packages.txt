@@ -117,6 +117,5 @@ nwg-look
 quickshell
 whitesur-icon-theme-git
 bibata-cursor-theme
-kotlin-language-server
 jdtls
 google-java-format
