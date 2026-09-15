@@ -33,6 +33,15 @@ function M.setup()
         size = "1000 600",
     })
     hl.window_rule({
+        name = "float-bitwarden-popup",
+        match = {
+            class = "^(chrome-nngceckbapebfimnlniiiahkandclblb-Default)$",
+            initial_title = "^_crx_nngceckbapebfimnlniiiahkandclblb$"        },
+        float = true,
+        center = true,
+        size = "450 600",
+    })
+    hl.window_rule({
         name = "AppManager",
         match = { class = "^(com.github.AppManager)$" },
         float = true,
