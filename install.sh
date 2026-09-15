@@ -419,6 +419,37 @@ else
 fi
 
 # --------------------------------------------
+# Configure Waybar output (auto-detect to prevent hidden bar)
+# --------------------------------------------
+echo
+echo "Configuring Waybar output..."
+
+WAYBAR_CONFIG="$CONFIG_DIR/waybar/config.json"
+
+if [[ -f "$WAYBAR_CONFIG" ]]; then
+    if [[ -n "${first_monitor:-}" ]]; then
+        # Set Waybar output to the auto-detected primary monitor
+        if grep -q '"output"' "$WAYBAR_CONFIG"; then
+            sed -i "s|\"output\":[[:space:]]*\"[^\"]*\"|\"output\": \"${first_monitor}\"|" "$WAYBAR_CONFIG"
+            echo "  - Set Waybar output to detected monitor: $first_monitor"
+        else
+            echo "  - Waybar config has no 'output' field, using default (all monitors)"
+        fi
+    else
+        # No monitor detected - remove the hardcoded output so bar shows everywhere
+        if grep -q '"output"' "$WAYBAR_CONFIG"; then
+            sed -i '/"output":/d' "$WAYBAR_CONFIG"
+            echo "  - No monitor detected. Removed 'output' line from Waybar config"
+            echo "  - Waybar will show on all monitors"
+        else
+            echo "  - Waybar config has no 'output' field, nothing to change"
+        fi
+    fi
+else
+    echo "  - Waybar config not found, skipping"
+fi
+
+# --------------------------------------------
 # Configure Desktop Entries for Terminal Apps (btop & nvim)
 # --------------------------------------------
 echo
