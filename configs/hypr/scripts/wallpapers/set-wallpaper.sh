@@ -24,7 +24,7 @@ AVAILABLE_LIST=$(comm -23 <(echo "$FILE_LIST") <(sort "$HISTORY_FILE"))
 
 if [ -z "$AVAILABLE_LIST" ]; then
     echo "Todos os wallpapers foram usados. Reiniciando o ciclo..."
-    > "$HISTORY_FILE"
+    : > "$HISTORY_FILE"
     AVAILABLE_LIST="$FILE_LIST"
 fi
 

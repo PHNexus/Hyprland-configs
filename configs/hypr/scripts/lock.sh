@@ -24,16 +24,16 @@ fi
 get_resolution() {
     # Hyprland
     if [[ "$XDG_CURRENT_DESKTOP" = "Hyprland" ]]; then
-        read -r WIDTH HEIGHT <<< $(hyprctl monitors -j | jq -r '.[0] | "\(.width) \(.height)"')
+        read -r WIDTH HEIGHT < <(hyprctl monitors -j | jq -r '.[0] | "\(.width) \(.height)"')
     # Niri
     elif [[ "$XDG_CURRENT_DESKTOP" = "niri" ]]; then
-        read -r WIDTH HEIGHT <<< $(niri msg --json outputs | jq -r 'to_entries | .[0].value | .modes[.current_mode] | "\(.width) \(.height)"')
+        read -r WIDTH HEIGHT < <(niri msg --json outputs | jq -r 'to_entries | .[0].value | .modes[.current_mode] | "\(.width) \(.height)"')
     # MangoWM
     elif [[ "$XDG_CURRENT_DESKTOP" = "mango" ]]; then
-        read -r WIDTH HEIGHT <<< $(mmsg get all-monitors | jq -r '.monitors[] | select(.active == true) // .[0] | "\(.width) \(.height)"')
+        read -r WIDTH HEIGHT < <(mmsg get all-monitors | jq -r '.monitors[] | select(.active == true) // .[0] | "\(.width) \(.height)"')
     # Labwc
     elif [[ "$XDG_CURRENT_DESKTOP" = "labwc" ]]; then
-        read -r WIDTH HEIGHT <<< $(wlr-randr | grep -i "current" | head -n 1 | sed -E 's/.* ([0-9]+)x([0-9]+) px.*/\1 \2/')
+        read -r WIDTH HEIGHT < <(wlr-randr | grep -i "current" | head -n 1 | sed -E 's/.* ([0-9]+)x([0-9]+) px.*/\1 \2/')
     # Fallback to sysfs detection
     else
         for mode_file in /sys/class/drm/card*-*/modes; do
