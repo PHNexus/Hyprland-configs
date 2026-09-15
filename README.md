@@ -42,10 +42,10 @@ chmod +x install.sh
 
 ## [Dependencies](packages.txt)
 
-
 # Keybinds
 
 Modifier key (`$mainMod`) is **SUPER** (Windows key).
+
 ## Apps & Scripts
 
 | Keybind | Action |
@@ -54,11 +54,12 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + Space` | App launcher (`wofi`) |
 | `SUPER + E` | File manager (`thunar`) |
 | `SUPER + C` | Open VS Code (`code`) |
-| `SUPER + B` | Open browser (`zen-browser`) |
+| `SUPER + B` | Open browser (`helium-browser`) |
 | `SUPER + V` | Clipboard history (`cliphist`) |
 | `SUPER + L` | Lock screen (`hyprlock`) |
+| `SUPER + N` | Toggle SwayNC control center |
 | `SUPER + SHIFT + R` | Set random wallpaper |
-| `SUPER + W` | Wallpaper picker |
+| `SUPER + W` | Wallpaper picker (`quickshell`) |
 
 ## Window Management
 
@@ -66,15 +67,15 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 |---|---|
 | `SUPER + Q` | Close active window |
 | `SUPER + SHIFT + W` | Toggle Waybar |
-| `SUPER + S` | Toggle Floating |
+| `SUPER + S` | Toggle Floating (center + resize 1000x600) |
 | `SUPER + F11` | Toggle Fullscreen |
 | `SUPER + M` | Exit Hyprland |
 | `SUPER + D` | Move column (`move +col`) |
 | `SUPER + A` | Move column (`move -col`) |
-| `SUPER + R` | Toggle window to secondary monitor  |
+| `SUPER + R` | Move window to secondary monitor (workspace 6) |
 | `SUPER + equal` | Resize column (`colresize +conf`) |
 | `SUPER + minus` | Resize column (`colresize -conf`) |
-| `SUPER + f` | Resize column (`colresize +conf`) |
+| `SUPER + F` | Toggle Maximize window |
 | `SUPER + l / j / i / k` | Move focus (left, right, up, down) |
 | `SUPER + left / right` | Consume or expel window (`consume_or_expel`) |
 | `SUPER + SHIFT + left / right` | Move window to adjacent direction |
@@ -89,7 +90,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + SHIFT + [1-4]` | Move window to workspace 1–4 |
 | `SUPER + Tab` | Switch to previous workspace |
 | `ALT + Tab` | Cycle to next window |
-| `ALT + SHIFT + Tab` | Cycle to previous workspace |
+| `ALT + SHIFT + Tab` | Cycle to previous window |
 | `SUPER + ALT + left / right` | Cycle workspaces (`m-1` / `m+1`) |
 | `SUPER + mouse_down` | Scroll to next workspace (`e+1`) |
 | `SUPER + mouse_up` | Scroll to previous workspace (`e-1`) |
@@ -98,12 +99,12 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 
 | Keybind | Action |
 |---|---|
-| `XF86AudioRaiseVolume` | Volume up (`wpctl 5%+`) |
-| `XF86AudioLowerVolume` | Volume down (`wpctl 5%-`) |
-| `XF86AudioMute` | Toggle audio mute|
+| `XF86AudioRaiseVolume` | Volume up (`wpctl 2%+`, limit 100%) |
+| `XF86AudioLowerVolume` | Volume down (`wpctl 2%-`) |
+| `XF86AudioMute` | Toggle audio mute |
 | `XF86AudioMicMute` | Toggle microphone mute |
-| `XF86MonBrightnessUp` | Brightness up (`brightnessctl 5%+`) |
-| `XF86MonBrightnessDown` | Brightness down (`brightnessctl 5%-`) |
+| `XF86MonBrightnessUp` | Brightness up (`brightnessctl 2%+`) |
+| `XF86MonBrightnessDown` | Brightness down (`brightnessctl 2%-`) |
 
 ## Screenshots
 
