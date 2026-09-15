@@ -7,7 +7,6 @@ function M.setup()
             kb_layout = "us",
             kb_options = "grp:win_space_toggle",
             accel_profile = "flat",
-            scroll_method = 2,
             sensitivity = 0,
             natural_scroll = false,
             scroll_factor = 1,
