@@ -450,6 +450,46 @@ else
 fi
 
 # --------------------------------------------
+# Configure EasyEffects systemd user service
+# --------------------------------------------
+echo
+echo "Configuring EasyEffects user service..."
+
+SYSTEMD_USER_DIR="$CONFIG_DIR/systemd/user"
+EASYEFFECTS_SERVICE="$SYSTEMD_USER_DIR/easyeffects.service"
+
+mkdir -p "$SYSTEMD_USER_DIR"
+
+cat > "$EASYEFFECTS_SERVICE" << EOF
+[Unit]
+Description=EasyEffects Service
+Wants=pipewire-pulse.service
+After=pipewire-pulse.service
+BindsTo=pipewire-pulse.service
+PartOf=pipewire-pulse.service
+
+[Service]
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=${HOME}/.Xauthority
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus
+ExecStart=/usr/bin/easyeffects --gapplication-service
+Restart=always
+RestartSec=3
+StartLimitInterval=0
+
+[Install]
+WantedBy=default.target
+EOF
+
+echo "  - Created EasyEffects service file"
+
+if command -v systemctl &>/dev/null; then
+    systemctl --user daemon-reload 2>/dev/null || true
+    systemctl --user enable easyeffects.service 2>/dev/null || true
+    echo "  - Enabled EasyEffects service (will start on next login)"
+fi
+
+# --------------------------------------------
 # Configure Desktop Entries for Terminal Apps (btop & nvim)
 # --------------------------------------------
 echo

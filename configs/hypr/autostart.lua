@@ -43,9 +43,6 @@ function M.setup()
         hl.exec_cmd("awww-daemon")
     end)
 
-      hl.exec_cmd("systemctl --user enable --now easyeffects")
-
-
     -- ============================================================
     -- HYPRLAND SHUTDOWN
     -- ============================================================
