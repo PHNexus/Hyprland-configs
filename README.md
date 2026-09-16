@@ -27,7 +27,6 @@ I use these configs daily
 | Browser | [Helium](https://helium.computer/) |
 | Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
 
-
 ## Installation
 
 Clone the repository and run the installation script to automatically set up the dependencies and configuration files:                                          
