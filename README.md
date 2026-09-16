@@ -34,7 +34,8 @@ Clone the repository and run the installation script to automatically set up the
 #### You'll have to edit some things like monitors config
 
 ```bash
-git clone https://github.com/PHNexus/Hyprland-configs.git
+# Fast clone (recommended for regular users - no history)
+git clone --depth=1 https://github.com/PHNexus/Hyprland-configs.git
 cd Hyprland-configs
 chmod +x install.sh
 ./install.sh
