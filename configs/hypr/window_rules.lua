@@ -63,11 +63,15 @@ function M.setup()
     -- ============================================================
     -- Small floats (< 200x300) are left alone at their original position.
     -- Everything else gets centered.
-    hl.on("window.open", function(window)
+      hl.on("window.open", function(window)
         if not window.floating then return end
         if not window.size then return end
 
-        local w, h = window.size[1], window.size[2]
+        local w = window.size[1] or window.size.width
+        local h = window.size[2] or window.size.height
+
+        if not w or not h then return end
+
         local min_w, min_h = 200, 300
 
         if w < min_w or h < min_h then return end
