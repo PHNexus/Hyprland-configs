@@ -1,0 +1,316 @@
+#!/usr/bin/env bash
+# ============================================================
+# Local AI Installer — Arch Linux + NVIDIA
+# ============================================================
+# Installs llama.cpp with CUDA, downloads Qwen models, sets up
+# a Router Mode server with systemd.
+#
+# Usage: ./install-ai-local.sh [--no-35b] [--skip-models]
+# ============================================================
+
+set -euo pipefail
+
+# ─── Config ──────────────────────────────────────────────────
+MODELS_DIR="$HOME/models"
+BIN_DIR="$HOME/bin"
+LLAMA_DIR="$HOME/llama.cpp"
+SERVICE_DIR="$HOME/.config/systemd/user"
+SERVICE_NAME="llama-server.service"
+PORT=8080
+
+# Models (repo ids only — no ":QUANT" suffix, hf CLI doesn't accept it)
+MODEL_7B_NORMAL="Qwen/Qwen2.5-7B-Instruct-GGUF"
+MODEL_7B_ABLITERATED="richardyoung/Qwen2.5-7B-Instruct-abliterated-GGUF"
+MODEL_35B="lmstudio-community/Qwen3.6-35B-A3B-GGUF"
+
+# Colors
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+NC='\033[0m'
+
+# ─── Helpers ─────────────────────────────────────────────────
+say()  { printf "${BLUE}==>${NC} %s\n" "$*"; }
+ok()   { printf "${GREEN}✓${NC} %s\n" "$*"; }
+warn() { printf "${YELLOW}!${NC} %s\n" "$*"; }
+die()  { printf "${RED}✗${NC} %s\n" "$*" >&2; exit 1; }
+
+# ─── Parse args ──────────────────────────────────────────────
+WITH_35B=1
+SKIP_MODELS=0
+for arg in "$@"; do
+    case "$arg" in
+        --no-35b)      WITH_35B=0 ;;
+        --skip-models) SKIP_MODELS=1 ;;
+        -h|--help)
+            cat <<EOF
+Local AI Installer — Arch Linux + NVIDIA
+
+  ./install-ai-local.sh [options]
+
+  --no-35b        skip the 35B model (saves ~22 GB)
+  --skip-models   don't download any model — just check what exists
+  -h, --help      this message
+EOF
+            exit 0
+            ;;
+        *) die "unknown option: $arg" ;;
+    esac
+done
+
+# ─── Preflight ───────────────────────────────────────────────
+say "Checking the system..."
+
+[[ -f /etc/arch-release ]] || die "This script is for Arch Linux only"
+[[ $EUID -ne 0 ]] || die "Do not run as root"
+
+# NVIDIA — check via nvidia-smi first, fall back to lspci
+if command -v nvidia-smi >/dev/null 2>&1; then
+    GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
+    if [[ -n "$GPU_NAME" ]]; then
+        ok "NVIDIA GPU detected: $GPU_NAME"
+    else
+        die "nvidia-smi found no GPU"
+    fi
+elif command -v lspci >/dev/null 2>&1; then
+    if lspci | grep -qiE "nvidia|geforce|quadro|tesla"; then
+        ok "NVIDIA GPU detected (via lspci)"
+    else
+        die "No NVIDIA GPU detected"
+    fi
+else
+    die "Cannot detect GPU — install pciutils or nvidia-utils"
+fi
+
+# sudo
+if ! sudo -v; then
+    die "sudo is required"
+fi
+
+# ─── Step 1: Dependencies ────────────────────────────────────
+say "Step 1/6 — Installing dependencies..."
+
+PKGS=(
+    base-devel cmake git cuda python-pip
+    python-huggingface-hub curl jq pciutils
+)
+
+sudo pacman -S --needed --noconfirm "${PKGS[@]}"
+ok "Packages installed"
+
+# ─── Step 2: CUDA PATH ───────────────────────────────────────
+say "Step 2/6 — Setting up CUDA PATH..."
+
+FISH_CONFIG="$HOME/.config/fish/config.fish"
+mkdir -p "$(dirname "$FISH_CONFIG")"
+touch "$FISH_CONFIG"
+
+if ! grep -q "opt/cuda/bin" "$FISH_CONFIG"; then
+    cat >> "$FISH_CONFIG" <<'EOF'
+
+# CUDA
+fish_add_path /opt/cuda/bin
+set -gx CUDACXX /opt/cuda/bin/nvcc
+EOF
+    ok "CUDA PATH added to config.fish"
+else
+    ok "CUDA PATH already configured"
+fi
+
+# Apply to the current session
+export PATH="/opt/cuda/bin:$PATH"
+export CUDACXX="/opt/cuda/bin/nvcc"
+
+# ─── Step 3: llama.cpp ───────────────────────────────────────
+say "Step 3/6 — Building llama.cpp..."
+
+if [[ -d "$LLAMA_DIR" ]]; then
+    warn "$LLAMA_DIR already exists, updating..."
+    cd "$LLAMA_DIR"
+    git pull --quiet || warn "git pull failed, keeping current version"
+else
+    git clone https://github.com/ggerganov/llama.cpp "$LLAMA_DIR"
+    cd "$LLAMA_DIR"
+fi
+
+if [[ ! -f "$LLAMA_DIR/build/bin/llama-server" ]]; then
+    say "Building with CUDA (this takes 5-15 min)..."
+    cmake -B build -DGGML_CUDA=ON -DGGML_NATIVE=ON -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --config Release -j"$(nproc)"
+    ok "llama.cpp built"
+else
+    ok "llama.cpp already built"
+fi
+
+# ─── Step 4: sysctl ──────────────────────────────────────────
+say "Step 4/6 — Tuning vm.max_map_count..."
+
+SYSCTL_CONF="/etc/sysctl.d/99-llama.conf"
+if [[ ! -f "$SYSCTL_CONF" ]] || ! grep -q "vm.max_map_count" "$SYSCTL_CONF" 2>/dev/null; then
+    echo 'vm.max_map_count=262144' | sudo tee "$SYSCTL_CONF" > /dev/null
+    sudo sysctl --system > /dev/null
+    ok "vm.max_map_count = 262144"
+else
+    ok "vm.max_map_count already configured"
+fi
+
+# ─── Step 5: Models ──────────────────────────────────────────
+say "Step 5/6 — Checking models..."
+mkdir -p "$MODELS_DIR"
+
+# Helper: file exists (any match by glob)
+have_file() {
+    local pattern="$1"
+    compgen -G "$MODELS_DIR/$pattern" >/dev/null 2>&1
+}
+
+if [[ $SKIP_MODELS -eq 1 ]]; then
+    warn "Skipping model downloads (--skip-models)"
+fi
+
+# ── 7B normal ────────────────────────────────────────────────
+if have_file "qwen2.5-7b-instruct-q4_k_m.gguf"; then
+    ok "Qwen2.5-7B normal already present"
+elif [[ $SKIP_MODELS -eq 0 ]]; then
+    say "Downloading Qwen2.5-7B normal (~4.4 GB)..."
+    hf download "$MODEL_7B_NORMAL" \
+        --include "*q4_k_m*.gguf" \
+        --local-dir "$MODELS_DIR" \
+        --quiet
+
+    if have_file "qwen2.5-7b-instruct-q4_k_m-*-of-*.gguf"; then
+        say "Merging split parts..."
+        FIRST_PART=$(compgen -G "$MODELS_DIR/qwen2.5-7b-instruct-q4_k_m-00001-of-*.gguf" | head -1)
+        "$LLAMA_DIR/build/bin/llama-gguf-split" --merge \
+            "$FIRST_PART" \
+            "$MODELS_DIR/qwen2.5-7b-instruct-q4_k_m.gguf"
+        rm -f "$MODELS_DIR"/qwen2.5-7b-instruct-q4_k_m-*-of-*.gguf
+        ok "Merge complete"
+    fi
+    ok "Qwen2.5-7B normal ready"
+else
+    warn "Qwen2.5-7B normal not found and --skip-models is on"
+fi
+
+# ── 7B abliterated ───────────────────────────────────────────
+if have_file "Qwen2.5-7B-Instruct-abliterated-Q4_K_M.gguf"; then
+    ok "Qwen2.5-7B abliterated already present"
+elif [[ $SKIP_MODELS -eq 0 ]]; then
+    say "Downloading Qwen2.5-7B abliterated (~4.4 GB)..."
+    hf download "$MODEL_7B_ABLITERATED" \
+        --include "*Q4_K_M*" \
+        --local-dir "$MODELS_DIR" \
+        --quiet
+    ok "Qwen2.5-7B abliterated ready"
+else
+    warn "Qwen2.5-7B abliterated not found and --skip-models is on"
+fi
+
+# ── 35B (optional) ───────────────────────────────────────────
+if [[ $WITH_35B -eq 1 ]]; then
+    if have_file "Qwen3.6-35B-A3B*.gguf"; then
+        ok "Qwen3.6-35B already present"
+    elif [[ $SKIP_MODELS -eq 0 ]]; then
+        say "Downloading Qwen3.6-35B (~22 GB, takes a while)..."
+        hf download "$MODEL_35B" \
+            --include "*Q4_K_M*.gguf" \
+            --local-dir "$MODELS_DIR" \
+            --quiet
+        # Rename if it landed with a "-00001-of-00001" suffix
+        if [[ -f "$MODELS_DIR/Qwen3.6-35B-A3B-Q4_K_M-00001-of-00001.gguf" ]]; then
+            mv "$MODELS_DIR/Qwen3.6-35B-A3B-Q4_K_M-00001-of-00001.gguf" \
+               "$MODELS_DIR/Qwen3.6-35B-A3B-Q4_K_M.gguf"
+        fi
+        ok "Qwen3.6-35B ready"
+    else
+        warn "Qwen3.6-35B not found and --skip-models is on"
+    fi
+fi
+
+# ─── Step 6: Server script + systemd ─────────────────────────
+say "Step 6/6 — Setting up the server..."
+
+mkdir -p "$BIN_DIR"
+
+cat > "$BIN_DIR/ai-server" <<EOF
+#!/bin/bash
+cd $LLAMA_DIR
+exec ./build/bin/llama-server \\
+  --models-dir $MODELS_DIR \\
+  --host 127.0.0.1 \\
+  --port $PORT \\
+  -ngl 99 \\
+  -c 8192 \\
+  --flash-attn on \\
+  --cache-type-k q8_0 \\
+  --cache-type-v q8_0
+EOF
+chmod +x "$BIN_DIR/ai-server"
+ok "ai-server created at $BIN_DIR/ai-server"
+
+# Systemd service
+mkdir -p "$SERVICE_DIR"
+cat > "$SERVICE_DIR/$SERVICE_NAME" <<EOF
+[Unit]
+Description=llama.cpp server (Local AI)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=$BIN_DIR/ai-server
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable --now "$SERVICE_NAME" || true
+
+sleep 3
+if systemctl --user is-active --quiet "$SERVICE_NAME"; then
+    ok "Service running"
+else
+    warn "Service not up yet — check with: systemctl --user status $SERVICE_NAME"
+fi
+
+# fish abbr
+if command -v fish >/dev/null; then
+    if ! grep -q "abbr --add ia" "$FISH_CONFIG" 2>/dev/null; then
+        cat >> "$FISH_CONFIG" <<'EOF'
+
+# Local AI
+abbr --add ia 'helium-browser http://localhost:8080'
+EOF
+        ok "fish abbr 'ia' added"
+    fi
+fi
+
+# ─── Done ────────────────────────────────────────────────────
+echo
+echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}  Installation complete!${NC}"
+echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
+echo
+echo -e "  ${BLUE}Server:${NC}      systemctl --user status $SERVICE_NAME"
+echo -e "  ${BLUE}Interface:${NC}   http://localhost:$PORT"
+echo -e "  ${BLUE}Models:${NC}      $MODELS_DIR"
+echo -e "  ${BLUE}Script:${NC}      $BIN_DIR/ai-server"
+echo
+echo -e "  ${YELLOW}Useful commands:${NC}"
+echo
+echo "    systemctl --user restart $SERVICE_NAME   # restart"
+echo "    systemctl --user stop $SERVICE_NAME      # stop"
+echo "    journalctl --user -u $SERVICE_NAME -f    # follow logs"
+echo "    pkill -f llama-server                    # kill everything"
+echo
+echo -e "  ${YELLOW}Models in $MODELS_DIR:${NC}"
+for f in "$MODELS_DIR"/*.gguf; do
+    [[ -f "$f" ]] && echo "    • $(basename "$f")"
+done
+echo
+echo -e "  ${YELLOW}To open:${NC} open Helium at http://localhost:$PORT"
+echo -e "  or type ${GREEN}ia${NC} in fish (opens in Helium)"
+echo

@@ -35,3 +35,5 @@ alias xdg-open-appstream "gio open"
 # ============================================================
 abbr --add ai ~/bin/ai
 abbr --add af ~/bin/ai-fast
+# Local AI
+abbr --add ia 'helium-browser http://localhost:8080'
