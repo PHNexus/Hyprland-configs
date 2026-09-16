@@ -33,7 +33,8 @@ function M.setup()
         name = "float-bitwarden-popup",
         match = {
             class = "^(chrome-nngceckbapebfimnlniiiahkandclblb-Default)$",
-            initial_title = "^_crx_nngceckbapebfimnlniiiahkandclblb$"},
+            initial_title = "^_crx_nngceckbapebfimnlniiiahkandclblb$"
+        },
         float = true,
         center = true,
         size = "450 600",
@@ -57,27 +58,11 @@ function M.setup()
         match = { title = "Picture-in-Picture" },
         float = true,
     })
-
-    -- ============================================================
-    -- DYNAMIC FLOAT CENTERING (only for large windows)
-    -- ============================================================
-    -- Small floats (< 200x300) are left alone at their original position.
-    -- Everything else gets centered.
-      hl.on("window.open", function(window)
-        if not window.floating then return end
-        if not window.size then return end
-
-        local w = window.size[1] or window.size.width
-        local h = window.size[2] or window.size.height
-
-        if not w or not h then return end
-
-        local min_w, min_h = 200, 300
-
-        if w < min_w or h < min_h then return end
-
-        hl.dispatch(hl.dsp.window.center())
-    end)
+    hl.window_rule({
+        name = "center-all-floats",
+        match = { float = true },
+        center = true,
+    })
 
     -- ============================================================
     -- FILE DIALOGS (thunar, xdg-portal)
