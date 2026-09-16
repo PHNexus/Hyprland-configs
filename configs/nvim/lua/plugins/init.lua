@@ -92,7 +92,7 @@ return {
   },
 
   { "folke/trouble.nvim", cmd = "Trouble", opts = {} },
-  { "elkowar/yuck.vim", ft = "yuck", dependencies = { { "gpanders/nvim-parinfer", enabled = false } } },
+  { "elkowar/yuck.vim",   ft = "yuck",     dependencies = { { "gpanders/nvim-parinfer", enabled = false } } },
 
   {
     "nvim-telescope/telescope.nvim",
@@ -120,7 +120,7 @@ return {
     },
   },
 
-  { "jbyuki/venn.nvim", cmd = "VBox" },
+  { "jbyuki/venn.nvim",              cmd = "VBox" },
 
   {
     "OXY2DEV/markview.nvim",
@@ -198,10 +198,17 @@ return {
     config = function(_, opts)
       require("nvim-tree").setup(opts)
 
+      -- Auto-open NvimTree when a file is loaded, but keep focus on the file
       vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
         callback = function()
           if vim.bo.filetype ~= "NvimTree" and vim.fn.expand("%:t") ~= "" then
+            local file_buf = vim.api.nvim_get_current_buf()
             vim.cmd("NvimTreeOpen")
+            vim.defer_fn(function()
+              if vim.api.nvim_buf_is_valid(file_buf) then
+                vim.api.nvim_set_current_buf(file_buf)
+              end
+            end, 50)
           end
         end,
       })
