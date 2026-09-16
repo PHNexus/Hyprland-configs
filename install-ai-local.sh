@@ -241,7 +241,7 @@ exec ./build/bin/llama-server \\
   --host 127.0.0.1 \\
   --port $PORT \\
   -ngl 99 \\
-  -c 8192 \\
+  -c 26192 \\
   --flash-attn on \\
   --cache-type-k q8_0 \\
   --cache-type-v q8_0
