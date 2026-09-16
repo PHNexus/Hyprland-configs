@@ -8,7 +8,7 @@ function M.setup()
     hl.window_rule({ name = "opacity_kitty", match = { class = "^(kitty)$" }, opacity = "0.85 0.85" })
 
     -- ============================================================
-    -- FLOATING APPS
+    -- SPECIFIC FLOATS (with fixed size and center)
     -- ============================================================
     hl.window_rule({
         name = "float-pavucontrol",
@@ -45,8 +45,6 @@ function M.setup()
         center = true,
         size = "700 900",
     })
-
-    -- Floating centered: mpv, imv, calculator
     hl.window_rule({
         name = "floating-center",
         match = { class = "imv|mpv|org.gnome.Calculator" },
@@ -54,13 +52,28 @@ function M.setup()
         center = true,
         size = "1280 720",
     })
-
-    -- Floating Picture-in-Picture (YouTube PiP, etc)
     hl.window_rule({
         name = "floating-pip",
         match = { title = "Picture-in-Picture" },
         float = true,
     })
+
+    -- ============================================================
+    -- DYNAMIC FLOAT CENTERING (only for large windows)
+    -- ============================================================
+    -- Small floats (< 200x300) are left alone at their original position.
+    -- Everything else gets centered.
+    hl.on("window.open", function(window)
+        if not window.floating then return end
+        if not window.size then return end
+
+        local w, h = window.size[1], window.size[2]
+        local min_w, min_h = 200, 300
+
+        if w < min_w or h < min_h then return end
+
+        hl.dispatch(hl.dsp.window.center())
+    end)
 
     -- ============================================================
     -- FILE DIALOGS (thunar, xdg-portal)
@@ -114,14 +127,11 @@ function M.setup()
     -- ============================================================
     -- GENERAL BEHAVIOR
     -- ============================================================
-    -- Prevent apps from triggering "maximize" on their own
     hl.window_rule({
         name = "suppress-maximize-events",
         match = { class = ".*" },
         suppress_event = "maximize",
     })
-
-    -- Fix drag-and-drop for Xwayland apps (VSCode, games, etc)
     hl.window_rule({
         name = "fix-xwayland-drags",
         match = {
