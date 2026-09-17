@@ -20,9 +20,8 @@ SERVICE_NAME="llama-server.service"
 PORT=8080
 OPENCODE_CONFIG="$HOME/.config/opencode/opencode.json"
 
-# Models (repo ids only — no ":QUANT" suffix, hf CLI doesn't accept it)
-MODEL_7B_NORMAL="Qwen/Qwen2.5-7B-Instruct-GGUF"
-MODEL_7B_ABLITERATED="richardyoung/Qwen2.5-7B-Instruct-abliterated-GGUF"
+# Models — repo ids only (hf CLI doesn't accept ":QUANT")
+MODEL_9B="Abiray/Qwen3.5-9B-abliterated-GGUF"
 MODEL_35B="lmstudio-community/Qwen3.6-35B-A3B-GGUF"
 
 # Colors
@@ -70,13 +69,11 @@ say "Checking the system..."
 [[ -f /etc/arch-release ]] || die "This script is for Arch Linux only"
 [[ $EUID -ne 0 ]] || die "Do not run as root"
 
-# AUR helper (needed for opencode-bin)
 AUR=""
 for helper in paru yay; do
     command -v "$helper" >/dev/null 2>&1 && { AUR="$helper"; break; }
 done
 
-# NVIDIA — check via nvidia-smi first, fall back to lspci
 if command -v nvidia-smi >/dev/null 2>&1; then
     GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
     if [[ -n "$GPU_NAME" ]]; then
@@ -94,7 +91,6 @@ else
     die "Cannot detect GPU — install pciutils or nvidia-utils"
 fi
 
-# sudo
 if ! sudo -v; then
     die "sudo is required"
 fi
@@ -129,7 +125,6 @@ else
     ok "CUDA PATH already configured"
 fi
 
-# Apply to the current session
 export PATH="/opt/cuda/bin:$PATH"
 export CUDACXX="/opt/cuda/bin/nvcc"
 
@@ -170,7 +165,6 @@ fi
 say "Step 5/7 — Checking models..."
 mkdir -p "$MODELS_DIR"
 
-# Helper: file exists (any match by glob)
 have_file() {
     local pattern="$1"
     compgen -G "$MODELS_DIR/$pattern" >/dev/null 2>&1
@@ -180,42 +174,18 @@ if [[ $SKIP_MODELS -eq 1 ]]; then
     warn "Skipping model downloads (--skip-models)"
 fi
 
-# ── 7B normal ────────────────────────────────────────────────
-if have_file "qwen2.5-7b-instruct-q4_k_m.gguf"; then
-    ok "Qwen2.5-7B normal already present"
+# ── 9B abliterated (Q3_K_M — cabe na 1660 Ti) ────────────────
+if have_file "Qwen3.5-9B-abliterated-Q3_K_M.gguf"; then
+    ok "Qwen3.5-9B abliterated already present"
 elif [[ $SKIP_MODELS -eq 0 ]]; then
-    say "Downloading Qwen2.5-7B normal (~4.4 GB)..."
-    hf download "$MODEL_7B_NORMAL" \
-        --include "*q4_k_m*.gguf" \
+    say "Downloading Qwen3.5-9B abliterated Q3_K_M (~4.6 GB)..."
+    hf download "$MODEL_9B" \
+        --include "*Q3_K_M*.gguf" \
         --local-dir "$MODELS_DIR" \
         --quiet
-
-    if have_file "qwen2.5-7b-instruct-q4_k_m-*-of-*.gguf"; then
-        say "Merging split parts..."
-        FIRST_PART=$(compgen -G "$MODELS_DIR/qwen2.5-7b-instruct-q4_k_m-00001-of-*.gguf" | head -1)
-        "$LLAMA_DIR/build/bin/llama-gguf-split" --merge \
-            "$FIRST_PART" \
-            "$MODELS_DIR/qwen2.5-7b-instruct-q4_k_m.gguf"
-        rm -f "$MODELS_DIR"/qwen2.5-7b-instruct-q4_k_m-*-of-*.gguf
-        ok "Merge complete"
-    fi
-    ok "Qwen2.5-7B normal ready"
+    ok "Qwen3.5-9B abliterated ready"
 else
-    warn "Qwen2.5-7B normal not found and --skip-models is on"
-fi
-
-# ── 7B abliterated ───────────────────────────────────────────
-if have_file "Qwen2.5-7B-Instruct-abliterated-Q4_K_M.gguf"; then
-    ok "Qwen2.5-7B abliterated already present"
-elif [[ $SKIP_MODELS -eq 0 ]]; then
-    say "Downloading Qwen2.5-7B abliterated (~4.4 GB)..."
-    hf download "$MODEL_7B_ABLITERATED" \
-        --include "*Q4_K_M*" \
-        --local-dir "$MODELS_DIR" \
-        --quiet
-    ok "Qwen2.5-7B abliterated ready"
-else
-    warn "Qwen2.5-7B abliterated not found and --skip-models is on"
+    warn "Qwen3.5-9B abliterated not found and --skip-models is on"
 fi
 
 # ── 35B (optional) ───────────────────────────────────────────
@@ -254,8 +224,9 @@ exec ./build/bin/llama-server \\
   --models-max 1 \\
   --parallel 1 \\
   -ngl 99 \\
-  -c 18432 \\
+  -c 4096 \\
   --jinja \\
+  --chat-template-kwargs '{"enable_thinking": false}' \\
   --flash-attn on \\
   --cache-type-k q8_0 \\
   --cache-type-v q8_0
@@ -294,7 +265,6 @@ fi
 if [[ $WITH_OPENCODE -eq 1 ]]; then
     say "Step 7/7 — Setting up OpenCode..."
 
-    # Install opencode-bin from AUR if not present
     if ! command -v opencode >/dev/null 2>&1; then
         if [[ -n "$AUR" ]]; then
             say "Installing opencode-bin via $AUR..."
@@ -307,14 +277,12 @@ if [[ $WITH_OPENCODE -eq 1 ]]; then
         ok "OpenCode already installed"
     fi
 
-    # Configure OpenCode to use the local llama.cpp server
     if command -v opencode >/dev/null 2>&1; then
         mkdir -p "$(dirname "$OPENCODE_CONFIG")"
 
         if [[ -f "$OPENCODE_CONFIG" ]] && grep -q "llama.cpp" "$OPENCODE_CONFIG" 2>/dev/null; then
             ok "OpenCode already configured for llama.cpp (keeping existing config)"
         else
-            # Backup existing config if any
             if [[ -f "$OPENCODE_CONFIG" ]]; then
                 cp "$OPENCODE_CONFIG" "$OPENCODE_CONFIG.backup-$(date +%Y%m%d-%H%M%S)"
                 warn "Existing OpenCode config backed up"
@@ -331,11 +299,11 @@ if [[ $WITH_OPENCODE -eq 1 ]]; then
         "baseURL": "http://127.0.0.1:8080/v1"
       },
       "models": {
-        "qwen2.5-7b-instruct-q4_k_m": {
-          "name": "Qwen2.5 7B (local)"
+        "Qwen3.5-9B-abliterated-Q3_K_M": {
+          "name": "Qwen3.5 9B abliterated (local)"
         },
-        "Qwen2.5-7B-Instruct-abliterated-Q4_K_M": {
-          "name": "Qwen2.5 7B abliterated (local)"
+        "Qwen3.6-35B-A3B-Q4_K_M": {
+          "name": "Qwen3.6 35B-A3B (local)"
         }
       }
     }
