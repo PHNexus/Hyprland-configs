@@ -192,7 +192,8 @@ cat > "$BIN_DIR/ai-server" <<EOF
 #!/bin/bash
 cd $LLAMA_DIR
 exec ./build/bin/llama-server \\
-  --model $MODELS_DIR/Qwen3.5-9B-abliterated-Q3_K_M.gguf \\
+  --models-dir $MODELS_DIR \\
+  --no-models-autoload \\
   --host 127.0.0.1 \\
   --port $PORT \\
   --parallel 1 \\
@@ -202,7 +203,8 @@ exec ./build/bin/llama-server \\
   --chat-template-kwargs '{"enable_thinking": false}' \\
   --flash-attn on \\
   --cache-type-k q8_0 \\
-  --cache-type-v q8_0
+  --cache-type-v q8_0 \\
+  --sleep-idle-seconds 30
 EOF
 chmod +x "$BIN_DIR/ai-server"
 ok "ai-server created at $BIN_DIR/ai-server"
