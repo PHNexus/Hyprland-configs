@@ -224,7 +224,7 @@ exec ./build/bin/llama-server \\
   --models-max 1 \\
   --parallel 1 \\
   -ngl 99 \\
-  -c 4096 \\
+  -c 18096 \\
   --jinja \\
   --chat-template-kwargs '{"enable_thinking": false}' \\
   --flash-attn on \\
