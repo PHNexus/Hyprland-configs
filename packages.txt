@@ -104,6 +104,7 @@ lua-language-server
 stylua
 shfmt
 easyeffects
+less
 
 #AUR
 awww
