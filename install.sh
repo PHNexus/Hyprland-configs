@@ -651,6 +651,18 @@ EOF
 echo "  - Cookie exceptions policy configured successfully."
 
 # --------------------------------------------
+# Enable power-profiles-daemon service
+# --------------------------------------------
+echo
+echo "Enabling power-profiles-daemon service..."
+if systemctl list-unit-files | grep -q power-profiles-daemon.service; then
+    sudo systemctl enable --now power-profiles-daemon.service
+    echo "  - power-profiles-daemon enabled successfully."
+else
+    echo "  - power-profiles-daemon service not found. Verify if it's in packages.txt."
+fi
+
+# --------------------------------------------
 # Set Fish as Default Shell
 # --------------------------------------------
 echo

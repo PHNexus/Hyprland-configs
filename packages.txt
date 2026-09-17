@@ -60,6 +60,7 @@ ffmpegthumbnailer
 fuse2
 calf
 flatpak
+power-profiles-daemon
 
 # Fonts
 
