@@ -41,10 +41,10 @@ function M.setup()
     hl.config({
         decoration = {
             rounding = 8,
-            rounding_power = 2,
+            rounding_power = 10,
             active_opacity = 0.9,
             inactive_opacity = 0.7,
-            shadow = { enabled = true, range = 12, render_power = 3, color = "rgb(15161e)" },
+            shadow = { enabled = true, range = 16, render_power = 6, color = "rgb(15161e)" },
             blur = {
                 enabled = true,
                 size = 6,
