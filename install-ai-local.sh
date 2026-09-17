@@ -306,7 +306,7 @@ if [[ $WITH_OPENCODE -eq 1 ]]; then
     else
         ok "OpenCode already installed"
     fi
-.
+
     # Configure OpenCode to use the local llama.cpp server
     if command -v opencode >/dev/null 2>&1; then
         mkdir -p "$(dirname "$OPENCODE_CONFIG")"
