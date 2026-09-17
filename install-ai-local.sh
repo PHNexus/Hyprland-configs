@@ -3,10 +3,9 @@
 # Local AI Installer — Arch Linux + NVIDIA
 # ============================================================
 # Installs llama.cpp with CUDA, downloads Qwen models, sets up
-# a Router Mode server with systemd, and configures OpenCode
-# to use the local server.
+# a server with systemd, and configures OpenCode.
 #
-# Usage: ./install-ai-local.sh [--no-35b] [--skip-models] [--no-opencode]
+# Usage: ./install-ai-local.sh [--skip-models] [--no-opencode]
 # ============================================================
 
 set -euo pipefail
@@ -20,9 +19,8 @@ SERVICE_NAME="llama-server.service"
 PORT=8080
 OPENCODE_CONFIG="$HOME/.config/opencode/opencode.json"
 
-# Models — repo ids only (hf CLI doesn't accept ":QUANT")
+# Model — repo id only (hf CLI doesn't accept ":QUANT")
 MODEL_9B="Abiray/Qwen3.5-9B-abliterated-GGUF"
-MODEL_35B="lmstudio-community/Qwen3.6-35B-A3B-GGUF"
 
 # Colors
 RED='\033[1;31m'
@@ -38,12 +36,10 @@ warn() { printf "${YELLOW}!${NC} %s\n" "$*"; }
 die()  { printf "${RED}✗${NC} %s\n" "$*" >&2; exit 1; }
 
 # ─── Parse args ──────────────────────────────────────────────
-WITH_35B=1
 SKIP_MODELS=0
 WITH_OPENCODE=1
 for arg in "$@"; do
     case "$arg" in
-        --no-35b)       WITH_35B=0 ;;
         --skip-models)  SKIP_MODELS=1 ;;
         --no-opencode)  WITH_OPENCODE=0 ;;
         -h|--help)
@@ -52,7 +48,6 @@ Local AI Installer — Arch Linux + NVIDIA
 
   ./install-ai-local.sh [options]
 
-  --no-35b        skip the 35B model (saves ~22 GB)
   --skip-models   don't download any model — just check what exists
   --no-opencode   don't install or configure OpenCode
   -h, --help      this message
@@ -96,7 +91,7 @@ if ! sudo -v; then
 fi
 
 # ─── Step 1: Dependencies ────────────────────────────────────
-say "Step 1/7 — Installing dependencies..."
+say "Step 1/6 — Installing dependencies..."
 
 PKGS=(
     base-devel cmake git cuda python-pip
@@ -107,7 +102,7 @@ sudo pacman -S --needed --noconfirm "${PKGS[@]}"
 ok "Packages installed"
 
 # ─── Step 2: CUDA PATH ───────────────────────────────────────
-say "Step 2/7 — Setting up CUDA PATH..."
+say "Step 2/6 — Setting up CUDA PATH..."
 
 FISH_CONFIG="$HOME/.config/fish/config.fish"
 mkdir -p "$(dirname "$FISH_CONFIG")"
@@ -129,7 +124,7 @@ export PATH="/opt/cuda/bin:$PATH"
 export CUDACXX="/opt/cuda/bin/nvcc"
 
 # ─── Step 3: llama.cpp ───────────────────────────────────────
-say "Step 3/7 — Building llama.cpp..."
+say "Step 3/6 — Building llama.cpp..."
 
 if [[ -d "$LLAMA_DIR" ]]; then
     warn "$LLAMA_DIR already exists, updating..."
@@ -150,7 +145,7 @@ else
 fi
 
 # ─── Step 4: sysctl ──────────────────────────────────────────
-say "Step 4/7 — Tuning vm.max_map_count..."
+say "Step 4/6 — Tuning vm.max_map_count..."
 
 SYSCTL_CONF="/etc/sysctl.d/99-llama.conf"
 if [[ ! -f "$SYSCTL_CONF" ]] || ! grep -q "vm.max_map_count" "$SYSCTL_CONF" 2>/dev/null; then
@@ -162,7 +157,7 @@ else
 fi
 
 # ─── Step 5: Models ──────────────────────────────────────────
-say "Step 5/7 — Checking models..."
+say "Step 5/6 — Checking models..."
 mkdir -p "$MODELS_DIR"
 
 have_file() {
@@ -188,28 +183,8 @@ else
     warn "Qwen3.5-9B abliterated not found and --skip-models is on"
 fi
 
-# ── 35B (optional) ───────────────────────────────────────────
-if [[ $WITH_35B -eq 1 ]]; then
-    if have_file "Qwen3.6-35B-A3B*.gguf"; then
-        ok "Qwen3.6-35B already present"
-    elif [[ $SKIP_MODELS -eq 0 ]]; then
-        say "Downloading Qwen3.6-35B (~22 GB, takes a while)..."
-        hf download "$MODEL_35B" \
-            --include "*Q4_K_M*.gguf" \
-            --local-dir "$MODELS_DIR" \
-            --quiet
-        if [[ -f "$MODELS_DIR/Qwen3.6-35B-A3B-Q4_K_M-00001-of-00001.gguf" ]]; then
-            mv "$MODELS_DIR/Qwen3.6-35B-A3B-Q4_K_M-00001-of-00001.gguf" \
-               "$MODELS_DIR/Qwen3.6-35B-A3B-Q4_K_M.gguf"
-        fi
-        ok "Qwen3.6-35B ready"
-    else
-        warn "Qwen3.6-35B not found and --skip-models is on"
-    fi
-fi
-
 # ─── Step 6: Server script + systemd ─────────────────────────
-say "Step 6/7 — Setting up the server..."
+say "Step 6/6 — Setting up the server..."
 
 mkdir -p "$BIN_DIR"
 
@@ -217,10 +192,9 @@ cat > "$BIN_DIR/ai-server" <<EOF
 #!/bin/bash
 cd $LLAMA_DIR
 exec ./build/bin/llama-server \\
-  --models-dir $MODELS_DIR \\
+  --model $MODELS_DIR/Qwen3.5-9B-abliterated-Q3_K_M.gguf \\
   --host 127.0.0.1 \\
   --port $PORT \\
-  --models-max 1 \\
   --parallel 1 \\
   -ngl 99 \\
   -c 18432 \\
@@ -300,9 +274,6 @@ if [[ $WITH_OPENCODE -eq 1 ]]; then
       "models": {
         "Qwen3.5-9B-abliterated-Q3_K_M": {
           "name": "Qwen3.5 9B abliterated (local)"
-        },
-        "Qwen3.6-35B-A3B-Q4_K_M": {
-          "name": "Qwen3.6 35B-A3B (local)"
         }
       }
     }
