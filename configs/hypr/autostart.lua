@@ -2,7 +2,6 @@
 local M = {}
 
 function M.setup()
-    
     -- ============================================================
     -- HYPRLAND START
     -- ============================================================
@@ -17,6 +16,7 @@ function M.setup()
         hl.exec_cmd("systemctl --user start hyprpolkitagent")
         hl.exec_cmd("xrandr --output DP-1 --primary")
         hl.exec_cmd("waybar")
+        hl.exec_cmd("export WLR_CLIPBOARD_DAEMON_PID=$WLR_NO_HARDWARE_CURSORS")
         os.execute("nvibrant 0 512 512 0 >/dev/null 2>&1 &")
         hl.exec_cmd(
             "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && gnome-keyring-daemon --start --components=secrets")

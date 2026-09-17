@@ -14,7 +14,7 @@ function M.setup()
     hl.curve("easeoutquint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
     hl.curve("easeinout", { type = "bezier", points = { { 0.65, 0.05 }, { 0.36, 1 } } })
     hl.curve("almostlinear", { type = "bezier", points = { { 0.5, 0.5 }, { 0.75, 1 } } })
-    hl.curve("workspaceslide", { type = "bezier", points = { { 0.16, 1 }, { 0.3, 1 } } })
+    hl.curve("workspaceslide", { type = "bezier", points = { { 0.25, 0.4 }, { 0.95, 1 } } })
 
     -- ============================================================
     -- SPRING CURVES
@@ -46,7 +46,7 @@ function M.setup()
     hl.animation({ leaf = "layersIn", enabled = true, speed = 3, spring = "stiffboing" })
     hl.animation({ leaf = "layersOut", enabled = true, speed = 4, bezier = "emphasizedaccel" })
     hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 1.79, bezier = "almostlinear" })
-    hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 1.39, bezier = "almostlinear" })
+    hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 1.6, bezier = "almostlinear" })
 
     -- ============================================================
     -- WORKSPACES
