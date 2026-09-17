@@ -327,6 +327,6 @@ for f in "$MODELS_DIR"/*.gguf; do
 done
 echo
 echo -e "  ${YELLOW}To open:${NC} open Helium at http://localhost:$PORT"
-echo -e "  or type ${GREEN}ia${NC} in fish (opens in Helium)"
+echo -e "  or type ${GREEN}ia${NC} (opens in Terminal) if you use fish shell"
 echo -e "  or type ${GREEN}opencode${NC} to run the AI agent in your terminal"
 echo
