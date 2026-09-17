@@ -198,7 +198,6 @@ if [[ $WITH_35B -eq 1 ]]; then
             --include "*Q4_K_M*.gguf" \
             --local-dir "$MODELS_DIR" \
             --quiet
-        # Rename if it landed with a "-00001-of-00001" suffix
         if [[ -f "$MODELS_DIR/Qwen3.6-35B-A3B-Q4_K_M-00001-of-00001.gguf" ]]; then
             mv "$MODELS_DIR/Qwen3.6-35B-A3B-Q4_K_M-00001-of-00001.gguf" \
                "$MODELS_DIR/Qwen3.6-35B-A3B-Q4_K_M.gguf"
@@ -224,7 +223,7 @@ exec ./build/bin/llama-server \\
   --models-max 1 \\
   --parallel 1 \\
   -ngl 99 \\
-  -c 18096 \\
+  -c 18432 \\
   --jinja \\
   --chat-template-kwargs '{"enable_thinking": false}' \\
   --flash-attn on \\
