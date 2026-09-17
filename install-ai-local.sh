@@ -3,9 +3,10 @@
 # Local AI Installer — Arch Linux + NVIDIA
 # ============================================================
 # Installs llama.cpp with CUDA, downloads Qwen models, sets up
-# a Router Mode server with systemd.
+# a Router Mode server with systemd, and configures OpenCode
+# to use the local server.
 #
-# Usage: ./install-ai-local.sh [--no-35b] [--skip-models]
+# Usage: ./install-ai-local.sh [--no-35b] [--skip-models] [--no-opencode]
 # ============================================================
 
 set -euo pipefail
@@ -17,6 +18,7 @@ LLAMA_DIR="$HOME/llama.cpp"
 SERVICE_DIR="$HOME/.config/systemd/user"
 SERVICE_NAME="llama-server.service"
 PORT=8080
+OPENCODE_CONFIG="$HOME/.config/opencode/opencode.json"
 
 # Models (repo ids only — no ":QUANT" suffix, hf CLI doesn't accept it)
 MODEL_7B_NORMAL="Qwen/Qwen2.5-7B-Instruct-GGUF"
@@ -39,10 +41,12 @@ die()  { printf "${RED}✗${NC} %s\n" "$*" >&2; exit 1; }
 # ─── Parse args ──────────────────────────────────────────────
 WITH_35B=1
 SKIP_MODELS=0
+WITH_OPENCODE=1
 for arg in "$@"; do
     case "$arg" in
-        --no-35b)      WITH_35B=0 ;;
-        --skip-models) SKIP_MODELS=1 ;;
+        --no-35b)       WITH_35B=0 ;;
+        --skip-models)  SKIP_MODELS=1 ;;
+        --no-opencode)  WITH_OPENCODE=0 ;;
         -h|--help)
             cat <<EOF
 Local AI Installer — Arch Linux + NVIDIA
@@ -51,6 +55,7 @@ Local AI Installer — Arch Linux + NVIDIA
 
   --no-35b        skip the 35B model (saves ~22 GB)
   --skip-models   don't download any model — just check what exists
+  --no-opencode   don't install or configure OpenCode
   -h, --help      this message
 EOF
             exit 0
@@ -64,6 +69,12 @@ say "Checking the system..."
 
 [[ -f /etc/arch-release ]] || die "This script is for Arch Linux only"
 [[ $EUID -ne 0 ]] || die "Do not run as root"
+
+# AUR helper (needed for opencode-bin)
+AUR=""
+for helper in paru yay; do
+    command -v "$helper" >/dev/null 2>&1 && { AUR="$helper"; break; }
+done
 
 # NVIDIA — check via nvidia-smi first, fall back to lspci
 if command -v nvidia-smi >/dev/null 2>&1; then
@@ -89,18 +100,18 @@ if ! sudo -v; then
 fi
 
 # ─── Step 1: Dependencies ────────────────────────────────────
-say "Step 1/6 — Installing dependencies..."
+say "Step 1/7 — Installing dependencies..."
 
 PKGS=(
     base-devel cmake git cuda python-pip
-    python-huggingface-hub curl jq pciutils
+    python-huggingface-hub curl jq pciutils less
 )
 
 sudo pacman -S --needed --noconfirm "${PKGS[@]}"
 ok "Packages installed"
 
 # ─── Step 2: CUDA PATH ───────────────────────────────────────
-say "Step 2/6 — Setting up CUDA PATH..."
+say "Step 2/7 — Setting up CUDA PATH..."
 
 FISH_CONFIG="$HOME/.config/fish/config.fish"
 mkdir -p "$(dirname "$FISH_CONFIG")"
@@ -123,7 +134,7 @@ export PATH="/opt/cuda/bin:$PATH"
 export CUDACXX="/opt/cuda/bin/nvcc"
 
 # ─── Step 3: llama.cpp ───────────────────────────────────────
-say "Step 3/6 — Building llama.cpp..."
+say "Step 3/7 — Building llama.cpp..."
 
 if [[ -d "$LLAMA_DIR" ]]; then
     warn "$LLAMA_DIR already exists, updating..."
@@ -144,7 +155,7 @@ else
 fi
 
 # ─── Step 4: sysctl ──────────────────────────────────────────
-say "Step 4/6 — Tuning vm.max_map_count..."
+say "Step 4/7 — Tuning vm.max_map_count..."
 
 SYSCTL_CONF="/etc/sysctl.d/99-llama.conf"
 if [[ ! -f "$SYSCTL_CONF" ]] || ! grep -q "vm.max_map_count" "$SYSCTL_CONF" 2>/dev/null; then
@@ -156,7 +167,7 @@ else
 fi
 
 # ─── Step 5: Models ──────────────────────────────────────────
-say "Step 5/6 — Checking models..."
+say "Step 5/7 — Checking models..."
 mkdir -p "$MODELS_DIR"
 
 # Helper: file exists (any match by glob)
@@ -229,7 +240,7 @@ if [[ $WITH_35B -eq 1 ]]; then
 fi
 
 # ─── Step 6: Server script + systemd ─────────────────────────
-say "Step 6/6 — Setting up the server..."
+say "Step 6/7 — Setting up the server..."
 
 mkdir -p "$BIN_DIR"
 
@@ -240,8 +251,11 @@ exec ./build/bin/llama-server \\
   --models-dir $MODELS_DIR \\
   --host 127.0.0.1 \\
   --port $PORT \\
+  --models-max 1 \\
+  --parallel 1 \\
   -ngl 99 \\
-  -c 18192 \\
+  -c 18432 \\
+  --jinja \\
   --flash-attn on \\
   --cache-type-k q8_0 \\
   --cache-type-v q8_0
@@ -276,7 +290,66 @@ else
     warn "Service not up yet — check with: systemctl --user status $SERVICE_NAME"
 fi
 
-# fish abbr
+# ─── Step 7: OpenCode ────────────────────────────────────────
+if [[ $WITH_OPENCODE -eq 1 ]]; then
+    say "Step 7/7 — Setting up OpenCode..."
+
+    # Install opencode-bin from AUR if not present
+    if ! command -v opencode >/dev/null 2>&1; then
+        if [[ -n "$AUR" ]]; then
+            say "Installing opencode-bin via $AUR..."
+            "$AUR" -S --needed --noconfirm opencode-bin || warn "Failed to install opencode-bin — install it manually"
+        else
+            warn "No AUR helper (paru/yay) found — cannot install opencode-bin"
+            warn "Install it manually: yay -S opencode-bin"
+        fi
+    else
+        ok "OpenCode already installed"
+    fi
+
+    # Configure OpenCode to use the local llama.cpp server
+    if command -v opencode >/dev/null 2>&1; then
+        mkdir -p "$(dirname "$OPENCODE_CONFIG")"
+
+        if [[ -f "$OPENCODE_CONFIG" ]] && grep -q "llama.cpp" "$OPENCODE_CONFIG" 2>/dev/null; then
+            ok "OpenCode already configured for llama.cpp (keeping existing config)"
+        else
+            # Backup existing config if any
+            if [[ -f "$OPENCODE_CONFIG" ]]; then
+                cp "$OPENCODE_CONFIG" "$OPENCODE_CONFIG.backup-$(date +%Y%m%d-%H%M%S)"
+                warn "Existing OpenCode config backed up"
+            fi
+
+            cat > "$OPENCODE_CONFIG" <<'EOF'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "llama.cpp": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llama-server (local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8080/v1"
+      },
+      "models": {
+        "qwen2.5-7b-instruct-q4_k_m": {
+          "name": "Qwen2.5 7B (local)"
+        },
+        "Qwen2.5-7B-Instruct-abliterated-Q4_K_M": {
+          "name": "Qwen2.5 7B abliterated (local)"
+        }
+      }
+    }
+  }
+}
+EOF
+            ok "OpenCode configured at $OPENCODE_CONFIG"
+        fi
+    fi
+else
+    say "Skipping OpenCode (--no-opencode)"
+fi
+
+# ─── fish abbr ───────────────────────────────────────────────
 if command -v fish >/dev/null; then
     if ! grep -q "abbr --add ia" "$FISH_CONFIG" 2>/dev/null; then
         cat >> "$FISH_CONFIG" <<'EOF'
@@ -298,6 +371,7 @@ echo -e "  ${BLUE}Server:${NC}      systemctl --user status $SERVICE_NAME"
 echo -e "  ${BLUE}Interface:${NC}   http://localhost:$PORT"
 echo -e "  ${BLUE}Models:${NC}      $MODELS_DIR"
 echo -e "  ${BLUE}Script:${NC}      $BIN_DIR/ai-server"
+echo -e "  ${BLUE}OpenCode:${NC}    $(command -v opencode >/dev/null 2>&1 && echo "configured" || echo "not installed")"
 echo
 echo -e "  ${YELLOW}Useful commands:${NC}"
 echo
@@ -305,6 +379,7 @@ echo "    systemctl --user restart $SERVICE_NAME   # restart"
 echo "    systemctl --user stop $SERVICE_NAME      # stop"
 echo "    journalctl --user -u $SERVICE_NAME -f    # follow logs"
 echo "    pkill -f llama-server                    # kill everything"
+echo "    opencode                                 # run OpenCode"
 echo
 echo -e "  ${YELLOW}Models in $MODELS_DIR:${NC}"
 for f in "$MODELS_DIR"/*.gguf; do
@@ -313,4 +388,5 @@ done
 echo
 echo -e "  ${YELLOW}To open:${NC} open Helium at http://localhost:$PORT"
 echo -e "  or type ${GREEN}ia${NC} in fish (opens in Helium)"
+echo -e "  or type ${GREEN}opencode${NC} to run the AI agent in your terminal"
 echo
