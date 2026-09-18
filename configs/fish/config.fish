@@ -34,5 +34,7 @@ alias xdg-open-appstream "gio open"
 # IA local
 # ============================================================
 abbr --add ai ~/bin/ai
-# Local AI
 abbr --add ia 'helium-browser http://localhost:8080'
+
+set -Ux EDITOR nvim
+set -Ux VISUAL nvim
