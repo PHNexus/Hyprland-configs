@@ -114,9 +114,9 @@
                         "label": "󰤆   Shut down",
                         "command": "systemctl poweroff"
                     }
-                ]
+                ] 
             },
-            "menu#powermode-buttons": {
+             "menu#powermode-buttons": {
                 "label": "󱓞",
                 "position": "left",
                 "actions": [
@@ -133,7 +133,7 @@
                         "command": "powerprofilesctl set power-saver"
                     }
                 ]
-            }
+             } 
         }
     }
 }
