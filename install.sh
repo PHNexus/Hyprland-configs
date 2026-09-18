@@ -16,33 +16,28 @@ RED='\033[1;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${RED}╔════════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${RED}║                          ⚠  WARNING  ⚠                            ║${NC}"
-echo -e "${RED}╠════════════════════════════════════════════════════════════════════╣${NC}"
-echo -e "${RED}║${NC} ${YELLOW}This script is designed for a FRESH Arch Linux installation.${NC}       ${RED}║${NC}"
-echo -e "${RED}║${NC}                                                                     ${RED}║${NC}"
-echo -e "${RED}║${NC} ${YELLOW}•${NC} It backs up your current configs to ${YELLOW}~/.config/backups/${NC}          ${RED}║${NC}"
-echo -e "${RED}║${NC}   but IMMEDIATELY overwrites them with the dotfiles version.       ${RED}║${NC}"
-echo -e "${RED}║${NC}                                                                     ${RED}║${NC}"
-echo -e "${RED}║${NC} ${YELLOW}•${NC} It fixes DRM (Widevine/VAAPI) for the ${YELLOW}Helium browser${NC}        ${RED}║${NC}"
-echo -e "${RED}║${NC}   and installs a policy to prevent accidental Google account       ${RED}║${NC}"
-echo -e "${RED}║${NC}   disconnections — since Helium is a privacy-focused browser.      ${RED}║${NC}"
-echo -e "${RED}║${NC}                                                                     ${RED}║${NC}"
-echo -e "${RED}║${NC} ${YELLOW}•${NC} It also removes ${YELLOW}htop, vim, and dolphin${NC} if installed,       ${RED}║${NC}"
-echo -e "${RED}║${NC}   and changes your default shell to ${YELLOW}fish${NC}.                        ${RED}║${NC}"
-echo -e "${RED}║${NC}                                                                     ${RED}║${NC}"
-echo -e "${RED}║${NC} ${YELLOW}This will overwrite your current settings (a backup of your${NC}         ${RED}║${NC}"
-echo -e "${RED}║${NC} ${YELLOW}settings will be created, but active ones are immediately${NC}          ${RED}║${NC}"
-echo -e "${RED}║${NC} ${YELLOW}replaced by the dotfiles version).${NC}                                 ${RED}║${NC}"
-echo -e "${RED}╚════════════════════════════════════════════════════════════════════╝${NC}"
-echo
+echo -e "${RED}"
+echo "╔════════════════════════════════════════════════════════════════════╗"
+echo "║                          ⚠  WARNING  ⚠                             ║"
+echo "╠════════════════════════════════════════════════════════════════════╣"
+echo -e "║ ${YELLOW}This script is designed for a FRESH Arch Linux installation.${RED}       ║"
+echo "║                                                                    ║"
+echo -e "║ ${YELLOW}•${NC} It backs up your current configs to ${YELLOW}~/.config/backups/${RED}           ║"
+echo "║   but IMMEDIATELY overwrites them with the dotfiles version.       ║"
+echo "║                                                                    ║"
+echo -e "║ ${YELLOW}•${NC} It fixes DRM (Widevine/VAAPI) for the ${YELLOW}Helium browser    ${RED}         ║"
+echo "║   and installs a policy to prevent accidental Google account       ║"
+echo "║   disconnections — since Helium is a privacy-focused browser.      ║"
+echo "║                                                                    ║"
+echo -e "║ ${YELLOW}•${NC} It also removes ${YELLOW}htop, vim, and dolphin${RED}      if installed,        ║"
+echo -e "║   and changes your default shell to ${YELLOW}fish${RED}.                          ║"
+echo "║                                                                    ║"
+echo "║ This will overwrite your current settings (a backup of your        ║"
+echo "║ settings will be created, but active ones are immediately          ║"
+echo "║ replaced by the dotfiles version).                                 ║"
+echo "╚════════════════════════════════════════════════════════════════════╝"
+echo -e "${NC}"
 
-read -rp "Do you want to continue? [y/N]: " confirm
-if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-    echo "Installation cancelled by user."
-    exit 0
-fi
-echo
 
 # --------------------------------------------
 # Check OS & Root Execution
@@ -651,17 +646,15 @@ EOF
 echo "  - Cookie exceptions policy configured successfully."
 
 # --------------------------------------------
-# Configure cpupower for Performance mode
+# Enable power-profiles-daemon service
 # --------------------------------------------
 echo
-echo "Configuring cpupower for Performance mode..."
-if [[ -f /etc/default/cpupower-service.conf ]]; then
-    sudo sed -i '/GOVERNOR/d' /etc/default/cpupower-service.conf
-    echo 'GOVERNOR="performance"' | sudo tee -a /etc/default/cpupower-service.conf > /dev/null
-    sudo systemctl enable --now cpupower.service
-    echo "  - cpupower service enabled with 'performance' governor."
+echo "Enabling power-profiles-daemon service..."
+if systemctl list-unit-files | grep -q power-profiles-daemon.service; then
+    sudo systemctl enable --now power-profiles-daemon.service
+    echo "  - power-profiles-daemon enabled successfully."
 else
-    echo "  - cpupower-service.conf not found, skipping."
+    echo "  - power-profiles-daemon service not found. Verify if it's in packages.txt."
 fi
 
 # --------------------------------------------
