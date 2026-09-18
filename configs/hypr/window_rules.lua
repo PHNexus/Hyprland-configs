@@ -107,6 +107,14 @@ function M.setup()
         fullscreen = true,
         immediate = true,
     })
+     hl.window_rule({
+        name = "ESO",
+        match = {
+            class = "^(steam_app_306130)$",
+            title = "^(Elder Scrolls Online).*$"
+        },
+        fullscreen = true,
+    })
     hl.window_rule({
         name = "Counter Strike 2",
         match = { class = "^cs2.*$" },
