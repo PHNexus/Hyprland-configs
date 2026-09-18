@@ -646,15 +646,17 @@ EOF
 echo "  - Cookie exceptions policy configured successfully."
 
 # --------------------------------------------
-# Enable power-profiles-daemon service
+# Configure cpupower for Performance mode
 # --------------------------------------------
 echo
-echo "Enabling power-profiles-daemon service..."
-if systemctl list-unit-files | grep -q power-profiles-daemon.service; then
-    sudo systemctl enable --now power-profiles-daemon.service
-    echo "  - power-profiles-daemon enabled successfully."
+echo "Configuring cpupower for Performance mode..."
+if [[ -f /etc/default/cpupower-service.conf ]]; then
+    sudo sed -i '/GOVERNOR/d' /etc/default/cpupower-service.conf
+    echo 'GOVERNOR="performance"' | sudo tee -a /etc/default/cpupower-service.conf > /dev/null
+    sudo systemctl enable --now cpupower.service
+    echo "  - cpupower service enabled with 'performance' governor."
 else
-    echo "  - power-profiles-daemon service not found. Verify if it's in packages.txt."
+    echo "  - cpupower-service.conf not found, skipping."
 fi
 
 # --------------------------------------------
