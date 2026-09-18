@@ -651,25 +651,16 @@ EOF
 echo "  - Cookie exceptions policy configured successfully."
 
 # --------------------------------------------
-# Enable cpupower service and set GOVERNOR='performance'
+# Enable power-profiles-daemon service
 # --------------------------------------------
 echo
-echo "Configuring cpupower service..."
-if [[ -f /etc/default/cpupower-service.conf ]]; then
-    sudo sed -i "s/^#*GOVERNOR=.*/GOVERNOR='performance'/" /etc/default/cpupower-service.conf
-    sudo systemctl enable --now cpupower.service
-    echo "  - cpupower enabled and configured with performance governor successfully."
+echo "Enabling power-profiles-daemon service..."
+if systemctl list-unit-files | grep -q power-profiles-daemon.service; then
+    sudo systemctl enable --now power-profiles-daemon.service
+    echo "  - power-profiles-daemon enabled successfully."
 else
-    echo "  - /etc/default/cpupower-service.conf not found, skipping cpupower configuration."
+    echo "  - power-profiles-daemon service not found. Verify if it's in packages.txt."
 fi
-
-# --------------------------------------------
-# Configure NOPASSWD for cpupower
-# --------------------------------------------
-echo "Configuring automatic cpupower permission for user $USER..."
-CPUPOWER_SUDOERS="/etc/sudoers.d/cpupower"
-echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/cpupower frequency-set -g *" | sudo tee "$CPUPOWER_SUDOERS" > /dev/null
-sudo chmod 0440 "$CPUPOWER_SUDOERS"
 
 # --------------------------------------------
 # Set Fish as Default Shell
