@@ -37,7 +37,7 @@ function M.setup()
         },
         float = true,
         center = true,
-        size = "450 600",
+        size = "500 600",
     })
     hl.window_rule({
         name = "AppManager",
