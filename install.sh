@@ -660,6 +660,30 @@ else
 fi
 
 # --------------------------------------------
+# Remove NVIDIA environment variables if NVIDIA is NOT detected
+# --------------------------------------------
+echo
+echo "Checking GPU vendor to adjust Hyprland environment variables..."
+
+ENV_LUA_FILE="$HOME/.config/hypr/environment.lua"
+
+if ! lspci -nn | grep -iE 'vga|3d' | grep -iEq 'nvidia'; then
+    echo "  - NVIDIA GPU not detected. Removing NVIDIA environment variables..."
+    if [[ -f "$ENV_LUA_FILE" ]]; then
+
+        sed -i -E '/(LIBVA_DRIVER_NAME|__GLX_VENDOR_LIBRARY_NAME|GBM_BACKEND|NVD_BACKEND|VDPAU_DRIVER|__GL_SHADER_DISK_CACHE|__GL_SYNC_TO_VBLANK)/I d' "$ENV_LUA_FILE"
+        
+        sed -i '/-- NVIDIA/d' "$ENV_LUA_FILE"
+        
+        echo "  - NVIDIA environment variables successfully removed from environment.lua."
+    else
+        echo "  - Warning: $ENV_LUA_FILE not found, skipping GPU env adjustment."
+    fi
+else
+    echo "  - NVIDIA GPU detected, keeping original environment variables."
+fi
+
+# --------------------------------------------
 # Set Fish as Default Shell
 # --------------------------------------------
 echo
