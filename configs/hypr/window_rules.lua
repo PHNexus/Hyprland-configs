@@ -10,6 +10,8 @@ function M.setup()
     -- ============================================================
     -- SPECIFIC FLOATS (with fixed size and center)
     -- ============================================================
+    
+     --              To add more window rule use hyprctl clients
     hl.window_rule({
         name = "float-pavucontrol",
         match = { class = ".*pavucontrol.*" },
