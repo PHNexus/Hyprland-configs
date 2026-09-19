@@ -64,7 +64,7 @@ function M.setup()
     -- ============================================================
     -- MISC
     -- ============================================================
-    hl.config({ misc = { force_default_wallpaper = -1, disable_hyprland_logo = true, vrr = 2 } })
+    hl.config({ misc = { force_default_wallpaper = -1, disable_hyprland_logo = true } })
 
     -- ============================================================
     -- XWAYLAND
