@@ -198,11 +198,12 @@ exec ./build/bin/llama-server \\
   --port $PORT \\
   --parallel 1 \\
   -ngl 99 \\
-  -c 32768 \\
+  -c 38912 \\
   -b 512 \\
   -ub 512 \\
   --jinja \\
-  --chat-template-kwargs '{"enable_thinking": false}' \\
+  --chat-template-kwargs '{"enable_thinking": false}' \
+  -t 8 \\
   --flash-attn on \\
   --cache-type-k q8_0 \\
   --cache-type-v q8_0 \\
