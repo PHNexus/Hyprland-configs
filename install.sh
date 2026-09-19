@@ -661,10 +661,10 @@ if command -v systemctl &>/dev/null; then
     echo "  - Enabled gamemoded user service."
 fi
 
-# 3. Copy default configuration file
-if [[ -f /usr/share/gamemode/gamemode.ini ]] && [[ ! -f "$CONFIG_DIR/gamemode.ini" ]]; then
-    cp /usr/share/gamemode/gamemode.ini "$CONFIG_DIR/gamemode.ini"
-    echo "  - Copied default gamemode.ini to $CONFIG_DIR/"
+# 3. Download default configuration file from official repository
+if [[ ! -f "$CONFIG_DIR/gamemode.ini" ]]; then
+    curl -sLo "$CONFIG_DIR/gamemode.ini" https://raw.githubusercontent.com/FeralInteractive/gamemode/master/example/gamemode.ini
+    echo "  - Downloaded default gamemode.ini to $CONFIG_DIR/"
 fi
 
 echo "GameMode setup completed successfully!"
