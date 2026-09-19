@@ -60,11 +60,12 @@ function M.setup()
         match = { title = "Picture-in-Picture" },
         float = true,
     })
-    hl.window_rule({
-        name = "center-all-floats",
-        match = { float = true },
-        center = true,
-    })
+    -- # use if you want to center all floating windows, but it can be annoying if you have a lot of floating windows
+   -- hl.window_rule({
+     --   name = "center-all-floats",
+       -- match = { float = true },
+        --center = true,
+   -- })
 
     -- ============================================================
     -- FILE DIALOGS (thunar, xdg-portal)
