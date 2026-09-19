@@ -64,7 +64,7 @@ function M.setup()
    -- hl.window_rule({
      --   name = "center-all-floats",
        -- match = { float = true },
-        --center = true,
+        --center = true,a
    -- })
 
     -- ============================================================
