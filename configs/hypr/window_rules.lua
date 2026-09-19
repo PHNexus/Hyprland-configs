@@ -10,8 +10,8 @@ function M.setup()
     -- ============================================================
     -- SPECIFIC FLOATS (with fixed size and center)
     -- ============================================================
-    
-     --              To add more window rule use hyprctl clients
+
+    --              To add more window rule use hyprctl clients
     hl.window_rule({
         name = "float-pavucontrol",
         match = { class = ".*pavucontrol.*" },
@@ -61,11 +61,11 @@ function M.setup()
         float = true,
     })
     -- # use if you want to center all floating windows, but it can be annoying if you have a lot of floating windows
-   -- hl.window_rule({
-     --   name = "center-all-floats",
-       -- match = { float = true },
-        --center = true,a
-   -- })
+    -- hl.window_rule({
+    --   name = "center-all-floats",
+    -- match = { float = true },
+    --center = true,a
+    -- })
 
     -- ============================================================
     -- FILE DIALOGS (thunar, xdg-portal)
@@ -110,17 +110,19 @@ function M.setup()
         fullscreen = true,
         immediate = true,
     })
-     hl.window_rule({
+    hl.window_rule({
         name = "ESO",
         match = {
             class = "^(steam_app_306130)$",
             title = "^(Elder Scrolls Online).*$"
         },
         fullscreen = true,
+        immediate = true,
     })
     hl.window_rule({
         name = "Counter Strike 2",
         match = { class = "^cs2.*$" },
+        fullscreen = true,
         immediate = true,
     })
 

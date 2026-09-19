@@ -61,7 +61,6 @@ function M.setup()
     hl.env("VDPAU_DRIVER", "nvidia")
     hl.env("__GL_SHADER_DISK_CACHE", "1")
     hl.env("__GL_SHADER_DISK_CACHE_SIZE", "10737418240")
-    hl.env("__GL_SYNC_TO_VBLANK", "0")
 end
 
 return M
