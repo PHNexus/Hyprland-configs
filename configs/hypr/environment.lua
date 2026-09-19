@@ -56,6 +56,7 @@ function M.setup()
     -- ============================================================
     hl.env("LIBVA_DRIVER_NAME", "nvidia")
     hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
+    hl.env("GBM_BACKEND", "nvidia-drm")
     hl.env("NVD_BACKEND", "direct")
     hl.env("VDPAU_DRIVER", "nvidia")
     hl.env("__GL_SHADER_DISK_CACHE", "1")
