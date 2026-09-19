@@ -19,43 +19,43 @@ function M.setup()
     -- ============================================================
     -- SPRING CURVES
     -- ============================================================
-    hl.curve("boing", { type = "spring", mass = 1, stiffness = 95, dampening = 12 })
-    hl.curve("stiffboing", { type = "spring", mass = 1, stiffness = 100, dampening = 15 })
+    hl.curve("boing", { type = "spring", mass = 1, stiffness = 110, dampening = 12 })
+    hl.curve("stiffboing", { type = "spring", mass = 1, stiffness = 125, dampening = 15 })
 
     -- ============================================================
     -- WINDOWS
     -- ============================================================
-    hl.animation({ leaf = "global", enabled = true, speed = 5, bezier = "default" })
-    hl.animation({ leaf = "windows", enabled = true, speed = 4.79, bezier = "easeoutquint" })
-    hl.animation({ leaf = "windowsIn", enabled = true, speed = 4.8, bezier = "emphasizeddeccel" })
-    hl.animation({ leaf = "windowsOut", enabled = true, speed = 3, bezier = "emphasizedaccel" })
-    hl.animation({ leaf = "windowsMove", enabled = true, speed = 5, bezier = "standard", style = "slide" })
+    hl.animation({ leaf = "global", enabled = true, speed = 6.5, bezier = "default" })
+    hl.animation({ leaf = "windows", enabled = true, speed = 6.8, bezier = "easeoutquint" })
+    hl.animation({ leaf = "windowsIn", enabled = true, speed = 6.8, bezier = "emphasizeddeccel" })
+    hl.animation({ leaf = "windowsOut", enabled = true, speed = 5.0, bezier = "emphasizedaccel" })
+    hl.animation({ leaf = "windowsMove", enabled = true, speed = 7.0, bezier = "standard", style = "slide" })
 
     -- ============================================================
     -- FADE
     -- ============================================================
-    hl.animation({ leaf = "fadeIn", enabled = true, speed = 1.73, bezier = "almostlinear" })
-    hl.animation({ leaf = "fadeOut", enabled = true, speed = 1.46, bezier = "almostlinear" })
-    hl.animation({ leaf = "fade", enabled = true, speed = 3, bezier = "standard" })
-    hl.animation({ leaf = "fadeDim", enabled = true, speed = 6, bezier = "standard" })
+    hl.animation({ leaf = "fadeIn", enabled = true, speed = 4.5, bezier = "almostlinear" })
+    hl.animation({ leaf = "fadeOut", enabled = true, speed = 4.0, bezier = "almostlinear" })
+    hl.animation({ leaf = "fade", enabled = true, speed = 5.5, bezier = "standard" })
+    hl.animation({ leaf = "fadeDim", enabled = true, speed = 7.5, bezier = "standard" })
 
     -- ============================================================
     -- LAYERS
     -- ============================================================
-    hl.animation({ leaf = "layers", enabled = true, speed = 3.81, bezier = "easeoutquint" })
-    hl.animation({ leaf = "layersIn", enabled = true, speed = 3, spring = "stiffboing" })
-    hl.animation({ leaf = "layersOut", enabled = true, speed = 4, bezier = "emphasizedaccel" })
-    hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 1.79, bezier = "almostlinear" })
-    hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 1.6, bezier = "almostlinear" })
+    hl.animation({ leaf = "layers", enabled = true, speed = 5.8, bezier = "easeoutquint" })
+    hl.animation({ leaf = "layersIn", enabled = true, speed = 5.0, spring = "stiffboing" })
+    hl.animation({ leaf = "layersOut", enabled = true, speed = 6.0, bezier = "emphasizedaccel" })
+    hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 4.5, bezier = "almostlinear" })
+    hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 4.2, bezier = "almostlinear" })
 
     -- ============================================================
     -- WORKSPACES
     -- ============================================================
-    hl.animation({ leaf = "workspaces", enabled = true, speed = 4.6, bezier = "workspaceslide", style = "slidefade 25%" })
+    hl.animation({ leaf = "workspaces", enabled = true, speed = 6.8, bezier = "workspaceslide", style = "slidefade 25%" })
     hl.animation({
         leaf = "specialWorkspace",
         enabled = true,
-        speed = 9,
+        speed = 11.0,
         spring = "boing",
         style = "slidefadevert 50%",
     })
@@ -63,7 +63,7 @@ function M.setup()
     -- ============================================================
     -- BORDER
     -- ============================================================
-    hl.animation({ leaf = "border", enabled = true, speed = 5, bezier = "standard" })
+    hl.animation({ leaf = "border", enabled = true, speed = 6.5, bezier = "standard" })
 end
 
 return M
