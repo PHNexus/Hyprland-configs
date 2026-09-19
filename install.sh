@@ -646,6 +646,30 @@ EOF
 echo "  - Cookie exceptions policy configured successfully."
 
 # --------------------------------------------
+# Install and Configure GameMode
+# --------------------------------------------
+echo
+echo "Installing and configuring GameMode..."
+
+# 1. Install GameMode and 32-bit support
+sudo pacman -S --needed --noconfirm gamemode lib32-gamemode
+
+# 2. Enable and start systemd user service
+if command -v systemctl &>/dev/null; then
+    systemctl --user daemon-reload 2>/dev/null || true
+    systemctl --user enable --now gamemoded.service 2>/dev/null || true
+    echo "  - Enabled gamemoded user service."
+fi
+
+# 3. Copy default configuration file
+if [[ -f /usr/share/gamemode/gamemode.ini ]] && [[ ! -f "$CONFIG_DIR/gamemode.ini" ]]; then
+    cp /usr/share/gamemode/gamemode.ini "$CONFIG_DIR/gamemode.ini"
+    echo "  - Copied default gamemode.ini to $CONFIG_DIR/"
+fi
+
+echo "GameMode setup completed successfully!"
+
+# --------------------------------------------
 # Configure cpupower for Performance mode
 # --------------------------------------------
 echo
