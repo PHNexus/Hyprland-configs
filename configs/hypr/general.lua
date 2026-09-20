@@ -29,9 +29,9 @@ function M.setup()
             direction = "right",
             fullscreen_on_one_column = true,
             focus_fit_method = 0, -- 0 Opens all windows centered; 1 opens windows side-by-side, maintaining scrolling.
-            explicit_column_widths = "0.5, 1.0",
+            explicit_column_widths = "0.333,0.5,0.667, 1.0",
             follow_focus = true,
-            follow_min_visible = 0.4,
+            follow_min_visible = 0.0,
         },
     })
 
