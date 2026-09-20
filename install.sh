@@ -684,6 +684,30 @@ else
 fi
 
 # --------------------------------------------
+# Configure Cloudflare WARP
+# --------------------------------------------
+echo
+echo "Configuring Cloudflare WARP..."
+
+# Enable and start the WARP background service
+if command -v systemctl &>/dev/null; then
+    sudo systemctl enable --now warp-svc
+    echo "  - warp-svc service enabled and started."
+    
+    # Wait a few seconds for the daemon to fully initialize
+    sleep 3
+fi
+
+# Register the client and accept terms without connecting automatically
+if command -v warp-cli &>/dev/null; then
+    warp-cli --accept-tos registration new || true
+    warp-cli mode warp+doh || true
+    echo "  - Cloudflare WARP registered successfully (not connected)."
+else
+    echo "  - warp-cli not found, skipping configuration."
+fi
+
+# --------------------------------------------
 # Remove NVIDIA environment variables if NVIDIA is NOT detected
 # --------------------------------------------
 echo
