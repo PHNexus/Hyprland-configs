@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
-# Local AI Installer — Arch Linux + NVIDIA
+# Local AI Installer — Arch Linux + NVIDIA (Com Suporte a Visão)
 # ============================================================
 # Installs llama.cpp with CUDA, downloads Gemma-4-E4B Uncensored
-# (HauhauCS Aggressive Q5_K_P), sets up a server with systemd, and
-# configures OpenCode.
+# (HauhauCS Aggressive Q5_K_P) + mmproj, sets up systemd, etc.
 #
 # Usage: ./install-ai-local.sh [--skip-models] [--no-opencode]
 # ============================================================
@@ -20,21 +19,20 @@ SERVICE_NAME="llama-server.service"
 PORT=8080
 OPENCODE_CONFIG="$HOME/.config/opencode/opencode.json"
 
-# Model — Gemma 4 E4B Uncensored HauhauCS Aggressive (Q5_K_P)
+# Models — Gemma 4 E4B Uncensored HauhauCS Aggressive
 MODEL_FILE="Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf"
-# Repo do Hugging Face (ajuste se for outro). Deixe vazio para pular download.
+MMPROJ_FILE="mmproj-Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-f16.gguf"
 MODEL_REPO="HauhauCS/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-GGUF"
 
-# Model id exposto pelo llama-server em /v1/models (geralmente basename sem .gguf)
+# Model id exposto pelo llama-server em /v1/models
 MODEL_ID="Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-Q5_K_P"
-MODEL_LABEL="Gemma 4 E4B Uncensored (local)"
+MODEL_LABEL="Gemma 4 E4B Uncensored (local + visão)"
 
-# Contexto e geração (65536 conforme sua config atual)
-CTX_SIZE=65536
-N_PREDICT=65536
+# Contexto e geração otimizados para evitar estouro de VRAM na 1660 Ti
+CTX_SIZE=16384
+N_PREDICT=4096
 
-# Chat template customizado (obrigatório com sua config).
-# ORDEM IMPORTA: --jinja ANTES de --chat-template-file.
+# Chat template customizado
 CHAT_TEMPLATE_FILE="$LLAMA_DIR/models/templates/google-gemma-4-31B-it.jinja"
 
 # Colors
@@ -65,7 +63,7 @@ Local AI Installer — Arch Linux + NVIDIA
 
   --skip-models   don't download any model — just check what exists
   --no-opencode   don't install or configure OpenCode
-  -h, --help      this message
+  -h, --help      dieses message
 EOF
             exit 0
             ;;
@@ -91,14 +89,8 @@ if command -v nvidia-smi >/dev/null 2>&1; then
     else
         die "nvidia-smi found no GPU"
     fi
-elif command -v lspci >/dev/null 2>&1; then
-    if lspci | grep -qiE "nvidia|geforce|quadro|tesla"; then
-        ok "NVIDIA GPU detected (via lspci)"
-    else
-        die "No NVIDIA GPU detected"
-    fi
 else
-    die "Cannot detect GPU — install pciutils or nvidia-utils"
+    die "No NVIDIA GPU detected — install nvidia-utils"
 fi
 
 if ! sudo -v; then
@@ -171,34 +163,30 @@ else
     ok "vm.max_map_count already configured"
 fi
 
-# ─── Step 5: Models ──────────────────────────────────────────
-say "Step 5/6 — Checking models..."
+# ─── Step 5: Models & Vision Projector ────────────────────────
+say "Step 5/6 — Checking models and mmproj..."
 mkdir -p "$MODELS_DIR"
-
-have_file() {
-    local pattern="$1"
-    compgen -G "$MODELS_DIR/$pattern" >/dev/null 2>&1
-}
 
 if [[ $SKIP_MODELS -eq 1 ]]; then
     warn "Skipping model downloads (--skip-models)"
 fi
 
-# ── Gemma 4 E4B Uncensored (Q5_K_P) ──────────────────────────
-if have_file "$MODEL_FILE"; then
-    ok "Gemma-4-E4B Uncensored already present"
-elif [[ $SKIP_MODELS -eq 0 ]]; then
-    if [[ -n "${MODEL_REPO:-}" ]]; then
-        say "Downloading $MODEL_FILE ..."
-        hf download "$MODEL_REPO" "$MODEL_FILE" \
-            --local-dir "$MODELS_DIR" \
-            --quiet
-        ok "Gemma-4-E4B Uncensored ready"
+if [[ $SKIP_MODELS -eq 0 && -n "${MODEL_REPO:-}" ]]; then
+    if [[ ! -f "$MODELS_DIR/$MODEL_FILE" ]]; then
+        say "Downloading main model $MODEL_FILE ..."
+        hf download "$MODEL_REPO" "$MODEL_FILE" --local-dir "$MODELS_DIR" --quiet
+        ok "Gemma-4-E4B Uncensored downloaded"
     else
-        warn "MODEL_REPO not set — skipping download"
+        ok "Gemma-4-E4B Uncensored already present"
     fi
-else
-    warn "Gemma-4-E4B Uncensored not found and --skip-models is on"
+
+    if [[ ! -f "$MODELS_DIR/$MMPROJ_FILE" ]]; then
+        say "Downloading vision projector $MMPROJ_FILE ..."
+        hf download "$MODEL_REPO" "$MMPROJ_FILE" --local-dir "$MODELS_DIR" --quiet
+        ok "mmproj projector downloaded"
+    else
+        ok "mmproj projector already present"
+    fi
 fi
 
 # ─── Step 6: Server script + systemd ─────────────────────────
@@ -206,7 +194,6 @@ say "Step 6/6 — Setting up the server..."
 
 mkdir -p "$BIN_DIR"
 
-# Valida o chat template customizado
 if [[ ! -f "$CHAT_TEMPLATE_FILE" ]]; then
     die "CHAT_TEMPLATE_FILE não existe: $CHAT_TEMPLATE_FILE"
 fi
@@ -217,21 +204,20 @@ cat > "$BIN_DIR/ai-server" <<EOF
 
 exec $LLAMA_DIR/build/bin/llama-server \\
   --model $MODELS_DIR/$MODEL_FILE \\
+  --mmproj $MODELS_DIR/$MMPROJ_FILE \\
   --host 127.0.0.1 \\
   --port $PORT \\
   --parallel 1 \\
-  -ngl 99 \\
+  -ngl 32 \\
   -c $CTX_SIZE \\
   -n $N_PREDICT \\
-  -b 512 \\
-  -ub 512 \\
+  -b 256 \\
+  -ub 256 \\
   --jinja \\
   --tools all \\
   --chat-template-file $CHAT_TEMPLATE_FILE \\
   --agent \\
   --flash-attn on \\
-  --cache-type-k q8_0 \\
-  --cache-type-v q8_0 \\
   --sleep-idle-seconds 120
 EOF
 chmod +x "$BIN_DIR/ai-server"
@@ -241,7 +227,7 @@ ok "ai-server created at $BIN_DIR/ai-server"
 mkdir -p "$SERVICE_DIR"
 cat > "$SERVICE_DIR/$SERVICE_NAME" <<EOF
 [Unit]
-Description=llama.cpp server (Local AI)
+Description=llama.cpp server (Local AI with Vision)
 After=network.target
 
 [Service]
@@ -259,7 +245,7 @@ systemctl --user enable --now "$SERVICE_NAME" || true
 
 sleep 3
 if systemctl --user is-active --quiet "$SERVICE_NAME"; then
-    ok "Service running"
+    ok "Service running successfully"
 else
     warn "Service not up yet — check with: systemctl --user status $SERVICE_NAME"
 fi
@@ -271,10 +257,9 @@ if [[ $WITH_OPENCODE -eq 1 ]]; then
     if ! command -v opencode >/dev/null 2>&1; then
         if [[ -n "$AUR" ]]; then
             say "Installing opencode-bin via $AUR..."
-            "$AUR" -S --needed --noconfirm opencode-bin || warn "Failed to install opencode-bin — install it manually"
+            "$AUR" -S --needed --noconfirm opencode-bin || warn "Failed to install opencode-bin"
         else
-            warn "No AUR helper (paru/yay) found — cannot install opencode-bin"
-            warn "Install it manually: yay -S opencode-bin"
+            warn "No AUR helper found — install opencode-bin manually"
         fi
     else
         ok "OpenCode already installed"
@@ -282,16 +267,11 @@ if [[ $WITH_OPENCODE -eq 1 ]]; then
 
     if command -v opencode >/dev/null 2>&1; then
         mkdir -p "$(dirname "$OPENCODE_CONFIG")"
+        if [[ -f "$OPENCODE_CONFIG" ]]; then
+            cp "$OPENCODE_CONFIG" "$OPENCODE_CONFIG.backup-$(date +%Y%m%d-%H%M%S)"
+        fi
 
-        if [[ -f "$OPENCODE_CONFIG" ]] && grep -q "llama.cpp" "$OPENCODE_CONFIG" 2>/dev/null; then
-            ok "OpenCode already configured for llama.cpp (keeping existing config)"
-        else
-            if [[ -f "$OPENCODE_CONFIG" ]]; then
-                cp "$OPENCODE_CONFIG" "$OPENCODE_CONFIG.backup-$(date +%Y%m%d-%H%M%S)"
-                warn "Existing OpenCode config backed up"
-            fi
-
-            cat > "$OPENCODE_CONFIG" <<EOF
+        cat > "$OPENCODE_CONFIG" <<EOF
 {
   "\$schema": "https://opencode.ai/config.json",
   "provider": {
@@ -310,51 +290,18 @@ if [[ $WITH_OPENCODE -eq 1 ]]; then
   }
 }
 EOF
-            ok "OpenCode configured at $OPENCODE_CONFIG"
-        fi
-    fi
-else
-    say "Skipping OpenCode (--no-opencode)"
-fi
-
-# ─── fish abbr ───────────────────────────────────────────────
-if command -v fish >/dev/null; then
-    if ! grep -q "abbr --add ia" "$FISH_CONFIG" 2>/dev/null; then
-        cat >> "$FISH_CONFIG" <<'EOF'
-
-# Local AI
-abbr --add ia 'helium-browser http://localhost:8080'
-EOF
-        ok "fish abbr 'ia' added"
+        ok "OpenCode configured at $OPENCODE_CONFIG"
     fi
 fi
 
 # ─── Done ────────────────────────────────────────────────────
 echo
 echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  Installation complete!${NC}"
+echo -e "${GREEN}  Installation & Vision Support complete!${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
 echo
-echo -e "  ${BLUE}Server:${NC}      systemctl --user status $SERVICE_NAME"
+echo -e "  ${BLUE}Server status:${NC} systemctl --user status $SERVICE_NAME"
 echo -e "  ${BLUE}Interface:${NC}   http://localhost:$PORT"
-echo -e "  ${BLUE}Models:${NC}      $MODELS_DIR"
-echo -e "  ${BLUE}Script:${NC}      $BIN_DIR/ai-server"
-echo -e "  ${BLUE}OpenCode:${NC}    $(command -v opencode >/dev/null 2>&1 && echo "configured" || echo "not installed")"
-echo
-echo -e "  ${YELLOW}Useful commands:${NC}"
-echo
-echo "    systemctl --user restart $SERVICE_NAME   # restart"
-echo "    systemctl --user stop $SERVICE_NAME      # stop"
-echo "    journalctl --user -u $SERVICE_NAME -f    # follow logs"
-echo "    pkill -f llama-server                    # kill everything"
-echo "    opencode                                 # run OpenCode"
-echo
-echo -e "  ${YELLOW}Models in $MODELS_DIR:${NC}"
-for f in "$MODELS_DIR"/*.gguf; do
-    [[ -f "$f" ]] && echo "    • $(basename "$f")"
-done
-echo
-echo -e "  ${YELLOW}To open:${NC} open Helium at http://localhost:$PORT"
-echo -e "  or type ${GREEN}ia${NC} (opens in Terminal) if you use fish shell"
-echo -e "  or type ${GREEN}opencode${NC} to run the AI agent in your terminal"
+echo -e "  ${BLUE}Model File:${NC}  $MODEL_FILE"
+echo -e "  ${BLUE}Vision Proj:${NC} $MMPROJ_FILE"
 echo
