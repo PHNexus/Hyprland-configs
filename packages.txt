@@ -24,6 +24,7 @@ hyprshot
 grim
 slurp
 wf-recorder
+libnotify
 
 # Clipboard
 
