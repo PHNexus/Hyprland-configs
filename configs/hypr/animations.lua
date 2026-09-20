@@ -29,7 +29,7 @@ function M.setup()
     hl.animation({ leaf = "windows", enabled = true, speed = 6.8, bezier = "easeoutquint" })
     hl.animation({ leaf = "windowsIn", enabled = true, speed = 6.8, bezier = "emphasizeddeccel" })
     hl.animation({ leaf = "windowsOut", enabled = true, speed = 6.8, bezier = "emphasizedaccel" })
-    hl.animation({ leaf = "windowsMove", enabled = true, speed = 7.0, bezier = "standard", style = "slide" })
+    hl.animation({ leaf = "windowsMove", enabled = true, speed = 10, bezier = "standard", style = "slide" })
 
     -- ============================================================
     -- FADE

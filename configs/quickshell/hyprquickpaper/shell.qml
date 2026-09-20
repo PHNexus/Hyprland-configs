@@ -253,7 +253,7 @@ PanelWindow {
 			target: list
 			property: "contentX"
 
-			duration: 1000
+			duration: 750
 
 			easing.type: Easing.OutCubic
 		}
@@ -334,14 +334,14 @@ PanelWindow {
 
 				Behavior on width {
 					NumberAnimation {
-						duration: 450
+						duration: 500
 						easing.type: Easing.OutCubic
 					}
 				}
 
 				Behavior on height {
 					NumberAnimation {
-						duration: 550
+						duration: 500
 						easing.type: Easing.OutCubic
 					}
 				}
@@ -411,7 +411,7 @@ PanelWindow {
 
 					Behavior on opacity {
 						NumberAnimation {
-							duration: 750
+							duration: 500
 							easing.type: Easing.OutCubic
 						}
 					}
@@ -440,7 +440,7 @@ PanelWindow {
 				Timer {
 					id: hoverTimer
 
-					interval: 40
+					interval: 30
 					repeat: false
 
 					onTriggered: {
@@ -482,7 +482,7 @@ PanelWindow {
 
 					list.wheelTargetX = list.clampX(
 						list.wheelTargetX -
-						wheel.angleDelta.y * 2
+						wheel.angleDelta.y * 0.8
 					)
 
 					wheelAnimation.stop()
