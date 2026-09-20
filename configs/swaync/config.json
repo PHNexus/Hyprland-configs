@@ -95,11 +95,12 @@
     "label": "󰄀",
     "type": "normal",
     "command": "hyprshot -m region -o ~/Pictures/Screenshots -c --notify"
-},{
+},
+{
     "label": "",
     "type": "toggle",
     "active": false,
-    "command": "bash -c 'if pgrep -x wf-recorder >/dev/null; then killall -2 wf-recorder && sleep 1 && notify-send Recording_Stopped Video_saved_in_Videos; else M=$(hyprctl monitors -j | jq -r .[].name | head -n1); [ $(hyprctl monitors -j | jq length) -gt 1 ] && M=$(hyprctl monitors -j | jq -r .[].name | wofi --dmenu --prompt Select_monitor); [ -z \"$M\" ] && exit 0; mkdir -p ~/Videos && notify-send Starting_Recorder Capturing_$M && wf-recorder -o $M -p yuv420p -f ~/Videos/rec_$(date +%d-%H%M%S).mp4 >/dev/null 2>&1 & disown; fi'",
+    "command": "bash -c 'if pgrep -x wf-recorder >/dev/null; then killall -2 wf-recorder && sleep 1; for id in $(pactl list short modules | grep Combined | cut -f1); do pactl unload-module $id >/dev/null 2>&1; done; notify-send Recording_Stopped Video_saved_in_Videos; else M=$(hyprctl monitors -j | jq -r .[].name | head -n1); [ $(hyprctl monitors -j | jq length) -gt 1 ] && M=$(hyprctl monitors -j | jq -r .[].name | wofi --dmenu --prompt Select_monitor); [ -z \"$M\" ] && exit 0; SINK=$(pactl get-default-sink); SOURCE=$(pactl get-default-source); pactl load-module module-null-sink sink_name=Combined rate=48000 channels=2 sink_properties=device.description=Combined >/dev/null; pactl load-module module-loopback sink=Combined source=${SINK}.monitor latency_msec=100 rate=48000 channels=2 >/dev/null; pactl load-module module-loopback sink=Combined source=${SOURCE} latency_msec=100 rate=48000 channels=2 >/dev/null; pactl set-sink-mute Combined 0 >/dev/null 2>&1; pactl set-source-mute Combined.monitor 0 >/dev/null 2>&1; mkdir -p ~/Videos; notify-send Starting_Recorder Capturing_$M; wf-recorder --audio=Combined.monitor -o $M -p yuv420p -f ~/Videos/rec_$(date +%d-%H%M%S).mp4 >/dev/null 2>&1 & disown; fi'",
     "update-command": "pgrep -x wf-recorder >/dev/null && echo true || echo false"
 }
 
