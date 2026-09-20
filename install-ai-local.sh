@@ -29,6 +29,14 @@ MODEL_REPO="HauhauCS/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-GGUF"
 MODEL_ID="Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-Q5_K_P"
 MODEL_LABEL="Gemma 4 E4B Uncensored (local)"
 
+# Contexto e geração (65536 conforme sua config atual)
+CTX_SIZE=65536
+N_PREDICT=65536
+
+# Chat template customizado (obrigatório com sua config).
+# ORDEM IMPORTA: --jinja ANTES de --chat-template-file.
+CHAT_TEMPLATE_FILE="$LLAMA_DIR/models/templates/google-gemma-4-31B-it.jinja"
+
 # Colors
 RED='\033[1;31m'
 GREEN='\033[1;32m'
@@ -198,6 +206,12 @@ say "Step 6/6 — Setting up the server..."
 
 mkdir -p "$BIN_DIR"
 
+# Valida o chat template customizado
+if [[ ! -f "$CHAT_TEMPLATE_FILE" ]]; then
+    die "CHAT_TEMPLATE_FILE não existe: $CHAT_TEMPLATE_FILE"
+fi
+ok "Chat template encontrado: $CHAT_TEMPLATE_FILE"
+
 cat > "$BIN_DIR/ai-server" <<EOF
 #!/usr/bin/env fish
 
@@ -207,12 +221,13 @@ exec $LLAMA_DIR/build/bin/llama-server \\
   --port $PORT \\
   --parallel 1 \\
   -ngl 99 \\
-  -c 32768 \\
-  -n 32768 \\
+  -c $CTX_SIZE \\
+  -n $N_PREDICT \\
   -b 512 \\
   -ub 512 \\
   --jinja \\
   --tools all \\
+  --chat-template-file $CHAT_TEMPLATE_FILE \\
   --agent \\
   --flash-attn on \\
   --cache-type-k q8_0 \\
