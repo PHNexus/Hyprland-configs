@@ -115,7 +115,7 @@ PanelWindow {
 		spacing: 0
 		clip: true
 
-		cacheBuffer: width
+		cacheBuffer: width * 2
 
 		property int selectedIndex: 0
 		property int previousSelectedIndex: 0
@@ -334,14 +334,14 @@ PanelWindow {
 
 				Behavior on width {
 					NumberAnimation {
-						duration: 150
+						duration: 450
 						easing.type: Easing.OutCubic
 					}
 				}
 
 				Behavior on height {
 					NumberAnimation {
-						duration: 150
+						duration: 550
 						easing.type: Easing.OutCubic
 					}
 				}
@@ -380,7 +380,7 @@ PanelWindow {
 						folderModel.get(index, "fileName")
 
 					sourceSize.width:
-						list.tileWidth * 1.50
+						list.tileWidth * 1.50 + 40
 
 					sourceSize.height: main.imageHeight
 
@@ -411,7 +411,7 @@ PanelWindow {
 
 					Behavior on opacity {
 						NumberAnimation {
-							duration: 200
+							duration: 750
 							easing.type: Easing.OutCubic
 						}
 					}
