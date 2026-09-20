@@ -70,9 +70,9 @@ function M.setup()
 
     hl.animation({ leaf = "layersOut", enabled = true, speed = 5.8, bezier = "emphasizedaccel" })
 
-    hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 5.5, bezier = "almostlinear" })
+    hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 2.5, bezier = "almostlinear" })
 
-    hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 5.5, bezier = "almostlinear" })
+    hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 2.5, bezier = "almostlinear" })
 
     -- ============================================================
     -- WORKSPACES
