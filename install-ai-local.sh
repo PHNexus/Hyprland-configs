@@ -198,7 +198,7 @@ exec ./build/bin/llama-server \\
   --port $PORT \\
   --parallel 1 \\
   -ngl 99 \\
-  -c 32768 \\
+  -c 16384 \\
   -b 512 \\
   -ub 512 \\
   --jinja \\
