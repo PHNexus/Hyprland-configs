@@ -26,7 +26,7 @@ set -gx CUDACXX /opt/cuda/bin/nvcc
 # Aliases
 # ============================================================
 alias minecraft "sklauncher; pkill -f sklauncher"
-alias sync-dotfiles "bash ~/Documents/GitHub/GitHub/Hyprland-configs/sync-dotfiles.sh"
+alias sync-dotfiles "bash ~/Documents/GitHub/Hyprland-configs/sync-dotfiles.sh"
 alias freeram "sync && sudo sysctl vm.drop_caches=3"
 alias xdg-open-appstream "gio open"
 
