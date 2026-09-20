@@ -2,8 +2,8 @@
 # ============================================================
 # Local AI Installer — Arch Linux + NVIDIA
 # ============================================================
-# Installs llama.cpp with CUDA, downloads Qwen 2.5 Coder 7B
-# (heretic/abliterated), sets up a server with systemd, and
+# Installs llama.cpp with CUDA, downloads Gemma-4-E4B Uncensored
+# (HauhauCS Aggressive Q5_K_P), sets up a server with systemd, and
 # configures OpenCode.
 #
 # Usage: ./install-ai-local.sh [--skip-models] [--no-opencode]
@@ -20,9 +20,14 @@ SERVICE_NAME="llama-server.service"
 PORT=8080
 OPENCODE_CONFIG="$HOME/.config/opencode/opencode.json"
 
-# Model — repo id only (hf CLI doesn't accept ":QUANT")
-MODEL_REPO="mradermacher/Qwen2.5-Coder-7B-Instruct-heretic-GGUF"
-MODEL_FILE="Qwen2.5-Coder-7B-Instruct-heretic.IQ4_XS.gguf"
+# Model — Gemma 4 E4B Uncensored HauhauCS Aggressive (Q5_K_P)
+MODEL_FILE="Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf"
+# Repo do Hugging Face (ajuste se for outro). Deixe vazio para pular download.
+MODEL_REPO="HauhauCS/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-GGUF"
+
+# Model id exposto pelo llama-server em /v1/models (geralmente basename sem .gguf)
+MODEL_ID="Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-Q5_K_P"
+MODEL_LABEL="Gemma 4 E4B Uncensored (local)"
 
 # Colors
 RED='\033[1;31m'
@@ -171,17 +176,21 @@ if [[ $SKIP_MODELS -eq 1 ]]; then
     warn "Skipping model downloads (--skip-models)"
 fi
 
-# ── Qwen 2.5 Coder 7B heretic (IQ4_XS — cabe na 1660 Ti) ─────
-if have_file "Qwen2.5-Coder-7B-Instruct-heretic.IQ4_XS.gguf"; then
-    ok "Qwen2.5-Coder-7B heretic already present"
+# ── Gemma 4 E4B Uncensored (Q5_K_P) ──────────────────────────
+if have_file "$MODEL_FILE"; then
+    ok "Gemma-4-E4B Uncensored already present"
 elif [[ $SKIP_MODELS -eq 0 ]]; then
-    say "Downloading Qwen2.5-Coder-7B heretic IQ4_XS (~4.6 GB)..."
-    hf download "$MODEL_REPO" "$MODEL_FILE" \
-        --local-dir "$MODELS_DIR" \
-        --quiet
-    ok "Qwen2.5-Coder-7B heretic ready"
+    if [[ -n "${MODEL_REPO:-}" ]]; then
+        say "Downloading $MODEL_FILE ..."
+        hf download "$MODEL_REPO" "$MODEL_FILE" \
+            --local-dir "$MODELS_DIR" \
+            --quiet
+        ok "Gemma-4-E4B Uncensored ready"
+    else
+        warn "MODEL_REPO not set — skipping download"
+    fi
 else
-    warn "Qwen2.5-Coder-7B heretic not found and --skip-models is on"
+    warn "Gemma-4-E4B Uncensored not found and --skip-models is on"
 fi
 
 # ─── Step 6: Server script + systemd ─────────────────────────
@@ -190,18 +199,21 @@ say "Step 6/6 — Setting up the server..."
 mkdir -p "$BIN_DIR"
 
 cat > "$BIN_DIR/ai-server" <<EOF
-#!/bin/bash
-cd $LLAMA_DIR
-exec ./build/bin/llama-server \\
+#!/usr/bin/env fish
+
+exec $LLAMA_DIR/build/bin/llama-server \\
   --model $MODELS_DIR/$MODEL_FILE \\
   --host 127.0.0.1 \\
   --port $PORT \\
   --parallel 1 \\
   -ngl 99 \\
-  -c 16384 \\
+  -c 32768 \\
+  -n 32768 \\
   -b 512 \\
   -ub 512 \\
   --jinja \\
+  --tools all \\
+  --agent \\
   --flash-attn on \\
   --cache-type-k q8_0 \\
   --cache-type-v q8_0 \\
@@ -264,19 +276,19 @@ if [[ $WITH_OPENCODE -eq 1 ]]; then
                 warn "Existing OpenCode config backed up"
             fi
 
-            cat > "$OPENCODE_CONFIG" <<'EOF'
+            cat > "$OPENCODE_CONFIG" <<EOF
 {
-  "$schema": "https://opencode.ai/config.json",
+  "\$schema": "https://opencode.ai/config.json",
   "provider": {
     "llama.cpp": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "llama-server (local)",
       "options": {
-        "baseURL": "http://127.0.0.1:8080/v1"
+        "baseURL": "http://127.0.0.1:$PORT/v1"
       },
       "models": {
-        "Qwen2.5-Coder-7B-Instruct-heretic.IQ4_XS": {
-          "name": "Qwen2.5 Coder 7B heretic (local)"
+        "$MODEL_ID": {
+          "name": "$MODEL_LABEL"
         }
       }
     }
