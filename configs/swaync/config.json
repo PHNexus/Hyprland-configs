@@ -115,24 +115,6 @@
                         "command": "systemctl poweroff"
                     }
                 ]
-            },
-            "menu#powermode-buttons": {
-                "label": "󱓞",
-                "position": "left",
-                "actions": [
-                    {
-                        "label": "Performance",
-                        "command": "powerprofilesctl set performance"
-                    },
-                    {
-                        "label": "Balanced",
-                        "command": "powerprofilesctl set balanced"
-                    },
-                    {
-                        "label": "Power-saver",
-                        "command": "powerprofilesctl set power-saver"
-                    }
-                ]
             }
         }
     }
