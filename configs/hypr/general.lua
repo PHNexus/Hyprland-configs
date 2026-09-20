@@ -56,7 +56,7 @@ function M.setup()
                 contrast = 2,
                 vibrancy_darkness = 0.35,
                 xray = true,
-                new_optimizations = true,
+                new_optimizations = true, --
             },
         }
     })
