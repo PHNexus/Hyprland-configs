@@ -44,10 +44,7 @@ function M.setup()
     hl.bind(mainMod .. " + M", hl.dsp.exit())
     hl.bind(mainMod .. " + D", hl.dsp.layout("move +col"))
     hl.bind(mainMod .. " + A", hl.dsp.layout("move -col"))
-    hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({
-    mode = "maximized",
-    action = "toggle"
-}))
+    hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle"}))
     hl.bind(mainMod .. " + equal", hl.dsp.layout("colresize +conf"))
     hl.bind(mainMod .. " + minus", hl.dsp.layout("colresize -conf"))
 
