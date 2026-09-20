@@ -2,8 +2,9 @@
 # ============================================================
 # Local AI Installer — Arch Linux + NVIDIA
 # ============================================================
-# Installs llama.cpp with CUDA, downloads Qwen models, sets up
-# a server with systemd, and configures OpenCode.
+# Installs llama.cpp with CUDA, downloads Qwen 2.5 Coder 7B
+# (heretic/abliterated), sets up a server with systemd, and
+# configures OpenCode.
 #
 # Usage: ./install-ai-local.sh [--skip-models] [--no-opencode]
 # ============================================================
@@ -20,7 +21,8 @@ PORT=8080
 OPENCODE_CONFIG="$HOME/.config/opencode/opencode.json"
 
 # Model — repo id only (hf CLI doesn't accept ":QUANT")
-MODEL_9B="Abiray/Qwen3.5-9B-abliterated-GGUF"
+MODEL_REPO="mradermacher/Qwen2.5-Coder-7B-Instruct-heretic-GGUF"
+MODEL_FILE="Qwen2.5-Coder-7B-Instruct-heretic.IQ4_XS.gguf"
 
 # Colors
 RED='\033[1;31m'
@@ -169,18 +171,17 @@ if [[ $SKIP_MODELS -eq 1 ]]; then
     warn "Skipping model downloads (--skip-models)"
 fi
 
-# ── 9B abliterated (Q3_K_M — cabe na 1660 Ti) ────────────────
-if have_file "Qwen3.5-9B-abliterated-Q3_K_M.gguf"; then
-    ok "Qwen3.5-9B abliterated already present"
+# ── Qwen 2.5 Coder 7B heretic (IQ4_XS — cabe na 1660 Ti) ─────
+if have_file "Qwen2.5-Coder-7B-Instruct-heretic.IQ4_XS.gguf"; then
+    ok "Qwen2.5-Coder-7B heretic already present"
 elif [[ $SKIP_MODELS -eq 0 ]]; then
-    say "Downloading Qwen3.5-9B abliterated Q3_K_M (~4.6 GB)..."
-    hf download "$MODEL_9B" \
-        --include "*Q3_K_M*.gguf" \
+    say "Downloading Qwen2.5-Coder-7B heretic IQ4_XS (~4.6 GB)..."
+    hf download "$MODEL_REPO" "$MODEL_FILE" \
         --local-dir "$MODELS_DIR" \
         --quiet
-    ok "Qwen3.5-9B abliterated ready"
+    ok "Qwen2.5-Coder-7B heretic ready"
 else
-    warn "Qwen3.5-9B abliterated not found and --skip-models is on"
+    warn "Qwen2.5-Coder-7B heretic not found and --skip-models is on"
 fi
 
 # ─── Step 6: Server script + systemd ─────────────────────────
@@ -191,22 +192,20 @@ mkdir -p "$BIN_DIR"
 cat > "$BIN_DIR/ai-server" <<EOF
 #!/bin/bash
 cd $LLAMA_DIR
-exec ./build/bin/llama-server \
-  --models-dir $MODELS_DIR \
-  --no-models-autoload \
-  --host 127.0.0.1 \
-  --port $PORT \
-  --parallel 1 \
-  -ngl 99 \
-  -c 32768 \
-  -b 512 \
-  -ub 512 \
-  --jinja \
-  --chat-template-kwargs '{"enable_thinking": false}' \
-  --flash-attn on \
-  --cache-type-k q8_0 \
-  --cache-type-v q8_0 \
-  --sleep-idle-seconds 30
+exec ./build/bin/llama-server \\
+  --model $MODELS_DIR/$MODEL_FILE \\
+  --host 127.0.0.1 \\
+  --port $PORT \\
+  --parallel 1 \\
+  -ngl 99 \\
+  -c 32768 \\
+  -b 512 \\
+  -ub 512 \\
+  --jinja \\
+  --flash-attn on \\
+  --cache-type-k q8_0 \\
+  --cache-type-v q8_0 \\
+  --sleep-idle-seconds 120
 EOF
 chmod +x "$BIN_DIR/ai-server"
 ok "ai-server created at $BIN_DIR/ai-server"
@@ -276,8 +275,8 @@ if [[ $WITH_OPENCODE -eq 1 ]]; then
         "baseURL": "http://127.0.0.1:8080/v1"
       },
       "models": {
-        "Qwen3.5-9B-abliterated-Q3_K_M": {
-          "name": "Qwen3.5 9B abliterated (local)"
+        "Qwen2.5-Coder-7B-Instruct-heretic.IQ4_XS": {
+          "name": "Qwen2.5 Coder 7B heretic (local)"
         }
       }
     }
