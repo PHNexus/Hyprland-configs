@@ -90,7 +90,19 @@
                     "active": true,
                     "command": "$HOME/.config/hypr/scripts/warp_toggle.sh >/dev/null 2>&1",
                     "update-command": "warp-cli status | grep -q 'Connected' && echo true || echo false"
-                }
+                },
+     {
+    "label": "󰄀",
+    "type": "normal",
+    "command": "hyprshot -m region -o ~/Pictures/Screenshots -c --notify"
+},{
+    "label": "",
+    "type": "toggle",
+    "active": false,
+    "command": "bash -c 'if pgrep -x wf-recorder >/dev/null; then killall -2 wf-recorder && sleep 1 && notify-send Recording_Stopped Video_saved_in_Videos; else M=$(hyprctl monitors -j | jq -r .[].name | head -n1); [ $(hyprctl monitors -j | jq length) -gt 1 ] && M=$(hyprctl monitors -j | jq -r .[].name | wofi --dmenu --prompt Select_monitor); [ -z \"$M\" ] && exit 0; mkdir -p ~/Videos && notify-send Starting_Recorder Capturing_$M && wf-recorder -o $M -p yuv420p -f ~/Videos/rec_$(date +%d-%H%M%S).mp4 >/dev/null 2>&1 & disown; fi'",
+    "update-command": "pgrep -x wf-recorder >/dev/null && echo true || echo false"
+}
+
             ]
         },
         "menubar": {
