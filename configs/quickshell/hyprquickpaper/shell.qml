@@ -242,7 +242,7 @@ PanelWindow {
 			target: list
 			property: "contentX"
 
-			duration: 110
+			duration: 1000
 
 			easing.type: Easing.OutCubic
 		}
@@ -253,7 +253,7 @@ PanelWindow {
 			target: list
 			property: "contentX"
 
-			duration: 150
+			duration: 1000
 
 			easing.type: Easing.OutCubic
 		}
@@ -526,21 +526,21 @@ PanelWindow {
 					from: 0
 					to: 1
 
-					duration: 300
+					duration: 220
 
-					easing.type: Easing.OutCubic
+					easing.type: Easing.OutExpo
 				}
 
 				NumberAnimation {
 					target: delegateItem
 					property: "entranceOffset"
 
-					from: 25
+					from: 35
 					to: 0
 
-					duration: 300
+					duration: 220
 
-					easing.type: Easing.OutCubic
+					easing.type: Easing.OutExpo
 				}
 			}
 		}

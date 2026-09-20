@@ -45,13 +45,13 @@ function M.setup()
     hl.animation({ leaf = "layers", enabled = true, speed = 5.8, bezier = "easeoutquint" })
     hl.animation({ leaf = "layersIn", enabled = true, speed = 5.8, bezier = "emphasizeddeccel" })
     hl.animation({ leaf = "layersOut", enabled = true, speed = 5.8, bezier = "emphasizedaccel" })
-    hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 5.5, bezier = "almostlinear" })
-    hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 5.5, bezier = "almostlinear" })
+    hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 2.5, bezier = "almostlinear" })
+    hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 2.5, bezier = "almostlinear" })
 
     -- ============================================================
     -- WORKSPACES
     -- ============================================================
-    hl.animation({ leaf = "workspaces", enabled = true, speed = 6.8, bezier = "workspaceslide", style = "slidefade 25%" })
+    hl.animation({ leaf = "workspaces", enabled = true, speed = 4.0, bezier = "almostlinear", style = "slidefade 25%" })
     hl.animation({
         leaf = "specialWorkspace",
         enabled = true,
