@@ -28,9 +28,9 @@ MODEL_REPO="HauhauCS/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-GGUF"
 MODEL_ID="Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-Q5_K_P"
 MODEL_LABEL="Gemma 4 E4B Uncensored (local + visão)"
 
-# Contexto e geração otimizados para evitar estouro de VRAM na 1660 Ti
-CTX_SIZE=16384
-N_PREDICT=4096
+# Contexto e geração atualizados conforme nova configuração
+CTX_SIZE=65536
+N_PREDICT=65536
 
 # Chat template customizado
 CHAT_TEMPLATE_FILE="$LLAMA_DIR/models/templates/google-gemma-4-31B-it.jinja"
@@ -48,7 +48,7 @@ ok()   { printf "${GREEN}✓${NC} %s\n" "$*"; }
 warn() { printf "${YELLOW}!${NC} %s\n" "$*"; }
 die()  { printf "${RED}✗${NC} %s\n" "$*" >&2; exit 1; }
 
-# ─── Parse args ──────────────────────────────────────────────
+# ─── Parse args ──────────────────────────────────────
 SKIP_MODELS=0
 WITH_OPENCODE=1
 for arg in "$@"; do
@@ -208,11 +208,11 @@ exec $LLAMA_DIR/build/bin/llama-server \\
   --host 127.0.0.1 \\
   --port $PORT \\
   --parallel 1 \\
-  -ngl 32 \\
+  -ngl 99 \\
   -c $CTX_SIZE \\
   -n $N_PREDICT \\
-  -b 256 \\
-  -ub 256 \\
+  -b 512 \\
+  -ub 512 \\
   --jinja \\
   --tools all \\
   --chat-template-file $CHAT_TEMPLATE_FILE \\
@@ -304,4 +304,3 @@ echo -e "  ${BLUE}Server status:${NC} systemctl --user status $SERVICE_NAME"
 echo -e "  ${BLUE}Interface:${NC}   http://localhost:$PORT"
 echo -e "  ${BLUE}Model File:${NC}  $MODEL_FILE"
 echo -e "  ${BLUE}Vision Proj:${NC} $MMPROJ_FILE"
-echo
