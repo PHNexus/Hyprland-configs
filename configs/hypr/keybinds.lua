@@ -31,6 +31,9 @@ function M.setup()
     -- TOGGLE FLOATING
     -- ============================================================
     hl.bind(mainMod .. " + S", function()
+        hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "unset" }))
+        hl.dispatch(hl.dsp.window.fullscreen({ mode = "fullscreen", action = "unset" }))        
+
         hl.dispatch(hl.dsp.window.float())
         hl.dispatch(hl.dsp.window.center())
         hl.dispatch(hl.dsp.window.resize({ x = 1000, y = 600 }))
