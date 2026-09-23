@@ -11,10 +11,15 @@ I use these configs daily
 |---|---|
 | <img width="1921" height="1081" alt="2026-09-09-094547_hyprshot" src="https://github.com/user-attachments/assets/92f08967-f092-45db-929f-5129a1345ee6" />  | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" />
 
+
 <div align="center">
   <h2>Preview</h2>
   <img src="preview.gif" alt="Preview do setup" width="500">
 </div>
+
+<br>
+<br>
+<hr>
 
 | Component | Program |
 |---|---|
