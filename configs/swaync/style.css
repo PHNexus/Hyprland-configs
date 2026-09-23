@@ -193,7 +193,7 @@
 /* Override the font size for buttons in the widget-buttons-grid */
 .widget-buttons-grid flowboxchild > button label,
 .widget-buttons-grid flowboxchild > button * {
-    font-size: 18px;
+    font-size: 20px;
 }
 
 /* ============================================================================== */
