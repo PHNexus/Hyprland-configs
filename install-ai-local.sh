@@ -218,7 +218,7 @@ exec $LLAMA_DIR/build/bin/llama-server \\
   --chat-template-file $CHAT_TEMPLATE_FILE \\
   --agent \\
   --flash-attn on \\
-  --sleep-idle-seconds 120
+  --sleep-idle-seconds 30
 EOF
 chmod +x "$BIN_DIR/ai-server"
 ok "ai-server created at $BIN_DIR/ai-server"
