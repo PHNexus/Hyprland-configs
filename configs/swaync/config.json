@@ -44,7 +44,9 @@
             "text": "Do Not Disturb"
         },
         "mpris": {
-            "autohide": true
+            "autohide": true,
+            "loop-carousel": true
+
         },
         "volume": {
             "label": ""
