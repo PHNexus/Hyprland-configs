@@ -13,7 +13,7 @@ I use these configs daily
 
 
 <div align="center">
- <h2><a href="https://www.youtube.com/watch?v=OU2Szvqaj1c">Preview</a><h2/>
+ <h2>Preview<h2/>
   <img src="preview.gif" alt="Preview do setup" width="500">
 </div>
 
