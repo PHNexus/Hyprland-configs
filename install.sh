@@ -325,7 +325,7 @@ if [[ ${#monitor_entries[@]} -gt 1 ]]; then
     done
 
     # Sort descending by area
-    IFS=$'\n' sorted_entries=($(sort -t'|' -k1,1 -rn <<< "${sorted_entries[*]}")); unset IFS
+    mapfile -t sorted_entries < <(printf '%s\n' "${sorted_entries[@]}" | sort -t'|' -k1,1 -rn)
 
     # Rebuild monitor_entries in sorted order (largest first)
     monitor_entries=()
