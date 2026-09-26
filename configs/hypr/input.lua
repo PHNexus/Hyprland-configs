@@ -14,6 +14,7 @@ function M.setup()
             natural_scroll = false,
             scroll_factor = 1,
             follow_mouse = true,
+            float_switch_override_focus = 0
         },
         -- ============================================================
         -- RENDER
