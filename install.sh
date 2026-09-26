@@ -589,7 +589,7 @@ echo "Installing Google Chrome temporarily via $AUR_HELPER..."
 cd /tmp/helium-drm-fixer
 bun install
 # Note: The script might pause here if cli.ts requires (Y/n) confirmation
-bun run cli.ts
+bun run cli.ts,,
 
 echo "Uninstalling Google Chrome..."
 # Safely remove Chrome and its unused dependencies
@@ -732,6 +732,16 @@ else
 fi
 
 # --------------------------------------------
+# Configure GTK and Icon Themes (GNOME)
+# --------------------------------------------
+echo
+echo "Applying GTK and icon themes..."
+gsettings set org.gnome.desktop.interface gtk-theme "Materia-dark-compact"
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+gsettings set org.gnome.desktop.interface icon-theme "WhiteSur"
+echo "  - Themes applied successfully!"
+
+# --------------------------------------------
 # Set Fish as Default Shell
 # --------------------------------------------
 echo
@@ -748,6 +758,8 @@ fi
 
 echo
 echo "Installation complete!"
+echo "Reloading Hyprland configurations..."
+hyprctl reload
 read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
 reboot_choice="${reboot_choice:-Y}"
 
