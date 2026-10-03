@@ -265,7 +265,7 @@ fi
 # -----------------------------------------------------------------
 # Set Initial Default Wallpaper with Cache
 # -----------------------------------------------------------------
-DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/nome-da-sua-imagem.jpg"
+DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/35.jpg"
 CACHE_DIR="$HOME/.cache/wallpapers_state"
 mkdir -p "$CACHE_DIR"
 
