@@ -31,7 +31,7 @@ function M.setup()
     -- TOGGLE Dock-Bar
     -- ============================================================
     hl.bind(mainMod .. " + SHIFT + D",
-        hl.dsp.exec_cmd("dock-bar stop || dock-bar start"))
+        hl.dsp.exec_cmd("dock-bar autohideToggle"))
 
     -- ============================================================
     -- TOGGLE FLOATING
