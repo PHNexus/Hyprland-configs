@@ -80,6 +80,16 @@ function M.setup()
         center = true,
         size = "1000 600",
     })
+     hl.window_rule({
+        name = "file-extract",
+        match = {
+            class = "^(org.gnome.FileRoller)$",
+            title = "^(Extract).*$"
+       },
+        float = true,
+        center = true,
+        size = "1000 600",
+    })
     hl.window_rule({
         name = "file-rename",
         match = {
