@@ -1,0 +1,17 @@
+stylesheet=style.css
+show=drun
+columns=1
+matching=multi-contains
+no_actions=true
+width=330
+height=350
+always_parse_args=true
+show_all=false
+print_command=true
+layer=overlay
+insensitive=true
+prompt=
+allow_markup=true
+allow_images=true
+hide-scrollbar=true
+dynamic_lines=true

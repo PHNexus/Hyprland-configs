@@ -1,0 +1,102 @@
+window {
+  margin: 0px;
+  border: none;
+  border-radius: 12px;
+  background-color: transparent;
+  font-family: "Fira Code", "JetBrains Mono", monospace;
+  color: #f3f3f3;
+}
+
+#input {
+  margin: -1px 8px;
+  border: none;
+  color: #ffffff;
+  background-color: transparent;
+  padding: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: none;
+  outline: none;
+}
+
+#input::placeholder {
+  color: #666666;
+  font-style: italic;
+}
+
+#prompt {
+  color: transparent;
+}
+
+#inner-box {
+  margin: 2px 4px;
+  border: none;
+  padding: 0px;
+}
+
+#outer-box {
+  margin: 2px;
+  border: none;
+  padding: 2px;
+  background-color: #0d0d0d;
+  border-radius: 12px;
+}
+
+#scroll {
+  margin: 0px;
+  border: none;
+  background: none;
+}
+
+scrollbar, scrollbar trough, scrollbar slider {
+  opacity: 0;
+  border: none;
+  background: transparent;
+  width: 0px;
+}
+
+#entry label {
+  max-width: 130px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#text {
+  margin: 2px 4px;
+  border: none;
+  color: #d4d4d4;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+#entry {
+  border: none;
+  border-radius: 12px;
+  background: none;
+  margin: 2px;
+  padding: 4px 6px;
+  max-width: 210px;
+}
+
+#entry:selected {
+  background-color: #a3be8c;
+  border-radius: 12px;
+}
+
+#entry:selected #text {
+  font-weight: 600;
+  color: #1e1e1e;
+}
+
+#entry:hover {
+  background-color: #1a1a1a;
+  border-radius: 12px;
+}
+
+#entry:hover #text {
+  color: #ffffff;
+}
+
+#entry image {
+  margin-right: 6px;
+}

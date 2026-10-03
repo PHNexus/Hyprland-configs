@@ -1,0 +1,111 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "display": {
+    "separator": " "
+  },
+  "logo": {
+    "source": "~/.config/fastfetch/logo/felix.png",
+    "position": "left",
+    "width": 25,
+    "padding": {
+      "top": 3,
+      "left": 1,
+      "right": 2
+    }
+  },
+  "modules": [
+    {
+      "type": "custom",
+      "format": ""
+    },
+    {
+      "type": "custom",
+      "format": ""
+    },
+    {
+      "type": "custom",
+      "format": ""
+    },
+    {
+      "type": "custom",
+      "key": " ╭─Markosv─╮",
+      "keyColor": "white"
+    },
+    {
+      "type": "command",
+      "key": " │   usr  │",
+      "keyColor": "white",
+      "text": "echo $USER"
+    },
+    {
+      "type": "kernel",
+      "key": " │   ker  │",
+      "keyColor": "white",
+      "format": "{2}"
+    },
+    {
+      "type": "os",
+      "key": " │   os   │",
+      "keyColor": "white",
+      "format": "{3}"
+    },
+    {
+      "type": "wm",
+      "key": " │   wm   │",
+      "keyColor": "white",
+      "format": "{2}"
+    },
+    {
+      "type": "cpu",
+      "key": " │  󰻠 cpu  │",
+      "keyColor": "white",
+      "format": "{1}"
+    },
+    {
+      "type": "gpu",
+      "key": " │  󰢮 gpu  │",
+      "keyColor": "white",
+      "format": "{2}"
+    },
+    {
+      "type": "command",
+      "key": " │   nvm  │",
+      "keyColor": "white",
+      "text": "~/.config/fastfetch/storage.sh nvme"
+    },
+    {
+      "type": "command",
+      "key": " │   ssd  │",
+      "keyColor": "white",
+      "text": "~/.config/fastfetch/storage.sh ssd"
+    },
+    {
+      "type": "command",
+      "key": " │   hd   │",
+      "keyColor": "white",
+      "text": "~/.config/fastfetch/storage.sh hd"
+    },
+    {
+      "type": "command",
+      "key": " │   ram  │",
+      "keyColor": "white",
+      "text": "free -h | awk '/^Mem:/ {print $3 \"/\" $2}'"
+    },
+    {
+      "type": "command",
+      "key": " │   pkg  │",
+      "keyColor": "white",
+      "text": "echo \"$(flatpak list --system --columns=application 2>/dev/null | wc -l) (flatpak), $(pacman -Q 2>/dev/null | wc -l) (pacman)\""
+    },
+    {
+      "type": "custom",
+      "key": " ╰─────────╯",
+      "keyColor": "white"
+    },
+    {
+      "type": "colors",
+      "key": " ",
+      "symbol": "circle"
+    }
+  ]
+}

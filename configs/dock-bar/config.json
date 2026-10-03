@@ -1,0 +1,33 @@
+{
+  "dock": {
+    "enabled": true,
+    "autohide": true,
+    "iconSize": 40,
+    "spacing": 0,
+    "marginBottom": 12,
+    "reserveSpace": true,
+    "hideDelay": 400,
+    "launcherButton": false,
+    "launcherCommand": "wofi show drun",
+    "editorCommand": "code"
+  },
+  "pill": {
+    "radius": 12,
+    "padding": 6,
+    "animationDuration": 350
+  },
+  "border": {
+    "width": 0,
+    "colorTop": "#000000",
+    "colorBottom": "#000000"
+  },
+  "opacity": {
+    "normal": 0.3
+  },
+  "theme": {
+    "colorsFile": "~/.config/dock-bar/colors.json"
+  },
+  "apps": {
+    "pinned": ["com.microsoft.VSCode", "kitty", "helium"]
+  }
+}

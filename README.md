@@ -1,0 +1,152 @@
+<!-- Badges -->
+[![Platform](https://img.shields.io/badge/platform-Arch%20Linux-1793D1?logo=arch-linux&logoColor=white)](https://archlinux.org/)
+[![WM](https://img.shields.io/badge/WM-Hyprland-58E1FF)](https://hyprland.org/)
+[![Shell](https://img.shields.io/badge/shell-Fish-4AAE47?logo=fish-shell&logoColor=white)](https://fishshell.com/)
+[![Editor](https://img.shields.io/badge/editor-Neovim-57A143?logo=neovim&logoColor=white)](https://neovim.io/)
+[![License](https://img.shields.io/github/license/PHNexus/Hyprland-configs?color=blue)](https://github.com/PHNexus/Hyprland-configs/blob/main/LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/PHNexus/Hyprland-configs?color=green)](https://github.com/PHNexus/Hyprland-configs/commits/main)
+[![Repo Size](https://img.shields.io/github/repo-size/PHNexus/Hyprland-configs)](https://github.com/PHNexus/Hyprland-configs)
+[![Stars](https://img.shields.io/github/stars/PHNexus/Hyprland-configs?style=social)](https://github.com/PHNexus/Hyprland-configs/stargazers)
+[![Created At](https://img.shields.io/github/created-at/PHNexus/Hyprland-configs?color=blue&label=created)](https://github.com/PHNexus/Hyprland-configs)
+---
+
+## Hyprland Rice
+
+Welcome to my Hyprland Rice configuration! This setup is designed to provide a clean, efficient, and visually appealing desktop environment.
+
+I use these configs daily.
+
+#### Scrolling mode | looks like Niri
+
+## Screenshots
+
+|<img width="1924" height="1080" alt="2026-09-23-044410_hyprshot" src="https://github.com/user-attachments/assets/de9d3760-24cc-405f-8d82-e61e079d79fa" /> | <img width="1930" height="1081" alt="2026-09-09-095748_hyprshot" src="https://github.com/user-attachments/assets/b5f2844d-ad29-4245-a8b3-3157e09bf1c7" /> |
+|---|---|
+| <img width="1921" height="1081" alt="2026-09-09-094547_hyprshot" src="https://github.com/user-attachments/assets/92f08967-f092-45db-929f-5129a1345ee6" />  | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" /> |
+
+<div align="center">
+ <h2>Preview</h2>
+  <img src="preview.gif" alt="Preview do setup" width="500">
+</div>
+
+<br>
+<br>
+<hr>
+
+| Component | Program |
+|---|---|
+| Terminal | [Kitty](https://github.com/kovidgoyal/kitty) |
+| App Launcher | [Wofi](https://hg.sr.ht/~scoopta/wofi) |
+| Status Bar | [Waybar](https://github.com/alexays/waybar) |
+| Shell | [Fish](https://fishshell.com/) + [Starship](https://starship.rs/) |
+| File Manager | [Thunar](https://docs.xfce.org/xfce/thunar/start) |
+| Notifications & Control Center | [SwayNC](https://github.com/ErikReider/SwayNotificationCenter) |
+| Wallpaper | [Awww](https://codeberg.org/LGFae/awww) |
+| Idle Management | [Hypridle](https://github.com/hyprwm/hypridle) |
+| Screen Lock | [Hyprlock](https://github.com/hyprwm/hyprlock) |
+| Editor | [VS Code](https://code.visualstudio.com/) + [Neovim](https://neovim.io/) |
+| Browser | [Helium](https://helium.computer/) |
+| Display Manager (Default) | [Ly](https://codeberg.org/fairyglade/ly#systemd) |
+| Dock | [dock-bar](https://github.com/PHNexus/Hyprland-configs/tree/main/dock-bar) (`quickshell`) |
+
+## Installation
+
+Clone the repository and run the installation script to automatically set up the dependencies and configuration files.
+
+```bash
+# Fast clone (recommended for regular users - no history)
+git clone --depth=1 https://github.com/PHNexus/Hyprland-configs.git
+cd Hyprland-configs
+chmod +x install.sh
+./install.sh
+```
+
+## [Dependencies](packages.txt)
+
+---
+
+## Related Projects
+
+Other repos used by this dotfiles:
+
+| Project | Description |
+|---|---|
+| [![AppManager](https://img.shields.io/badge/-AppManager-blue?logo=github)](https://github.com/PHNexus/AppManager) | Fork of [kem-a/AppManager](https://github.com/kem-a/AppManager) — AppImage installer/manager. Installed automatically by `install.sh` and used to install other AppImages. |
+| [![helium-drm-fixer](https://img.shields.io/badge/-helium--drm--fixer-blue?logo=github)](https://github.com/PHNexus/helium-drm-fixer) | Fork of [vikas5914/helium-drm-fixer](https://github.com/vikas5914/helium-drm-fixer) — fixes DRM (Widevine) for the Helium browser. Run automatically by `install.sh`. |
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+# Keybinds
+
+Modifier key (`$mainMod`) is **SUPER** (Windows key).
+
+## Apps & Scripts
+
+| Keybind | Action |
+|---|---|
+| `SUPER + T` | Open terminal (`kitty`) |
+| `SUPER + Space` | App launcher (`wofi`) |
+| `SUPER + E` | File manager (`thunar`) |
+| `SUPER + C` | Open VS Code (`code`) |
+| `SUPER + B` | Open browser (`helium-browser`) |
+| `SUPER + X` | Open music (`spotify`) |
+| `SUPER + V` | Clipboard history (`cliphist`) |
+| `SUPER + L` | Lock screen (`hyprlock`) |
+| `SUPER + N` | Toggle SwayNC control center |
+| `SUPER + SHIFT + R` | Set random wallpaper |
+| `SUPER + W` | Wallpaper picker (`quickshell`) |
+
+## Window Management
+
+| Keybind | Action |
+|---|---|
+| `SUPER + Q` | Close active window |
+| `SUPER + SHIFT + W` | Toggle Waybar |
+| `SUPER + S` | Toggle Floating (center + resize 1000x600) |
+| `SUPER + F11` | Toggle Fullscreen |
+| `SUPER + M` | Exit Hyprland |
+| `SUPER + D` | Move column (`move +col`) |
+| `SUPER + A` | Move column (`move -col`) |
+| `SUPER + R` | Move window to secondary monitor (workspace 6) |
+| `SUPER + equal` | Resize column (`colresize +conf`) |
+| `SUPER + minus` | Resize column (`colresize -conf`) |
+| `SUPER + F` | Toggle Maximize window |
+| `SUPER + l / j / i / k` | Move focus (left, right, up, down) |
+| `SUPER + left / right` | Consume or expel window (`consume_or_expel`) |
+| `SUPER + SHIFT + left / right` | Move window to adjacent direction |
+| `SUPER + mouse:272` | Drag / move floating window |
+| `SUPER + mouse:273` | Resize floating window |
+
+## Workspaces
+
+| Keybind | Action |
+|---|---|
+| `SUPER + [1-4]` | Switch to workspace 1–4 |
+| `SUPER + SHIFT + [1-4]` | Move window to workspace 1–4 |
+| `SUPER + Tab` | Switch to previous workspace |
+| `ALT + Tab` | Cycle to next window |
+| `ALT + SHIFT + Tab` | Cycle to previous window |
+| `SUPER + ALT + left / right` | Cycle workspaces (`m-1` / `m+1`) |
+| `SUPER + mouse_down` | Scroll to next workspace (`e+1`) |
+| `SUPER + mouse_up` | Scroll to previous workspace (`e-1`) |
+
+## Media & Brightness
+
+| Keybind | Action |
+|---|---|
+| `XF86AudioRaiseVolume` | Volume up (`wpctl 2%+`, limit 100%) |
+| `XF86AudioLowerVolume` | Volume down (`wpctl 2%-`) |
+| `XF86AudioMute` | Toggle audio mute |
+| `XF86AudioMicMute` | Toggle microphone mute |
+| `XF86MonBrightnessUp` | Brightness up (`brightnessctl 2%+`) |
+| `XF86MonBrightnessDown` | Brightness down (`brightnessctl 2%-`) |
+
+## Screenshots
+
+| Keybind | Action |
+|---|---|
+| `SUPER + SHIFT + S` | Screenshot region via `hyprshot` → `~/Pictures/Screenshots` |
