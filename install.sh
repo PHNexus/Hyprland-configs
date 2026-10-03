@@ -528,7 +528,7 @@ mkdir -p "$(dirname "$MONITORS_LUA_CONFIG")"
 } > "$MONITORS_LUA_CONFIG"
 
 if [[ -f "$KEYBINDS_LUA_CONFIG" ]] && [[ ${#monitor_entries[@]} -le 1 ]]; then
-    sed -i '/hl.bind(mainMod .. " + R",/,/end\n    })/d' "$KEYBINDS_LUA_CONFIG"
+perl -0777 -pi -e 's/\n    -- ============================================================\n    -- MOVE WINDOW BETWEEN WORKSPACES \(6 = HDMI\)\n    -- ============================================================\n\n   hl.bind\(mainMod \.\. " \+ R", function\(\).*?end\)\n\n//s' "$KEYBINDS_LUA_CONFIG"
 fi
 
 if [[ ${#monitor_entries[@]} -gt 0 ]]; then
