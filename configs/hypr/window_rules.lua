@@ -28,8 +28,7 @@ function M.setup()
     hl.window_rule({
         name = "float-blueman-manager",
         match = { class = "^(blueman-manager)$" },
-        float = true,
-        center = true,
+        float = true,        center = true,
     })
     hl.window_rule({
         name = "float-bitwarden-popup",
@@ -138,6 +137,12 @@ function M.setup()
     -- ============================================================
     -- GENERAL BEHAVIOR
     -- ============================================================
+     hl.window_rule({
+    -- Everything that opens on workspace 6, set on the secondary monitor, will be fullscreen.
+        name = "workspace-6-fullscreen",
+        match = { workspace = "6" },
+        fullscreen = true,
+    })
     hl.window_rule({
         name = "suppress-maximize-events",
         match = { class = ".*" },
