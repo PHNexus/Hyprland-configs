@@ -106,6 +106,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 |---|---|
 | `SUPER + Q` | Close active window |
 | `SUPER + SHIFT + W` | Toggle Waybar |
+| `SUPER + SHIFT + D` | Toggle Dock-Bar |
 | `SUPER + S` | Toggle Floating (center + resize 1000x600) |
 | `SUPER + F11` | Toggle Fullscreen |
 | `SUPER + M` | Exit Hyprland |
