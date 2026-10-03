@@ -96,13 +96,18 @@ function M.setup()
     -- ============================================================
     -- MOVE WINDOW BETWEEN WORKSPACES (6 = HDMI)
     -- ============================================================
-    hl.bind(mainMod .. " + R", function()
+
+   hl.bind(mainMod .. " + R", function()
         local window = hl.get_active_window()
         if window == nil then return end
         if window.workspace.id == 6 then
             hl.dispatch(hl.dsp.window.move({ workspace = 1 }))
+            -- Optional: unset fullscreen when moving back to workspace 1
+            hl.dispatch(hl.dsp.window.fullscreen({ mode = "fullscreen", action = "unset" }))
         else
             hl.dispatch(hl.dsp.window.move({ workspace = 6 }))
+            -- Force fullscreen when moving to workspace 6
+            hl.dispatch(hl.dsp.window.fullscreen({ mode = "fullscreen", action = "set" }))
         end
     end)
 
