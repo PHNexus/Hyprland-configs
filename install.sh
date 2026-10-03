@@ -538,6 +538,9 @@ else
     echo "  - Waybar config not found, skipping"
 fi
 
+echo "Reloading Hyprland configurations..."
+hyprctl reload 2>/dev/null || true
+
 # --------------------------------------------
 # Configure EasyEffects systemd user service
 # --------------------------------------------
