@@ -262,6 +262,24 @@ if [[ -d "$REPO_DIR/Wallpapers" ]]; then
     cp -ru "$REPO_DIR/Wallpapers/." "$PICTURES_DIR/Wallpapers/"
 fi
 
+# -----------------------------------------------------------------
+# Set Initial Default Wallpaper with Cache
+# -----------------------------------------------------------------
+DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/nome-da-sua-imagem.jpg"
+CACHE_DIR="$HOME/.cache/wallpapers_state"
+mkdir -p "$CACHE_DIR"
+
+MONITORS=$(hyprctl monitors -j | jq -r '.[].name')
+
+if command -v awww &>/dev/null && [[ -f "$DEFAULT_WALLPAPER" ]]; then
+    awww init || true
+    for MONITOR in $MONITORS; do
+        awww img -o "$MONITOR" "$DEFAULT_WALLPAPER" -t random --transition-duration 1
+        echo "$DEFAULT_WALLPAPER" > "$CACHE_DIR/$MONITOR"
+    done
+    echo "  - Initial default wallpaper applied and saved to cache for all monitors!"
+fi
+
 # --------------------------------------------
 # Install Dock Bar (self-contained, no upstream)
 # --------------------------------------------
