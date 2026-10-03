@@ -28,6 +28,12 @@ function M.setup()
         hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
 
     -- ============================================================
+    -- TOGGLE Dock-Bar
+    -- ============================================================
+    hl.bind(mainMod .. " + SHIFT + D",
+        hl.dsp.exec_cmd("dock-bar stop ||  dock-bar start"))
+
+    -- ============================================================
     -- TOGGLE FLOATING
     -- ============================================================
     hl.bind(mainMod .. " + S", function()
