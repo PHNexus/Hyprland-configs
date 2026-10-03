@@ -1,7 +1,7 @@
 {
     "dock": {
         "enabled": true,
-        "autohide": false,
+        "autohide": true,
         "iconSize": 40,
         "spacing": 0,
         "marginBottom": 6,
