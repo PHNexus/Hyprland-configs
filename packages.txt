@@ -121,6 +121,7 @@ imagemagick
 helium-browser-bin
 visual-studio-code-bin
 spotify
+steam
 nvibrant-bin
 wlogout
 nwg-look
