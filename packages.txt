@@ -130,3 +130,6 @@ whitesur-icon-theme-git
 bibata-cursor-theme
 jdtls
 google-java-format
+
+#Flatpak
+org.onlyoffice.desktopeditors

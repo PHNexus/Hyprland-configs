@@ -666,8 +666,55 @@ else
     echo "  - Flatpak is not installed, skipping Bazaar installation."
 fi
 
-# Install ONLYOFFICE
-    flatpak install --user -y flathub org.onlyoffice.desktopeditors 
+# --------------------------------------------
+# Install Flatpak Apps from packages.txt
+# --------------------------------------------
+echo
+echo "Configuring Flathub and installing Flatpak apps..."
+if command -v flatpak &>/dev/null; then
+    flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    
+    # Fixed installation for Bazaar
+    echo "  - Installing Bazaar..."
+    flatpak install --user -y flathub io.github.kolunmi.Bazaar
+
+    # Read and automatically install Flatpaks from the #Flatpaks section in packages.txt
+    if [[ -f "$REPO_DIR/packages.txt" ]]; then
+        flatpak_packages=()
+        is_flatpaks=0
+
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            [[ -z "$line" ]] && continue
+
+            if [[ "$line" =~ ^#Flatpaks ]]; then
+                is_flatpaks=1
+                continue
+            fi
+
+            # If another header with # is found, disable the flag
+            if [[ "$line" =~ ^# && "$line" != "#Flatpaks" ]]; then
+                is_flatpaks=0
+            fi
+
+            [[ "$line" =~ ^# ]] && continue
+
+            if [[ $is_flatpaks -eq 1 ]]; then
+                flatpak_packages+=("$line")
+            fi
+        done < "$REPO_DIR/packages.txt"
+
+        # Install everything listed in the section without prompting
+        if [[ ${#flatpak_packages[@]} -gt 0 ]]; then
+            for app in "${flatpak_packages[@]}"; do
+                echo "  - Installing Flatpak: $app..."
+                flatpak install --user -y flathub "$app"
+            done
+        fi
+    fi
+else
+    echo "  - Flatpak is not installed, skipping Flatpak applications."
+fi
 
 # --------------------------------------------
 # Helium DRM Fixer Automation
