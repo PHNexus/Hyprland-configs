@@ -390,6 +390,7 @@ echo
 echo "Detecting connected monitors..."
 
 MONITORS_LUA_CONFIG="$CONFIG_DIR/hypr/monitors.lua"
+KEYBINDS_LUA_CONFIG="$CONFIG_DIR/hypr/keybinds.lua"
 
 # --- Gather monitor info ---
 # Priority: hyprctl (running Hyprland) -> sysfs (fresh install, no WM yet)
@@ -502,15 +503,22 @@ mkdir -p "$(dirname "$MONITORS_LUA_CONFIG")"
         echo "    -- ============================================================"
         echo "    -- WORKSPACES"
         echo "    -- ============================================================"
-        printf '    hl.workspace_rule({ workspace = 1, monitor = "%s", persistent = true })\n' "$first_monitor"
-        printf '    hl.workspace_rule({ workspace = 2, monitor = "%s", persistent = true })\n' "$first_monitor"
-        printf '    hl.workspace_rule({ workspace = 3, monitor = "%s", persistent = true })\n' "$first_monitor"
-        printf '    hl.workspace_rule({ workspace = 4, monitor = "%s", persistent = true })\n' "$first_monitor"
+        
+        if [[ ${#monitor_entries[@]} -eq 1 ]]; then
+            for w in {1..6}; do
+                printf '    hl.workspace_rule({ workspace = %d, monitor = "%s", persistent = true })\n' "$w" "$first_monitor"
+            done
+        else
+            printf '    hl.workspace_rule({ workspace = 1, monitor = "%s", persistent = true })\n' "$first_monitor"
+            printf '    hl.workspace_rule({ workspace = 2, monitor = "%s", persistent = true })\n' "$first_monitor"
+            printf '    hl.workspace_rule({ workspace = 3, monitor = "%s", persistent = true })\n' "$first_monitor"
+            printf '    hl.workspace_rule({ workspace = 4, monitor = "%s", persistent = true })\n' "$first_monitor"
 
-        if [[ ${#monitor_entries[@]} -ge 2 ]]; then
-            second_entry="${monitor_entries[1]}"
-            second_monitor="${second_entry%%|*}"
-            printf '    hl.workspace_rule({ workspace = 6, monitor = "%s", persistent = true, default = true })\n' "$second_monitor"
+            if [[ ${#monitor_entries[@]} -ge 2 ]]; then
+                second_entry="${monitor_entries[1]}"
+                second_monitor="${second_entry%%|*}"
+                printf '    hl.workspace_rule({ workspace = 6, monitor = "%s", persistent = true, default = true })\n' "$second_monitor"
+            fi
         fi
     fi
 
@@ -518,6 +526,10 @@ mkdir -p "$(dirname "$MONITORS_LUA_CONFIG")"
     echo ""
     echo "return M"
 } > "$MONITORS_LUA_CONFIG"
+
+if [[ -f "$KEYBINDS_LUA_CONFIG" ]] && [[ ${#monitor_entries[@]} -le 1 ]]; then
+    sed -i '/hl.bind(mainMod .. " + R",/,/end\n    })/d' "$KEYBINDS_LUA_CONFIG"
+fi
 
 if [[ ${#monitor_entries[@]} -gt 0 ]]; then
     echo "  Generated $MONITORS_LUA_CONFIG with ${#monitor_entries[@]} monitor(s)"
