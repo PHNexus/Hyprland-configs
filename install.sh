@@ -663,6 +663,9 @@ else
     echo "  - Flatpak is not installed, skipping Bazaar installation."
 fi
 
+# Install ONLYOFFICE
+    flatpak install --user -y flathub org.onlyoffice.desktopeditors 
+
 # --------------------------------------------
 # Helium DRM Fixer Automation
 # --------------------------------------------

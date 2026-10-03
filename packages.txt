@@ -120,6 +120,7 @@ github-desktop-bin
 imagemagick 
 helium-browser-bin
 visual-studio-code-bin
+spotify
 nvibrant-bin
 wlogout
 nwg-look
