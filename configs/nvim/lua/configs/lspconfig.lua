@@ -1,0 +1,86 @@
+require("nvchad.configs.lspconfig").defaults()
+
+vim.lsp.config("basedpyright", {
+  settings = {
+    basedpyright = {
+      analysis = {
+        autoSearchPaths = true,
+        useLibraryCodeForTypes = true,
+        typeCheckingMode = "off",
+        diagnosticMode = "openFilesOnly",
+      },
+    },
+  },
+})
+
+vim.lsp.config("kotlin_language_server", {
+  settings = {
+    kotlin = {
+      diagnostics = {
+        enabled = true,
+      },
+    },
+  },
+})
+
+local java_home = vim.env.JAVA_HOME or "/usr/lib/jvm/default"
+
+vim.lsp.config("jdtls", {
+  cmd = { "jdtls" },
+  root_dir = vim.fs.root(0, { ".git", "pom.xml", "build.gradle", "build.gradle.kts" }),
+  settings = {
+    java = {
+      home = java_home,
+      configuration = {
+        updateBuildConfiguration = "automatic",
+        runtimes = {
+          {
+            name = "JavaSE",
+            path = java_home,
+            default = true,
+          },
+        },
+      },
+    },
+  },
+})
+
+local vue_language_server_path = vim.fn.stdpath "data"
+  .. "/mason/packages/vue-language-server/node_modules/@vue/language-server"
+
+local tsserver_filetypes = { "typescript", "javascript", "javascriptreact", "typescriptreact", "vue" }
+
+local vue_plugin = {
+  name = "@vue/typescript-plugin",
+  location = vue_language_server_path,
+  languages = { "vue" },
+  configNamespace = "typescript",
+}
+
+vim.lsp.config("vtsls", {
+  settings = {
+    vtsls = {
+      tsserver = { globalPlugins = { vue_plugin } },
+    },
+  },
+  filetypes = tsserver_filetypes,
+})
+
+-- Single call with all servers
+local servers = {
+  "html",
+  "cssls",
+  "jsonls",
+  "unocss",
+  "tailwindcss",
+  "svelte",
+  "basedpyright",
+  "ruff",
+  "astro",
+  "kotlin_language_server",
+  "jdtls",
+  "vtsls",
+  "vue_ls",
+}
+
+vim.lsp.enable(servers)
