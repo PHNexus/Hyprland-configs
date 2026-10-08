@@ -1,0 +1,52 @@
+/* bind = $mod, Escape, exec, wlogout -b 1 -c 20 -r 20 -L 1700 -R 1700 -T 325 -B 325 */
+* { 
+    background-image: none;
+    box-shadow: none;
+    font-size: 0px;
+}
+
+window {
+    background-color: rgba(12, 12, 12, 0.3);
+}
+
+button {
+    margin: 0;
+
+    min-width: 100px;
+    min-height: 100px;
+
+    border-radius: 100px;
+    border: 1px solid transparent;
+
+    color: #FFFFFF;
+    background-color: rgba(12, 12, 12, 0.4);
+
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 20%;
+
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+
+    transition: all 0.2s ease;
+}
+
+button:hover,
+button:focus,
+button:active {
+    background-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6);
+    outline: none;
+}
+
+#shutdown {
+    background-image: url("/home/mark/.config/wlogout/icons/shutdown.png");
+}
+
+#reboot {
+    background-image: url("/home/mark/.config/wlogout/icons/reboot.png");
+}
+
+#logout {
+    background-image: url("/home/mark/.config/wlogout/icons/logout.png");
+}
+

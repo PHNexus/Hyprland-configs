@@ -1,0 +1,233 @@
+/* ============================================================================== */
+/* GLOBAL STYLES                                                                  */
+/* ============================================================================== */
+* {
+    font-weight: bold;
+     font-size: 13px;
+    transition: all 0.5s cubic-bezier(0, 0.5, 0.35, 1);
+}
+
+window#waybar {
+    background-color: transparent;
+    border-radius: 0;
+    margin-top: 10px; 
+}
+
+.modules-left,
+.modules-center,
+.modules-right {
+    padding: 3px 6px; 
+    margin: 4px 6px 0 6px; 
+    background-color: transparent; 
+}
+
+/* ============================================================================== */
+/* SOLID BLACK BLOCKS WITH GLOWING ACCENT TEXT                                    */
+/* ============================================================================== */
+                        
+#workspaces,
+#clock,
+#custom-logo,
+#custom-recorder,
+#monitor,
+#settings,
+#media {
+    background-color: rgb(0, 0, 0);
+    border-radius: 9px; 
+    padding: 1px 11px 3px 13px; 
+    margin: -1px 4px -1px 1px; 
+    color: @accent_color;
+    text-shadow: 0px 0px 5px @accent_color; 
+    box-shadow: 0 0 0px #000000;
+    font-size: 12px;
+}
+    #custom-notification {
+    background-color: rgb(0, 0, 0);
+    border-radius: 9px; 
+    padding: 2px 7px 3px 5px; 
+    margin: -1px 0px -1px 1px; 
+    color: @accent_color;
+    text-shadow: 0px 0px 5px @accent_color; 
+    box-shadow: 0 0 0px #000000;
+    min-width: 28px;
+    font-family: monospace;
+    font-size: 13px;
+}
+#custom-power {
+    background-color: rgb(0, 0, 0);
+    border-radius: 9px; 
+    padding: 2px 8px 3px 4px; 
+    margin: -1px 4px -1px 5px; 
+    color: @accent_color;
+    text-shadow: 0px 0px 5px @accent_color; 
+    box-shadow: 0 0 0px #000000;
+    min-width: 28px;
+    font-family: monospace;
+    font-size: 13px;
+}
+#custom-logo {
+    padding: 0px 17px 1px 15px;
+    font-size: 15px;
+}
+/* ============================================================================== */
+/* WORKSPACES */
+/* ============================================================================== */
+#hworkspaces {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+}
+
+#workspaces {
+    padding: 8px 9px 8px 2px;
+}
+
+#workspaces button {
+    background-color: rgba(255, 255, 255, 0.096);
+    border-radius: 5px; 
+    padding: 1.5px 7px 2px 3px;
+    margin: 0 -2px 0 5;
+    min-width: 20px;
+    min-height: 0;
+    opacity: 1.2;
+}
+
+#workspaces button.active {
+    background-color: rgba(54, 53, 53, 0.616); 
+    padding: 1.5px 7px 2px 5px;
+    min-width: 35px;
+    opacity: 1;   
+}
+
+#workspaces button.empty {
+    background-color: rgba(255, 255, 255, 0.055);
+    opacity: 1.2; 
+    padding: 1.5px 8px 2px 5px;
+    min-width: 15px;
+}
+
+#workspaces button.empty.active {
+    background-color: rgba(54, 53, 53, 0.616);
+    opacity: 1;
+    min-width: 40px;
+}
+
+#workspaces button.overview {
+    background-color: rgba(255, 255, 255, 0.15);
+    min-width: 40px;
+    opacity: 0.4;
+}
+
+#workspaces button.overview.active {
+    background-color: rgba(54, 53, 53, 0.616);
+    opacity: 1;
+}
+/* ============================================================================== */
+/* MODULES INSIDE GROUPS                                                          */
+/* ============================================================================== */
+#custom-monitor,
+#custom-settings,
+#cpu,
+#memory,
+#temperature,
+#battery,
+#power-profiles-daemon,
+#tray,
+#pulseaudio,
+#backlight {
+    background-color: transparent;
+    color: @accent_color;
+    margin: 2px;
+    padding: 0 3px; 
+    min-width: 15px; 
+    text-shadow: 0px 0px 5px @accent_color;
+    font-size: 12px;
+}
+/* ============================================================================== */
+/* SLIDERS                                                                        */
+/* ============================================================================== */
+#backlight-slider slider,
+#pulseaudio-slider slider {
+    opacity: 0;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    background: none;
+}
+
+#backlight-slider trough,
+#pulseaudio-slider trough {
+    min-width: 40px; 
+    min-height: 5px; 
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0 3px;
+}
+
+#backlight-slider highlight,
+#pulseaudio-slider highlight {
+    min-width: 5px;
+    border-radius: 3px;
+    background: @accent_color;
+    box-shadow: 0 0 7px @accent_color;
+}
+
+/* ============================================================================== */
+/* HOVER EFFECTS (EXPANDING)                                                      */
+/* ============================================================================== */
+#clock:hover,
+#custom-logo:hover,
+#custom-recorder:hover,
+#custom-notification:hover {
+    min-width: 60px; 
+    padding: 2px 13px;
+}
+#custom-power:hover {
+    min-width: 60px; 
+    padding: 2px 13px;
+}
+#workspaces button:hover {
+    min-width: 26px; 
+}
+
+#power-profiles-daemon:hover,
+#cpu:hover,
+#memory:hover,
+#temperature:hover,
+#battery:hover,
+#pulseaudio:hover,
+#backlight:hover {
+    border-radius: 7px;
+    min-width: 45px; 
+    padding: 0 11px;
+}
+
+#custom-monitor:hover,
+#custom-settings:hover {
+    border-radius: 7px;
+    min-width: 31px;
+    padding: 0 11px;
+}
+
+/* ============================================================================== */
+/* TOOLTIPS                                                                       */
+/* ============================================================================== */
+tooltip {
+    background: rgb(0, 0, 0);
+    border-radius: 7px;
+    padding: 8px;
+}
+
+tooltip label {
+    color: @accent_color;
+    text-shadow: 0px 0px 4px @accent_color;
+}
+
+/* ============================================================================== */
+/* ANIMATIONS                                                                     */
+/* ============================================================================== */
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}

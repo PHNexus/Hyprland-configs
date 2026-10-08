@@ -1,0 +1,10 @@
+{
+  "background": "#000000",
+  "on_primary": "#000000",
+  "on_surface": "#ffffff",
+  "on_surface_variant": "#cccccc",
+  "outline_variant": "#555555",
+  "primary": "#ffffff",
+  "shadow": "#000000",
+  "surface_container_high": "#1a1a1a"
+}
