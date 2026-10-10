@@ -606,6 +606,132 @@ else
 fi
 
 # --------------------------------------------
+# Install Settings Controller
+# --------------------------------------------
+echo
+echo "Installing Settings controller..."
+
+SETTINGS_DIR="$CONFIG_DIR/quickshell/settings"
+SETTINGS_BIN="$HOME/.local/bin/settings"
+SETTINGS_LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/settings"
+
+if ! command -v qs >/dev/null 2>&1; then
+    echo "  - Quickshell (qs) not found. Skipping Settings controller."
+elif [[ ! -f "$SETTINGS_DIR/shell.qml" ]]; then
+    echo "  - Settings shell not found at $SETTINGS_DIR/shell.qml"
+    echo "  - Skipping Settings controller."
+else
+    mkdir -p "$HOME/.local/bin" "$SETTINGS_LOG_DIR"
+
+    cat > "$SETTINGS_BIN" <<'SETTINGS_EOF'
+#!/usr/bin/env bash
+set -uo pipefail
+
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/settings"
+IPC_TARGET="settings"
+LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/settings"
+LOG_FILE="$LOG_DIR/quickshell.log"
+IPC_LOG="$LOG_DIR/ipc.log"
+ACTION="${1:-toggle}"
+
+usage() {
+    echo "Usage: settings [start|stop|restart|toggle|show|hide|log|audio|display|network|bluetooth|storage|power|configs]" >&2
+}
+
+if ! command -v qs >/dev/null 2>&1; then
+    echo "ERROR: Quickshell (qs) not found." >&2
+    exit 127
+fi
+
+if [[ ! -f "$CONFIG/shell.qml" ]]; then
+    echo "ERROR: Settings configuration not found: $CONFIG/shell.qml" >&2
+    exit 1
+fi
+
+mkdir -p "$LOG_DIR"
+
+call_ipc() {
+    qs -p "$CONFIG" ipc call "$IPC_TARGET" "$1"
+}
+
+case "$ACTION" in
+    start)
+        exec qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1
+        ;;
+
+    stop)
+        qs kill -p "$CONFIG"
+        ;;
+
+    restart)
+        qs kill -p "$CONFIG" >/dev/null 2>&1 || true
+        exec qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1
+        ;;
+
+    log)
+        tail -n 100 "$LOG_FILE"
+        ;;
+
+    toggle|show|hide|audio|display|network|bluetooth|storage|power|configs)
+        if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
+            cat "$IPC_LOG"
+            exit 0
+        fi
+
+        if [[ "$ACTION" == "hide" ]]; then
+            exit 0
+        fi
+
+        MONITOR=""
+        if command -v hyprctl >/dev/null 2>&1 &&
+           command -v jq >/dev/null 2>&1; then
+            MONITOR="$(hyprctl monitors -j 2>/dev/null |
+                jq -er '.[] | select(.focused == true) | .name' 2>/dev/null)" || MONITOR=""
+        fi
+
+        if [[ -n "$MONITOR" ]]; then
+            QS_SETTINGS_MONITOR="$MONITOR" qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1 &
+        else
+            qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1 &
+        fi
+        SHELL_PID=$!
+
+        for _ in {1..50}; do
+            if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
+                cat "$IPC_LOG"
+                exit 0
+            fi
+
+            if ! kill -0 "$SHELL_PID" 2>/dev/null; then
+                break
+            fi
+
+            sleep 0.1
+        done
+
+        echo "ERROR: Failed to execute Settings IPC command '$ACTION'." >&2
+        echo "Shell log: $LOG_FILE" >&2
+        tail -n 40 "$LOG_FILE" >&2 || true
+        cat "$IPC_LOG" >&2 2>/dev/null || true
+        exit 1
+        ;;
+
+    help|-h|--help)
+        usage
+        ;;
+
+    *)
+        usage
+        exit 2
+        ;;
+esac
+SETTINGS_EOF
+
+    chmod 755 "$SETTINGS_BIN"
+    echo "  - Settings controller installed at $SETTINGS_BIN"
+fi
+
+# --------------------------------------------
 # Install HyprQuickpaper Controller
 # --------------------------------------------
 echo
@@ -616,6 +742,9 @@ HYPRQUICKPAPER_BIN="$HOME/.local/bin/hyprquickpaper"
 
 if ! command -v qs >/dev/null 2>&1; then
     echo "  - Quickshell (qs) not found. Skipping HyprQuickpaper controller."
+elif [[ ! -f "$HYPRQUICKPAPER_DIR/shell.qml" ]]; then
+    echo "  - HyprQuickpaper shell not found at $HYPRQUICKPAPER_DIR/shell.qml"
+    echo "  - Skipping HyprQuickpaper controller."
 else
     mkdir -p "$HOME/.local/bin"
 
@@ -636,9 +765,9 @@ usage() {
 Usage: hyprquickpaper [command]
 
 Commands:
-  start    Start the HyprQuickpaper shell
+  start    Start the independent HyprQuickpaper shell
   stop     Stop the independent shell
-  restart  Restart the shell
+  restart  Restart the independent shell
   toggle   Toggle the wallpaper picker
   show     Show the wallpaper picker
   hide     Hide the wallpaper picker
@@ -653,8 +782,7 @@ if ! command -v qs >/dev/null 2>&1; then
 fi
 
 if [[ ! -f "$PICKER_DIR/shell.qml" ]]; then
-    echo "ERROR: HyprQuickpaper shell not found at:" >&2
-    echo "  $PICKER_DIR/shell.qml" >&2
+    echo "ERROR: HyprQuickpaper shell not found at $PICKER_DIR/shell.qml" >&2
     exit 1
 fi
 
@@ -703,7 +831,7 @@ case "$ACTION" in
             sleep 0.1
         done
 
-        echo "ERROR: Failed to execute IPC command '$ACTION'." >&2
+        echo "ERROR: Failed to execute IPC command '$IPC_TARGET $ACTION'." >&2
         echo "Shell log: $LOG_FILE" >&2
         echo >&2
         echo "--- Latest shell log entries ---" >&2
@@ -731,102 +859,7 @@ esac
 HYPRQUICKPAPER_EOF
 
     chmod 755 "$HYPRQUICKPAPER_BIN"
-
-    echo "  - Controller installed at: $HYPRQUICKPAPER_BIN"
-fi
-
-# --------------------------------------------
-# Install Settings Controller
-# --------------------------------------------
-echo
-echo "Installing Settings controller..."
-
-SETTINGS_DIR="$CONFIG_DIR/quickshell/settings"
-SETTINGS_BIN="$HOME/.local/bin/settings"
-SETTINGS_LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/settings"
-
-if ! command -v qs >/dev/null 2>&1; then
-    echo "  - Quickshell (qs) not found. Skipping Settings controller."
-elif [[ ! -f "$SETTINGS_DIR/shell.qml" ]]; then
-    echo "  - Settings shell not found at $SETTINGS_DIR/shell.qml"
-    echo "  - Skipping Settings controller."
-else
-    mkdir -p "$HOME/.local/bin" "$SETTINGS_LOG_DIR"
-
-    cat > "$SETTINGS_BIN" <<'SETTINGS_EOF'
-#!/usr/bin/env bash
-
-set -uo pipefail
-
-CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/settings"
-LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/settings"
-LOG_FILE="$LOG_DIR/quickshell.log"
-ACTION="${1:-toggle}"
-
-case "$ACTION" in
-    toggle|show|hide)
-        ;;
-    *)
-        echo "Usage: settings [toggle|show|hide]" >&2
-        exit 2
-        ;;
-esac
-
-if [[ ! -f "$CONFIG/shell.qml" ]]; then
-    echo "ERROR: Settings configuration not found: $CONFIG/shell.qml" >&2
-    exit 1
-fi
-
-if ! command -v qs >/dev/null 2>&1; then
-    echo "ERROR: Quickshell (qs) was not found in PATH." >&2
-    exit 127
-fi
-
-if qs -p "$CONFIG" ipc call settings "$ACTION" >/dev/null 2>&1; then
-    exit 0
-fi
-
-if [[ "$ACTION" == "hide" ]]; then
-    exit 0
-fi
-
-if ! command -v hyprctl >/dev/null 2>&1 ||
-   ! command -v jq >/dev/null 2>&1; then
-    echo "ERROR: hyprctl and jq are required to detect the focused monitor." >&2
-    exit 1
-fi
-
-if ! MONITOR="$(hyprctl monitors -j 2>/dev/null |
-    jq -er '.[] | select(.focused == true) | .name' 2>/dev/null)"; then
-    echo "ERROR: Could not detect the focused monitor." >&2
-    exit 1
-fi
-
-mkdir -p "$LOG_DIR"
-
-QS_SETTINGS_MONITOR="$MONITOR" qs -p "$CONFIG" >>"$LOG_FILE" 2>&1 &
-SHELL_PID=$!
-
-for _ in {1..50}; do
-    sleep 0.1
-
-    if qs -p "$CONFIG" ipc call settings "$ACTION" >/dev/null 2>&1; then
-        exit 0
-    fi
-
-    if ! kill -0 "$SHELL_PID" 2>/dev/null; then
-        break
-    fi
-done
-
-echo "ERROR: Failed to open Settings on monitor $MONITOR." >&2
-echo "Recent log entries:" >&2
-tail -n 60 "$LOG_FILE" >&2 2>/dev/null || true
-exit 1
-SETTINGS_EOF
-
-    chmod 755 "$SETTINGS_BIN"
-    echo "  - Settings controller installed at $SETTINGS_BIN"
+    echo "  - Controller installed at $HYPRQUICKPAPER_BIN"
 fi
 
 # --------------------------------------------

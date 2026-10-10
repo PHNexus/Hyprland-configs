@@ -56,14 +56,14 @@
           "label": "󰖩",
           "type": "toggle",
           "active": false,
-          "command": "sh -c 'swaync-client --close-panel; qs ipc call settings network'",
+          "command": "sh -c 'swaync-client --close-panel; settings network'",
           "update-command": "sh -c 'if command -v curl >/dev/null 2>&1; then for url in https://connectivitycheck.gstatic.com/generate_204 https://www.google.com/generate_204 https://www.cloudflare.com/cdn-cgi/trace https://example.com/; do code=$(curl -sSL --connect-timeout 2 --max-time 4 -o /dev/null -w \"%{http_code}\" \"$url\" 2>/dev/null || true); case \"$url\" in *generate_204) if [ \"$code\" = 204 ]; then echo true; exit 0; fi ;; */cdn-cgi/trace|https://example.com/) if [ \"$code\" = 200 ]; then echo true; exit 0; fi ;; esac; done; fi; if timeout 2 bash -c \":</dev/tcp/1.1.1.1/443\" 2>/dev/null || timeout 2 bash -c \":</dev/tcp/8.8.8.8/443\" 2>/dev/null; then echo true; else echo false; fi'"
         },
         {
           "label": "󰂯",
           "type": "toggle",
           "active": false,
-          "command": "sh -c 'swaync-client --close-panel; qs ipc call settings bluetooth'",
+          "command": "sh -c 'swaync-client --close-panel; settings bluetooth'",
           "update-command": "sh -c 'bluetoothctl show 2>/dev/null | grep -q \"Powered: yes\" && echo true || echo false'"
         },
         {
@@ -131,38 +131,17 @@
           }
         ]
       },
-      "menu#settings-buttons": {
-        "label": "󰒓",
-        "position": "left",
-        "actions": [
-          {
-            "label": "   Audio",
-            "command": "qs ipc call settings audio"
-          },
-          {
-            "label": "󰍹   Display",
-            "command": "qs ipc call settings display"
-          },
-          {
-            "label": "󰖩   Network",
-            "command": "qs ipc call settings network"
-          },
-          {
-            "label": "󰂯   Bluetooth",
-            "command": "qs ipc call settings bluetooth"
-          },
-          {
-            "label": "󰋊   Storage",
-            "command": "qs ipc call settings storage"
-          },
-          {
-            "label": "󰐥   Power",
-            "command": "qs ipc call settings power"
-          },
-          {
-            "label": "󰧮   Configs",
-            "command": "qs ipc call settings configs"
-          }
+     "menu#settings-buttons": {
+       "label": "󰒓",
+       "position": "left",
+       "actions": [
+         {"label": "   Audio", "command": "settings audio"},
+         {"label": "󰍹   Display", "command": "settings display"},
+         {"label": "󰖩   Network", "command": "settings network"},
+         {"label": "󰂯   Bluetooth", "command": "settings bluetooth"},
+         {"label": "󰋊   Storage", "command": "settings storage"},
+         {"label": "󰐥   Power", "command": "settings power"},
+         {"label": "󰧮   Configs", "command": "settings configs"}
         ]
       }
     }
