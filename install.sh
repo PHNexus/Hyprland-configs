@@ -357,7 +357,7 @@ fi
 # -----------------------------------------------------------------
 # Set Initial Default Wallpaper with Cache
 # -----------------------------------------------------------------
-DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/08.png"
+DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/30.png"
 CACHE_DIR="$HOME/.cache/wallpapers_state"
 mkdir -p "$CACHE_DIR"
 
@@ -938,7 +938,56 @@ fi
 cd "$HELIUM_DRM_DIR"
 if ! bun install || ! bun run cli.ts; then
     warn "Helium DRM Fixer failed; continuing with the remaining installer steps."
+fi# --------------------------------------------
+# Install MacTahoe Icon Theme
+# --------------------------------------------
+echo
+echo "Installing MacTahoe icon theme..."
+
+MACOS_ICON_DIR="$(mktemp -d /tmp/MacTahoe-icon-theme.XXXXXX)"
+MACOS_ICON_READY=0
+MACOS_ICON_URL="https://github.com/PHNexus/MacTahoe-icon-theme.git"
+
+# Retry shallow clone; if Git transport is unavailable, try GitHub's source archive.
+for attempt in 1 2 3; do
+    rm -rf "$MACOS_ICON_DIR"/* "$MACOS_ICON_DIR"/.[!.]* "$MACOS_ICON_DIR"/..?* 2>/dev/null || true
+    if git -c http.connectTimeout=15 clone --depth=1 "$MACOS_ICON_URL" "$MACOS_ICON_DIR"; then
+        MACOS_ICON_READY=1
+        break
+    fi
+    warn "MacTahoe clone attempt $attempt/3 failed."
+    [[ "$attempt" -eq 3 ]] || sleep 2
+done
+
+if [[ "$MACOS_ICON_READY" -eq 0 ]] && command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
+    MACOS_ICON_ARCHIVE="$(mktemp /tmp/MacTahoe-icon-theme.XXXXXX.tar.gz)"
+    if curl -fL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 \
+        "https://codeload.github.com/PHNexus/MacTahoe-icon-theme/tar.gz/refs/heads/main" \
+        -o "$MACOS_ICON_ARCHIVE"; then
+        if tar -xzf "$MACOS_ICON_ARCHIVE" --strip-components=1 -C "$MACOS_ICON_DIR"; then
+            MACOS_ICON_READY=1
+        fi
+    fi
+    rm -f "$MACOS_ICON_ARCHIVE"
 fi
+
+MACOS_ICON_INSTALLED=0
+if [[ "$MACOS_ICON_READY" -eq 1 && -f "$MACOS_ICON_DIR/install.sh" ]]; then
+    if (cd "$MACOS_ICON_DIR" && bash ./install.sh); then
+        if [[ -d "$HOME/.local/share/icons/MacTahoe" ]]; then
+            MACOS_ICON_INSTALLED=1
+            echo "  - Installed MacTahoe icon theme."
+        else
+            warn "MacTahoe installer exited successfully, but the expected theme directory was not found."
+        fi
+    else
+        warn "MacTahoe upstream installer failed."
+    fi
+else
+    warn "Could not download MacTahoe icon theme; skipping it without affecting the rest of setup."
+fi
+
+rm -rf "$MACOS_ICON_DIR"
 
 if [[ "$CHROME_INSTALLED_BY_SCRIPT" -eq 1 ]]; then
     echo "Uninstalling temporary Google Chrome..."
@@ -959,7 +1008,56 @@ fi
 # Clean up the temporary fixer repository.
 rm -rf "$HELIUM_DRM_DIR"
 trap - EXIT
-cd "$REPO_DIR"
+cd "$RE# --------------------------------------------
+# Install MacTahoe Icon Theme
+# --------------------------------------------
+echo
+echo "Installing MacTahoe icon theme..."
+
+MACOS_ICON_DIR="$(mktemp -d /tmp/MacTahoe-icon-theme.XXXXXX)"
+MACOS_ICON_READY=0
+MACOS_ICON_URL="https://github.com/PHNexus/MacTahoe-icon-theme.git"
+
+# Retry shallow clone; if Git transport is unavailable, try GitHub's source archive.
+for attempt in 1 2 3; do
+    rm -rf "$MACOS_ICON_DIR"/* "$MACOS_ICON_DIR"/.[!.]* "$MACOS_ICON_DIR"/..?* 2>/dev/null || true
+    if git -c http.connectTimeout=15 clone --depth=1 "$MACOS_ICON_URL" "$MACOS_ICON_DIR"; then
+        MACOS_ICON_READY=1
+        break
+    fi
+    warn "MacTahoe clone attempt $attempt/3 failed."
+    [[ "$attempt" -eq 3 ]] || sleep 2
+done
+
+if [[ "$MACOS_ICON_READY" -eq 0 ]] && command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
+    MACOS_ICON_ARCHIVE="$(mktemp /tmp/MacTahoe-icon-theme.XXXXXX.tar.gz)"
+    if curl -fL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 \
+        "https://codeload.github.com/PHNexus/MacTahoe-icon-theme/tar.gz/refs/heads/main" \
+        -o "$MACOS_ICON_ARCHIVE"; then
+        if tar -xzf "$MACOS_ICON_ARCHIVE" --strip-components=1 -C "$MACOS_ICON_DIR"; then
+            MACOS_ICON_READY=1
+        fi
+    fi
+    rm -f "$MACOS_ICON_ARCHIVE"
+fi
+
+MACOS_ICON_INSTALLED=0
+if [[ "$MACOS_ICON_READY" -eq 1 && -f "$MACOS_ICON_DIR/install.sh" ]]; then
+    if (cd "$MACOS_ICON_DIR" && bash ./install.sh); then
+        if [[ -d "$HOME/.local/share/icons/MacTahoe" ]]; then
+            MACOS_ICON_INSTALLED=1
+            echo "  - Installed MacTahoe icon theme."
+        else
+            warn "MacTahoe installer exited successfully, but the expected theme directory was not found."
+        fi
+    else
+        warn "MacTahoe upstream installer failed."
+    fi
+else
+    warn "Could not download MacTahoe icon theme; skipping it without affecting the rest of setup."
+fi
+
+rm -rf "$MACOS_ICON_DIR"PO_DIR"
 fi
     echo "Helium DRM Fixer step finished."
 
