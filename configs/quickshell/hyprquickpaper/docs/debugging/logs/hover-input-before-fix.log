@@ -1,0 +1,5 @@
+# Curated excerpt from the pre-fix debugging session; intermediate lines omitted.
+# Pointer movement and delegate enter events occur while mouse input remains disabled.
+[QKP_HOVER] handler pointChanged active=false position=QPointF(1392.5, 558) lastPosition=QPointF(841.5, 488) mouseEnabled=false keyboardMode=true
+[QKP_HOVER] pointerHoveredChanged index=8 pointerHovered=true mouseEnabled=false keyboardMode=true
+[QKP_TRACE] MouseArea entered index=8 contentX=1990.22 targetX=1990.22 originX=1629.00 contentWidth=5460.00 viewWidth=1920.00 selectedIndex=5 keyboardAnimation=false wheelAnimation=false mouseEnabled=false keyboardMode=true

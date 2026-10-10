@@ -1,0 +1,9 @@
+# Curated excerpt from the pre-hoverfix5 debugging session; intermediate lines omitted.
+# During wheelAnimation, delegates moving beneath a stationary pointer repeatedly change selectedIndex.
+[QKP_TRACE] MouseArea entered index=14 contentX=1208.21 targetX=1440.00 originX=0.00 contentWidth=5460.00 viewWidth=1920.00 selectedIndex=13 keyboardAnimation=false wheelAnimation=true mouseEnabled=true keyboardMode=false
+[QKP_TRACE] hoverTimer triggered index=14 contentX=1248.60 targetX=1440.00 originX=0.00 contentWidth=5460.00 viewWidth=1920.00 selectedIndex=13 keyboardAnimation=false wheelAnimation=true mouseEnabled=true keyboardMode=false
+[QKP_TRACE] selectedIndexChanged contentX=1248.60 targetX=1440.00 originX=0.00 contentWidth=5460.00 viewWidth=1920.00 selectedIndex=14 keyboardAnimation=false wheelAnimation=true mouseEnabled=true keyboardMode=false
+...
+[QKP_TRACE] selectedIndexChanged contentX=1388.94 targetX=1920.00 originX=0.00 contentWidth=5460.00 viewWidth=1920.00 selectedIndex=15 keyboardAnimation=false wheelAnimation=true mouseEnabled=true keyboardMode=false
+...
+[QKP_TRACE] selectedIndexChanged contentX=1609.69 targetX=2016.00 originX=0.00 contentWidth=5460.00 viewWidth=1920.00 selectedIndex=16 keyboardAnimation=false wheelAnimation=true mouseEnabled=true keyboardMode=false

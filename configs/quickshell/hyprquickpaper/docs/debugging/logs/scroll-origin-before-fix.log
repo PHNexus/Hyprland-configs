@@ -1,0 +1,6 @@
+# Curated excerpt from the pre-fix debugging session; intermediate lines omitted.
+# The target/content positions fall below originX=2896.
+[QKP_TRACE] contentXChanged contentX=2889.62 targetX=2800.00 originX=2896.00 contentWidth=5460.00 viewWidth=1920.00 selectedIndex=0 keyboardAnimation=false wheelAnimation=true mouseEnabled=false keyboardMode=true
+[QKP_TRACE] wheel event delta=120 contentX=2889.62 targetX=2800.00 originX=2896.00 contentWidth=5460.00 viewWidth=1920.00 selectedIndex=0 keyboardAnimation=false wheelAnimation=true mouseEnabled=false keyboardMode=true
+...
+[QKP_TRACE] pickerOpenChanged open=false contentX=1840.14 targetX=1840.00 originX=2896.00 contentWidth=5460.00 viewWidth=1920.00 selectedIndex=0 keyboardAnimation=false wheelAnimation=true mouseEnabled=false keyboardMode=true
