@@ -1,164 +1,134 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
 REPO_DIR="$HOME/Documents/GitHub/Hyprland-configs"
 CONFIG_DIR="$REPO_DIR/configs"
+WALLPAPER_SOURCE="$HOME/Pictures/Wallpapers"
+DOCKBAR_SOURCE="$HOME/.local/share/dock-bar"
+MAX_NEW_DOCKBAR_ASSET_SIZE_MB=5
 
 CONFIG_FOLDERS=(
-    "btop"
-    "nvim"
-    "cava"
-    "fastfetch"
-    "fish"
-    "hypr"
-    "kitty"
-    "quickshell"
-    "swaync"
-    "waybar"
-    "gtk-3.0"
-    "gtk-4.0"
-    "wlogout"
-    "wofi"
-    "xdg-desktop-portal"
-    "dock-bar"
+    "btop" "nvim" "cava" "fastfetch" "fish" "hypr" "kitty"
+    "quickshell" "swaync" "waybar" "gtk-3.0" "gtk-4.0"
+    "wlogout" "wofi" "xdg-desktop-portal" "dock-bar"
 )
 
-msg()  { echo -e "\033[1;34m[INFO]\033[0m $1"; }
-ok()   { echo -e "\033[1;32m[ OK ]\033[0m $1"; }
-warn() { echo -e "\033[1;33m[WARN]\033[0m $1"; }
-err()  { echo -e "\033[1;31m[ERR ]\033[0m $1"; exit 1; }
+msg()  { printf '\033[1;34m[INFO]\033[0m %s\n' "$1"; }
+ok()   { printf '\033[1;32m[ OK ]\033[0m %s\n' "$1"; }
+warn() { printf '\033[1;33m[WARN]\033[0m %s\n' "$1"; }
+err()  { printf '\033[1;31m[ERR ]\033[0m %s\n' "$1" >&2; exit 1; }
 
-shopt -s nullglob
+[[ -d "$REPO_DIR" ]] || err "Repository directory not found: $REPO_DIR"
+cd "$REPO_DIR" || err "Cannot access repository directory."
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || err "Not a valid Git repository."
 
-[[ -d "$REPO_DIR" ]] || err "Directory $REPO_DIR not found."
-
-cd "$REPO_DIR" || err "Cannot access $REPO_DIR."
-
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 \
-    || err "Not a valid Git repository."
+# Avoid accidentally including unrelated changes that were staged before this script ran.
+if ! git diff --cached --quiet; then
+    err "You already have staged changes. Commit or unstage them before running this script."
+fi
 
 msg "Starting sync..."
+mkdir -p "$CONFIG_DIR"
 
-# Wallpapers
-if [[ -d "$HOME/Pictures/Wallpapers" ]]; then
+# Mirror wallpapers by content. All new wallpapers are retained and staged together.
+if [[ -d "$WALLPAPER_SOURCE" ]]; then
     mkdir -p "$REPO_DIR/Wallpapers"
-
-    rsync -a --delete \
-        "$HOME/Pictures/Wallpapers/" \
-        "$REPO_DIR/Wallpapers/"
-
+    rsync -a --checksum --delete -- "$WALLPAPER_SOURCE/" "$REPO_DIR/Wallpapers/"
     ok "Wallpapers synced"
 else
-    warn "Wallpapers folder not found"
+    warn "Wallpapers folder not found: $WALLPAPER_SOURCE"
 fi
 
-# Dock-bar
-if [[ -d "$HOME/.local/share/dock-bar" ]]; then
+# Mirror dock-bar, excluding its own Git metadata. New files above the size limit are skipped.
+if [[ -d "$DOCKBAR_SOURCE" ]]; then
     mkdir -p "$REPO_DIR/dock-bar"
-
-    rsync -a --delete \
-        --exclude=".git" \
-        "$HOME/.local/share/dock-bar/" \
-        "$REPO_DIR/dock-bar/"
-
+    rsync -a --checksum --delete --exclude='.git' -- "$DOCKBAR_SOURCE/" "$REPO_DIR/dock-bar/"
     ok "Dock-bar synced"
 else
-    warn "Dock-bar folder not found"
+    warn "Dock-bar folder not found: $DOCKBAR_SOURCE"
 fi
 
-# Configs
 msg "Copying configs..."
-
 for folder in "${CONFIG_FOLDERS[@]}"; do
-    if [[ -d "$HOME/.config/$folder" ]]; then
-        mkdir -p "$CONFIG_DIR/$folder"
-
-        rsync -a --delete \
-            "$HOME/.config/$folder/" \
-            "$CONFIG_DIR/$folder/"
-
+    source="$HOME/.config/$folder"
+    target="$CONFIG_DIR/$folder"
+    if [[ -d "$source" ]]; then
+        mkdir -p "$target"
+        rsync -a --checksum --delete -- "$source/" "$target/"
         ok "Config: $folder"
     else
         warn "Folder not found: $folder"
     fi
 done
 
-mkdir -p "$CONFIG_DIR"
-
-# starship.toml
 if [[ -f "$HOME/.config/starship.toml" ]]; then
-    cp -fL "$HOME/.config/starship.toml" "$CONFIG_DIR/"
+    cp -fL -- "$HOME/.config/starship.toml" "$CONFIG_DIR/starship.toml"
     ok "File: starship.toml"
 else
     warn "File not found: starship.toml"
 fi
 
-# .gtkrc-2.0
 if [[ -f "$HOME/.gtkrc-2.0" ]]; then
-    cp -fL "$HOME/.gtkrc-2.0" "$CONFIG_DIR/"
+    cp -fL -- "$HOME/.gtkrc-2.0" "$CONFIG_DIR/.gtkrc-2.0"
     ok "File: .gtkrc-2.0"
 else
     warn "File not found: .gtkrc-2.0"
 fi
 
-# Date
-DATE=$(date '+%Y-%m-%d')
-TIME=$(date '+%H:%M:%S')
+# Stage only paths managed by this script. Git reuses identical content objects,
+# so unchanged files are not stored again in each commit.
+managed_paths=()
+for path in "configs" "Wallpapers" "dock-bar" "update-dotfiles.sh"; do
+    [[ -e "$path" ]] && managed_paths+=("$path")
+done
 
-msg "Checking for changes..."
-
-# Nothing changed
-if git diff --quiet \
-    && git diff --cached --quiet \
-    && [[ -z "$(git ls-files --others --exclude-standard)" ]]; then
-
-    warn "No changes to commit."
-    ok "Sync complete."
+if ((${#managed_paths[@]} == 0)); then
+    warn "No managed paths found."
     exit 0
 fi
 
-# Show exactly what changed
-msg "Changes detected:"
-git status --short
+git add -A -- "${managed_paths[@]}"
 
-echo
+# Unstage oversized NEW dock-bar files only; tracked files and wallpapers are unaffected.
+max_bytes=$((MAX_NEW_DOCKBAR_ASSET_SIZE_MB * 1024 * 1024))
+if [[ -d "$REPO_DIR/dock-bar" ]]; then
+    while IFS= read -r -d '' file; do
+        [[ -f "$file" ]] || continue
+        if ! git ls-files --error-unmatch -- "$file" >/dev/null 2>&1; then
+            size_bytes=$(stat -c '%s' -- "$file")
+            if ((size_bytes > max_bytes)); then
+                git reset -q -- "$file"
+                warn "Skipping new dock-bar file larger than ${MAX_NEW_DOCKBAR_ASSET_SIZE_MB} MiB: $file"
+            fi
+        fi
+    done < <(find "$REPO_DIR/dock-bar" -type f -not -path '*/.git/*' -print0)
+fi
 
-git diff --stat
-
-echo
-
-# Stage only actual changes
-git add -A
-
-# Check staged diff
 if git diff --cached --quiet; then
-    warn "No changes staged."
-    ok "Sync complete."
-    exit 0
+    warn "No new changes to commit."
+else
+    msg "Changes to be committed:"
+    git diff --cached --name-status
+    echo
+    git diff --cached --stat
+    echo
+
+    DATE=$(date '+%Y-%m-%d')
+    TIME=$(date '+%H:%M:%S')
+    COMMIT_MESSAGE="update: configs - $DATE $TIME"
+    git commit -m "$COMMIT_MESSAGE"
+    ok "Commit created: $COMMIT_MESSAGE"
 fi
 
-# Commit only the diff
-COMMIT_MESSAGE="update: configs - $DATE $TIME"
-
-git commit -m "$COMMIT_MESSAGE"
-
-ok "Commit created: $COMMIT_MESSAGE"
-
-# Pull remote changes before push
+# Always sync and push, even when this run creates no new commit.
+# --autostash protects unrelated tracked edits from blocking the rebase.
 msg "Updating from GitHub..."
-
-if git pull --rebase origin main 2>/dev/null; then
+if git pull --rebase --autostash origin main; then
     msg "Pushing to GitHub..."
-
-    if git push origin main; then
-        ok "Push successful."
-    else
-        err "Push failed."
-    fi
+    git push origin main || err "Push failed."
 else
-    git rebase --abort 2>/dev/null || true
-    err "Pull/rebase failed."
+    err "Pull/rebase failed. Review the Git output above; local changes were preserved where possible."
 fi
 
 ok "Sync complete."
