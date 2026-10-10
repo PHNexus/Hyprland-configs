@@ -79,7 +79,7 @@ fi
 # Stage only paths managed by this script. Git reuses identical content objects,
 # so unchanged files are not stored again in each commit.
 managed_paths=()
-for path in "configs" "Wallpapers" "dock-bar" "update-dotfiles.sh"; do
+for path in "configs" "Wallpapers" "dock-bar" "update-dotfiles.sh" "install.sh"; do
     [[ -e "$path" ]] && managed_paths+=("$path")
 done
 
