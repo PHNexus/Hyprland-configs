@@ -1132,7 +1132,7 @@ echo "Installing MacTahoe icon theme..."
 
 MACOS_ICON_DIR="$(mktemp -d /tmp/MacTahoe-icon-theme.XXXXXX)"
 MACOS_ICON_READY=0
-MACOS_ICON_URL="https://github.com/vinceliuice/MacTahoe-icon-theme.git"
+MACOS_ICON_URL="https://github.com/PHNexus/MacTahoe-icon-theme.git"
 
 # Retry shallow clone; if Git transport is unavailable, try GitHub's source archive.
 for attempt in 1 2 3; do
@@ -1148,7 +1148,7 @@ done
 if [[ "$MACOS_ICON_READY" -eq 0 ]] && command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
     MACOS_ICON_ARCHIVE="$(mktemp /tmp/MacTahoe-icon-theme.XXXXXX.tar.gz)"
     if curl -fL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 \
-        "https://codeload.github.com/vinceliuice/MacTahoe-icon-theme/tar.gz/refs/heads/main" \
+        "https://codeload.github.com/PHNexus/MacTahoe-icon-theme/tar.gz/refs/heads/main" \
         -o "$MACOS_ICON_ARCHIVE"; then
         if tar -xzf "$MACOS_ICON_ARCHIVE" --strip-components=1 -C "$MACOS_ICON_DIR"; then
             MACOS_ICON_READY=1
@@ -1159,13 +1159,10 @@ fi
 
 MACOS_ICON_INSTALLED=0
 if [[ "$MACOS_ICON_READY" -eq 1 && -f "$MACOS_ICON_DIR/install.sh" ]]; then
-    if (cd "$MACOS_ICON_DIR" && bash ./install.sh -t nord); then
-        if [[ -d "$HOME/.local/share/icons/MacTahoe-nord-dark" ]]; then
+    if (cd "$MACOS_ICON_DIR" && bash ./install.sh); then
+        if [[ -d "$HOME/.local/share/icons/MacTahoe" ]]; then
             MACOS_ICON_INSTALLED=1
-            echo "  - Installed MacTahoe-nord-dark icon theme."
-        elif [[ -d "$HOME/.local/share/icons/MacTahoe-nord" ]]; then
-            MACOS_ICON_INSTALLED=1
-            echo "  - Installed MacTahoe-nord icon theme."
+            echo "  - Installed MacTahoe icon theme."
         else
             warn "MacTahoe installer exited successfully, but the expected theme directory was not found."
         fi
@@ -1173,8 +1170,9 @@ if [[ "$MACOS_ICON_READY" -eq 1 && -f "$MACOS_ICON_DIR/install.sh" ]]; then
         warn "MacTahoe upstream installer failed."
     fi
 else
-    warn "Could not download the official MacTahoe icon theme; skipping it without affecting the rest of setup."
+    warn "Could not download MacTahoe icon theme; skipping it without affecting the rest of setup."
 fi
+
 rm -rf "$MACOS_ICON_DIR"
 
 # --------------------------------------------
@@ -1189,9 +1187,9 @@ if command -v gsettings >/dev/null 2>&1; then
 
     if [[ "$MACOS_ICON_INSTALLED" -eq 1 ]]; then
         if [[ -d "$HOME/.local/share/icons/MacTahoe-nord-dark" ]]; then
-            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-nord-dark" || theme_changes_ok=0
+            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe" || theme_changes_ok=0
         else
-            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-nord" || theme_changes_ok=0
+            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe" || theme_changes_ok=0
         fi
     else
         echo "  - MacTahoe was not installed; leaving the current icon theme unchanged."
