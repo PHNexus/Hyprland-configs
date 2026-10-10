@@ -93,6 +93,7 @@ bluez-utils
 blueman
 networkmanager
 pciutils
+pacman-contrib
 ksshaskpass
 rsync
 seahorse
