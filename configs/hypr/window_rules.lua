@@ -73,7 +73,7 @@ function M.setup()
         name = "file-dialogs",
         match = {
             class = "^(xdg-desktop-portal-gtk)$",
-            title = "^(Open|Save|Choose|Select).*$"
+            title = "^(Open|Save|Choose|Select|.*).*$"
         },
         float = true,
         center = true,
