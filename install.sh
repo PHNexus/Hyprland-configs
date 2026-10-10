@@ -6,6 +6,20 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$HOME/.config"
 PICTURES_DIR="$HOME/Pictures"
 
+log() { printf '\n%s\n' "$*"; }
+warn() { printf '  Warning: %s\n' "$*" >&2; }
+
+for arg in "$@"; do
+    case "$arg" in
+        --skip-appmanager) SKIP_APPMANAGER=1 ;;
+        -h|--help)
+            printf 'Usage: %s [--skip-appmanager]\n' "${0##*/}"
+            exit 0
+            ;;
+        *) printf 'Warning: ignoring unknown argument: %s\n' "$arg" >&2 ;;
+    esac
+done
+
 echo "Welcome to Hyprland-configs Installer!"
 echo
 
@@ -76,12 +90,16 @@ fi
 # --------------------------------------------
 echo
 echo "Ensuring multilib repository is enabled..."
-if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
-    if grep -q '^#\[multilib\]$' /etc/pacman.conf && \
-       grep -q '^#Include = /etc/pacman.d/mirrorlist$' /etc/pacman.conf; then
-        sudo sed -i '/^#\[multilib\]$/,/^#Include = \/etc\/pacman.d\/mirrorlist$/ s/^#//' /etc/pacman.conf
-        sudo pacman -Syy
-        echo "  - Enabled multilib repository and refreshed package databases."
+if ! grep -Eq '^[[:space:]]*\[multilib\][[:space:]]*$' /etc/pacman.conf; then
+    if grep -Eq '^#[[:space:]]*\[multilib\][[:space:]]*$' /etc/pacman.conf; then
+        sudo sed -i '/^#[[:space:]]*\[multilib\][[:space:]]*$/,/^#[[:space:]]*Include[[:space:]]*=[[:space:]]*\/etc\/pacman\.d\/mirrorlist[[:space:]]*$/ s/^#//' /etc/pacman.conf
+        if grep -Eq '^[[:space:]]*\[multilib\][[:space:]]*$' /etc/pacman.conf; then
+            sudo pacman -Syu --noconfirm
+            echo "  - Enabled multilib repository and refreshed package databases."
+        else
+            echo "Error: Could not safely enable multilib. Check /etc/pacman.conf."
+            exit 1
+        fi
     else
         echo "Error: Could not find the standard multilib section in /etc/pacman.conf."
         exit 1
@@ -104,16 +122,37 @@ elif command -v paru &>/dev/null; then
     AUR_HELPER="paru"
 else
     echo "AUR helper not found. Installing yay automatically..."
-    rm -rf /tmp/yay
-    git clone https://aur.archlinux.org/yay.git /tmp/yay
-    cd /tmp/yay
-    makepkg -si --noconfirm --needed
-    cd "$REPO_DIR"
-    rm -rf /tmp/yay
+    YAY_BUILD_DIR="$(mktemp -d /tmp/yay-build.XXXXXX)"
+    if git clone https://aur.archlinux.org/yay.git "$YAY_BUILD_DIR/yay"; then
+        if ! (cd "$YAY_BUILD_DIR/yay" && makepkg -si --noconfirm --needed); then
+            rm -rf -- "$YAY_BUILD_DIR"
+            echo "Error: yay could not be built or installed." >&2
+            exit 1
+        fi
+    else
+        rm -rf -- "$YAY_BUILD_DIR"
+        echo "Error: Could not clone the yay repository." >&2
+        exit 1
+    fi
+    rm -rf -- "$YAY_BUILD_DIR"
+    if ! command -v yay &>/dev/null; then
+        echo "Error: yay installation failed." >&2
+        exit 1
+    fi
     AUR_HELPER="yay"
 fi
 
 echo "Using AUR helper: $AUR_HELPER"
+
+# Use explicit answers for yay's clean-build/diff/edit menus. --noconfirm alone
+# does not suppress these menus on some yay configurations.
+aur_install() {
+    if [[ "$AUR_HELPER" == "yay" ]]; then
+        yay -S --needed --noconfirm --answerclean None --answerdiff None --answeredit None "$@"
+    else
+        paru -S --needed --noconfirm "$@"
+    fi
+}
 
 # --------------------------------------------
 # Uninstall unwanted packages
@@ -151,12 +190,12 @@ if [[ -f "$REPO_DIR/packages.txt" ]]; then
         line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
         [[ -z "$line" ]] && continue
 
-        if [[ "$line" =~ ^#AUR ]]; then
+        if [[ "$line" =~ ^#[[:space:]]*AUR([[:space:]]|$) ]]; then
             is_aur=1
             continue
         fi
 
-        if [[ "$line" =~ ^#Flatpaks ]]; then
+        if [[ "$line" =~ ^#[[:space:]]*Flatpaks([[:space:]]|$) ]]; then
             break
         fi
 
@@ -176,7 +215,7 @@ if [[ -f "$REPO_DIR/packages.txt" ]]; then
 
     if [[ ${#aur_packages[@]} -gt 0 ]]; then
         echo "Installing AUR packages via $AUR_HELPER..."
-        "$AUR_HELPER" -S --needed --noconfirm "${aur_packages[@]}"
+        aur_install "${aur_packages[@]}"
     fi
 else
     echo "packages.txt not found in repository root."
@@ -212,30 +251,23 @@ fi
 # --------------------------------------------
 echo
 echo "Updating XDG user directories..."
-
 if ! command -v xdg-user-dirs-update &>/dev/null; then
     sudo pacman -S --needed --noconfirm xdg-user-dirs
 fi
 
-# Remove Projects from global XDG defaults.
+# Remove Projects from the global defaults and this user's XDG mappings.
+# This does not delete ~/Projects or any other directory.
 XDG_DEFAULTS="/etc/xdg/user-dirs.defaults"
-
-if [[ -f "$XDG_DEFAULTS" ]] &&
-   grep -qE '^[[:space:]]*PROJECTS[[:space:]]*=' "$XDG_DEFAULTS"; then
+if [[ -f "$XDG_DEFAULTS" ]] && grep -qE '^[[:space:]]*PROJECTS[[:space:]]*=' "$XDG_DEFAULTS"; then
     sudo sed -i '/^[[:space:]]*PROJECTS[[:space:]]*=/d' "$XDG_DEFAULTS"
-    echo "Removed Projects from global XDG defaults."
+    echo "  - Removed Projects from global XDG defaults."
 fi
 
-# Remove any existing per-user Projects mapping.
-# This does NOT delete ~/Projects or any other directory.
 USER_DIRS_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs"
-
 if [[ -f "$USER_DIRS_CONFIG" ]]; then
-    sed -i '/^[[:space:]]*XDG_PROJECTS_DIR[[:space:]]*=/d' \
-        "$USER_DIRS_CONFIG"
+    sed -i '/^[[:space:]]*XDG_PROJECTS_DIR[[:space:]]*=/d' "$USER_DIRS_CONFIG"
 fi
 
-# Update the remaining XDG user directories.
 xdg-user-dirs-update
 
 if command -v xdg-mime &>/dev/null; then
@@ -330,8 +362,11 @@ CACHE_DIR="$HOME/.cache/wallpapers_state"
 mkdir -p "$CACHE_DIR"
 
 MONITORS=""
-if command -v hyprctl &>/dev/null && hyprctl monitors -j &>/dev/null; then
-    MONITORS=$(hyprctl monitors -j | jq -r '.[].name')
+if command -v hyprctl &>/dev/null && command -v jq &>/dev/null; then
+    wallpaper_monitors_json="$(hyprctl monitors -j 2>/dev/null || true)"
+    if [[ -n "$wallpaper_monitors_json" ]] && jq -e 'type == "array"' >/dev/null 2>&1 <<<"$wallpaper_monitors_json"; then
+        MONITORS="$(jq -r '.[].name // empty' <<<"$wallpaper_monitors_json")"
+    fi
 fi
 
 if command -v awww &>/dev/null && [[ -f "$DEFAULT_WALLPAPER" ]]; then
@@ -402,8 +437,7 @@ else
 
     API_URL="https://api.github.com/repos/PHNexus/AppManager/releases/latest"
     APPIMAGE_URL=$(curl -fsSL "$API_URL" 2>/dev/null \
-        | jq -r '.assets[] | select(.name | endswith(".AppImage")) | .browser_download_url' \
-        | head -1)
+        | jq -r '[.assets[]? | select(.name | endswith(".AppImage")) | .browser_download_url][0] // empty' 2>/dev/null || true)
 
     if [[ -z "$APPIMAGE_URL" || "$APPIMAGE_URL" == "null" ]]; then
         echo "  - Warning: no AppImage found in latest release"
@@ -438,7 +472,7 @@ fi
 echo
 echo "Applying post-installation adjustments..."
 
-ESCAPED_HOME=$(printf '%s\n' "$HOME" | sed 's/[&/\]/\\&/g')
+ESCAPED_HOME=$(printf '%s\n' "$HOME" | sed 's/[&|\\]/\\&/g')
 
 HYPRQUICKPAPER_CONFIG="$CONFIG_DIR/quickshell/hyprquickpaper/config.json"
 if [[ -f "$HYPRQUICKPAPER_CONFIG" ]]; then
@@ -463,10 +497,9 @@ KEYBINDS_LUA_CONFIG="$CONFIG_DIR/hypr/keybinds.lua"
 # Priority: hyprctl (running Hyprland) -> sysfs (fresh install, no WM yet)
 monitor_entries=()
 
-if command -v hyprctl &>/dev/null && hyprctl monitors -j &>/dev/null; then
+if command -v hyprctl &>/dev/null && command -v jq &>/dev/null && monitors_json="$(hyprctl monitors -j 2>/dev/null)" && jq -e 'type == "array"' >/dev/null <<<"$monitors_json"; then
     echo "  Hyprland is running. Reading active monitors via hyprctl."
-    monitors_json=$(hyprctl monitors -j)
-    count=$(echo "$monitors_json" | jq 'length')
+    count=$(jq 'length' <<<"$monitors_json")
 
     for i in $(seq 0 $((count - 1))); do
         name=$(echo "$monitors_json" | jq -r ".[$i].name")
@@ -606,315 +639,74 @@ else
 fi
 
 # --------------------------------------------
-# Install Settings Controller
-# --------------------------------------------
-echo
-echo "Installing Settings controller..."
-
-SETTINGS_DIR="$CONFIG_DIR/quickshell/settings"
-SETTINGS_BIN="$HOME/.local/bin/settings"
-SETTINGS_LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/settings"
-
-if ! command -v qs >/dev/null 2>&1; then
-    echo "  - Quickshell (qs) not found. Skipping Settings controller."
-elif [[ ! -f "$SETTINGS_DIR/shell.qml" ]]; then
-    echo "  - Settings shell not found at $SETTINGS_DIR/shell.qml"
-    echo "  - Skipping Settings controller."
-else
-    mkdir -p "$HOME/.local/bin" "$SETTINGS_LOG_DIR"
-
-    cat > "$SETTINGS_BIN" <<'SETTINGS_EOF'
-#!/usr/bin/env bash
-set -uo pipefail
-
-CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/settings"
-IPC_TARGET="settings"
-LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/settings"
-LOG_FILE="$LOG_DIR/quickshell.log"
-IPC_LOG="$LOG_DIR/ipc.log"
-ACTION="${1:-toggle}"
-
-usage() {
-    echo "Usage: settings [start|stop|restart|toggle|show|hide|log|audio|display|network|bluetooth|storage|power|configs]" >&2
-}
-
-if ! command -v qs >/dev/null 2>&1; then
-    echo "ERROR: Quickshell (qs) not found." >&2
-    exit 127
-fi
-
-if [[ ! -f "$CONFIG/shell.qml" ]]; then
-    echo "ERROR: Settings configuration not found: $CONFIG/shell.qml" >&2
-    exit 1
-fi
-
-mkdir -p "$LOG_DIR"
-
-call_ipc() {
-    qs -p "$CONFIG" ipc call "$IPC_TARGET" "$1"
-}
-
-case "$ACTION" in
-    start)
-        exec qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1
-        ;;
-
-    stop)
-        qs kill -p "$CONFIG"
-        ;;
-
-    restart)
-        qs kill -p "$CONFIG" >/dev/null 2>&1 || true
-        exec qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1
-        ;;
-
-    log)
-        tail -n 100 "$LOG_FILE"
-        ;;
-
-    toggle|show|hide|audio|display|network|bluetooth|storage|power|configs)
-        if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
-            cat "$IPC_LOG"
-            exit 0
-        fi
-
-        if [[ "$ACTION" == "hide" ]]; then
-            exit 0
-        fi
-
-        MONITOR=""
-        if command -v hyprctl >/dev/null 2>&1 &&
-           command -v jq >/dev/null 2>&1; then
-            MONITOR="$(hyprctl monitors -j 2>/dev/null |
-                jq -er '.[] | select(.focused == true) | .name' 2>/dev/null)" || MONITOR=""
-        fi
-
-        if [[ -n "$MONITOR" ]]; then
-            QS_SETTINGS_MONITOR="$MONITOR" qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1 &
-        else
-            qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1 &
-        fi
-        SHELL_PID=$!
-
-        for _ in {1..50}; do
-            if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
-                cat "$IPC_LOG"
-                exit 0
-            fi
-
-            if ! kill -0 "$SHELL_PID" 2>/dev/null; then
-                break
-            fi
-
-            sleep 0.1
-        done
-
-        echo "ERROR: Failed to execute Settings IPC command '$ACTION'." >&2
-        echo "Shell log: $LOG_FILE" >&2
-        tail -n 40 "$LOG_FILE" >&2 || true
-        cat "$IPC_LOG" >&2 2>/dev/null || true
-        exit 1
-        ;;
-
-    help|-h|--help)
-        usage
-        ;;
-
-    *)
-        usage
-        exit 2
-        ;;
-esac
-SETTINGS_EOF
-
-    chmod 755 "$SETTINGS_BIN"
-    echo "  - Settings controller installed at $SETTINGS_BIN"
-fi
-
-# --------------------------------------------
-# Install HyprQuickpaper Controller
-# --------------------------------------------
-echo
-echo "Installing HyprQuickpaper controller..."
-
-HYPRQUICKPAPER_DIR="$CONFIG_DIR/quickshell/hyprquickpaper"
-HYPRQUICKPAPER_BIN="$HOME/.local/bin/hyprquickpaper"
-
-if ! command -v qs >/dev/null 2>&1; then
-    echo "  - Quickshell (qs) not found. Skipping HyprQuickpaper controller."
-elif [[ ! -f "$HYPRQUICKPAPER_DIR/shell.qml" ]]; then
-    echo "  - HyprQuickpaper shell not found at $HYPRQUICKPAPER_DIR/shell.qml"
-    echo "  - Skipping HyprQuickpaper controller."
-else
-    mkdir -p "$HOME/.local/bin"
-
-    cat > "$HYPRQUICKPAPER_BIN" <<'HYPRQUICKPAPER_EOF'
-#!/usr/bin/env bash
-
-set -uo pipefail
-
-PICKER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/hyprquickpaper"
-IPC_TARGET="hyprquickpaper"
-LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hyprquickpaper"
-LOG_FILE="$LOG_DIR/quickshell.log"
-IPC_LOG="$LOG_DIR/ipc.log"
-ACTION="${1:-start}"
-
-usage() {
-    cat <<'USAGE'
-Usage: hyprquickpaper [command]
-
-Commands:
-  start    Start the independent HyprQuickpaper shell
-  stop     Stop the independent shell
-  restart  Restart the independent shell
-  toggle   Toggle the wallpaper picker
-  show     Show the wallpaper picker
-  hide     Hide the wallpaper picker
-  log      Display the latest shell log
-  help     Display this help message
-USAGE
-}
-
-if ! command -v qs >/dev/null 2>&1; then
-    echo "ERROR: Quickshell (qs) was not found in PATH." >&2
-    exit 127
-fi
-
-if [[ ! -f "$PICKER_DIR/shell.qml" ]]; then
-    echo "ERROR: HyprQuickpaper shell not found at $PICKER_DIR/shell.qml" >&2
-    exit 1
-fi
-
-mkdir -p "$LOG_DIR"
-
-start_shell() {
-    qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1
-}
-
-call_ipc() {
-    qs -p "$PICKER_DIR" ipc call "$IPC_TARGET" "$1"
-}
-
-case "$ACTION" in
-    start)
-        exec qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1
-        ;;
-
-    stop)
-        qs kill -p "$PICKER_DIR"
-        ;;
-
-    restart)
-        qs kill -p "$PICKER_DIR" >/dev/null 2>&1 || true
-        exec qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1
-        ;;
-
-    toggle|show|hide)
-        if call_ipc "$ACTION"; then
-            exit 0
-        fi
-
-        start_shell &
-        SHELL_PID=$!
-
-        for _ in {1..40}; do
-            if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
-                cat "$IPC_LOG"
-                exit 0
-            fi
-
-            if ! kill -0 "$SHELL_PID" 2>/dev/null; then
-                break
-            fi
-
-            sleep 0.1
-        done
-
-        echo "ERROR: Failed to execute IPC command '$IPC_TARGET $ACTION'." >&2
-        echo "Shell log: $LOG_FILE" >&2
-        echo >&2
-        echo "--- Latest shell log entries ---" >&2
-        tail -n 60 "$LOG_FILE" >&2 || true
-        echo >&2
-        echo "--- Latest IPC error ---" >&2
-        cat "$IPC_LOG" >&2 2>/dev/null || true
-        exit 1
-        ;;
-
-    log)
-        tail -n 100 "$LOG_FILE"
-        ;;
-
-    help|-h|--help)
-        usage
-        ;;
-
-    *)
-        echo "ERROR: Unknown command: $ACTION" >&2
-        usage >&2
-        exit 2
-        ;;
-esac
-HYPRQUICKPAPER_EOF
-
-    chmod 755 "$HYPRQUICKPAPER_BIN"
-    echo "  - Controller installed at $HYPRQUICKPAPER_BIN"
-fi
-
-# --------------------------------------------
 # Configure Waybar output (auto-detect to prevent hidden bar)
 # --------------------------------------------
 echo
 echo "Configuring Waybar output..."
 
-WAYBAR_CONFIG="$CONFIG_DIR/waybar/config.json"
+WAYBAR_CONFIG=""
+for candidate in "$CONFIG_DIR/waybar/config.jsonc" "$CONFIG_DIR/waybar/config" "$CONFIG_DIR/waybar/config.json"; do
+    if [[ -f "$candidate" ]]; then
+        WAYBAR_CONFIG="$candidate"
+        break
+    fi
+done
 
-if [[ -f "$WAYBAR_CONFIG" ]]; then
-    if [[ -n "${first_monitor:-}" ]]; then
-        # Set Waybar output to the auto-detected primary monitor
-        if grep -q '"output"' "$WAYBAR_CONFIG"; then
-            sed -i "s|\"output\":[[:space:]]*\"[^\"]*\"|\"output\": \"${first_monitor}\"|" "$WAYBAR_CONFIG"
-            echo "  - Set Waybar output to detected monitor: $first_monitor"
+if [[ -n "$WAYBAR_CONFIG" ]]; then
+    echo "  - Found Waybar config: $WAYBAR_CONFIG"
+    if command -v jq >/dev/null 2>&1 && jq empty "$WAYBAR_CONFIG" >/dev/null 2>&1; then
+        WAYBAR_TMP="$(mktemp)"
+        if [[ -n "${first_monitor:-}" ]]; then
+            if jq --arg monitor "$first_monitor" '
+                if type == "array" then map(if type == "object" and has("output") then .output = $monitor else . end)
+                elif type == "object" then if has("output") then .output = $monitor else . end
+                else . end
+            ' "$WAYBAR_CONFIG" > "$WAYBAR_TMP"; then
+                if jq -e 'if type == "array" then any(.[]; type == "object" and has("output")) elif type == "object" then has("output") else false end' "$WAYBAR_CONFIG" >/dev/null; then
+                    cat "$WAYBAR_TMP" > "$WAYBAR_CONFIG"
+                    echo "  - Updated Waybar output to detected monitor: $first_monitor."
+                else
+                    warn "Waybar config has no output field; leaving it unchanged."
+                fi
+            else
+                warn "Could not update Waybar JSON; original file was preserved."
+            fi
         else
-            echo "  - Waybar config has no 'output' field, using default (all monitors)"
+            if jq 'if type == "array" then map(if type == "object" then del(.output) else . end) elif type == "object" then del(.output) else . end' "$WAYBAR_CONFIG" > "$WAYBAR_TMP"; then
+                cat "$WAYBAR_TMP" > "$WAYBAR_CONFIG"
+                echo "  - No monitor detected. Removed any hardcoded output from Waybar JSON."
+            else
+                warn "Could not update Waybar JSON; original file was preserved."
+            fi
         fi
+        rm -f "$WAYBAR_TMP"
     else
-        # No monitor detected - remove the hardcoded output so bar shows everywhere
-        if grep -q '"output"' "$WAYBAR_CONFIG"; then
-            sed -i '/"output":/d' "$WAYBAR_CONFIG"
-            echo "  - No monitor detected. Removed 'output' line from Waybar config"
-            echo "  - Waybar will show on all monitors"
-        else
-            echo "  - Waybar config has no 'output' field, nothing to change"
-        fi
+        warn "Waybar config is not valid JSON (it may be JSONC); leaving it unchanged."
     fi
 else
-    echo "  - Waybar config not found, skipping"
+    echo "  - No Waybar config found (checked config.jsonc, config and config.json); skipping."
 fi
-
 echo "Reloading Hyprland configurations..."
 hyprctl reload 2>/dev/null || true
 
 # --------------------------------------------
 # Configure EasyEffects systemd user service
 # --------------------------------------------
-HAS_EASYEFFECTS=0
+echo
+echo "Configuring EasyEffects user service..."
 
-if grep -qE '^[[:space:]]*easyeffects[[:space:]]*$' "$REPO_DIR/packages.txt"; then
+HAS_EASYEFFECTS=0
+if [[ -f "$REPO_DIR/packages.txt" ]] && grep -qE '^[[:space:]]*easyeffects[[:space:]]*$' "$REPO_DIR/packages.txt"; then
     HAS_EASYEFFECTS=1
 fi
 
 if [[ "$HAS_EASYEFFECTS" -eq 1 ]]; then
-    echo
-    echo "Configuring EasyEffects user service..."
-
     SYSTEMD_USER_DIR="$CONFIG_DIR/systemd/user"
     EASYEFFECTS_SERVICE="$SYSTEMD_USER_DIR/easyeffects.service"
 
     mkdir -p "$SYSTEMD_USER_DIR"
 
-    cat > "$EASYEFFECTS_SERVICE" << EOF
+    cat > "$EASYEFFECTS_SERVICE" <<'EOF'
 [Unit]
 Description=EasyEffects Service
 Wants=pipewire-pulse.service
@@ -923,13 +715,9 @@ BindsTo=pipewire-pulse.service
 PartOf=pipewire-pulse.service
 
 [Service]
-Environment=DISPLAY=:0
-Environment=XAUTHORITY=${HOME}/.Xauthority
-Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus
 ExecStart=/usr/bin/easyeffects --gapplication-service
-Restart=always
+Restart=on-failure
 RestartSec=3
-StartLimitInterval=0
 
 [Install]
 WantedBy=default.target
@@ -938,10 +726,15 @@ EOF
     echo "  - Created EasyEffects service file"
 
     if command -v systemctl &>/dev/null; then
-        systemctl --user daemon-reload 2>/dev/null || true
-        systemctl --user enable easyeffects.service 2>/dev/null || true
-        echo "  - Enabled EasyEffects service (will start on next login)"
+        if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable --now easyeffects.service 2>/dev/null; then
+            echo "  - EasyEffects user service enabled and started."
+        else
+            echo "  - Warning: could not enable the EasyEffects user service in this session."
+        fi
     fi
+
+else
+    echo "  - EasyEffects is not listed in packages.txt; skipping its user service."
 fi
 
 # --------------------------------------------
@@ -1022,9 +815,15 @@ fi
 echo
 echo "Configuring Flathub and installing Bazaar..."
 if command -v flatpak &>/dev/null; then
-    flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    flatpak install --user -y flathub io.github.kolunmi.Bazaar
-    echo "  - Bazaar successfully installed."
+    if flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
+        if flatpak install --user -y flathub io.github.kolunmi.Bazaar; then
+            echo "  - Bazaar installed or already present."
+        else
+            warn "Bazaar installation failed; continuing with the remaining setup."
+        fi
+    else
+        warn "Could not configure the Flathub user remote; skipping Bazaar."
+    fi
 else
     echo "  - Flatpak is not installed, skipping Bazaar installation."
 fi
@@ -1035,10 +834,10 @@ fi
 echo
 echo "Configuring Flathub and installing Flatpak apps..."
 if command -v flatpak &>/dev/null; then
-    flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    
-    # Read and automatically install Flatpaks from the #Flatpaks section in packages.txt
-    if [[ -f "$REPO_DIR/packages.txt" ]]; then
+    if ! flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
+        warn "Could not configure the Flathub user remote; skipping Flatpak packages."
+    elif [[ -f "$REPO_DIR/packages.txt" ]]; then
+        # Read and automatically install Flatpaks from the #Flatpaks section in packages.txt
         flatpak_packages=()
         is_flatpaks=0
 
@@ -1046,14 +845,15 @@ if command -v flatpak &>/dev/null; then
             line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
             [[ -z "$line" ]] && continue
 
-            if [[ "$line" =~ ^#Flatpaks ]]; then
+            if [[ "$line" =~ ^#[[:space:]]*Flatpaks([[:space:]]|$) ]]; then
                 is_flatpaks=1
                 continue
             fi
 
-            # If another header with # is found, disable the flag
-            if [[ "$line" =~ ^# && "$line" != "#Flatpaks" ]]; then
+            # Any other section header ends the Flatpak section.
+            if [[ "$line" =~ ^# ]]; then
                 is_flatpaks=0
+                continue
             fi
 
             [[ "$line" =~ ^# ]] && continue
@@ -1067,7 +867,9 @@ if command -v flatpak &>/dev/null; then
         if [[ ${#flatpak_packages[@]} -gt 0 ]]; then
             for app in "${flatpak_packages[@]}"; do
                 echo "  - Installing Flatpak: $app..."
-                flatpak install --user -y flathub "$app"
+                if ! flatpak install --user -y flathub "$app"; then
+                    warn "Failed to install Flatpak '$app'; continuing."
+                fi
             done
         fi
     fi
@@ -1095,13 +897,12 @@ if pacman -Qi google-chrome &>/dev/null; then
 fi
 
 cleanup_helium_drm() {
-    rm -rf "$HELIUM_DRM_DIR"
+    if [[ -n "${HELIUM_DRM_DIR:-}" ]]; then
+        rm -rf -- "$HELIUM_DRM_DIR"
+    fi
 
     if [[ "$CHROME_INSTALLED_BY_SCRIPT" -eq 1 ]]; then
         sudo pacman -Rns --noconfirm google-chrome &>/dev/null || true
-        rm -rf "$HOME/.config/google-chrome"
-        rm -rf "$HOME/.cache/google-chrome"
-
         if [[ "$AUR_HELPER" == "yay" ]]; then
             rm -rf "$HOME/.cache/yay/google-chrome"
         elif [[ "$AUR_HELPER" == "paru" ]]; then
@@ -1112,33 +913,40 @@ cleanup_helium_drm() {
 trap cleanup_helium_drm EXIT
 
 rm -rf "$HELIUM_DRM_DIR"
-git clone https://github.com/PHNexus/helium-drm-fixer.git "$HELIUM_DRM_DIR"
+if ! git clone https://github.com/PHNexus/helium-drm-fixer.git "$HELIUM_DRM_DIR"; then
+    warn "Could not clone Helium DRM Fixer; skipping this optional step."
+    HELIUM_DRM_DIR=""
+fi
 
+if [[ -z "$HELIUM_DRM_DIR" || ! -d "$HELIUM_DRM_DIR" ]]; then
+    echo "  - Helium DRM Fixer unavailable; continuing without running it."
+else
 echo "Installing Google Chrome temporarily via $AUR_HELPER..."
 if [[ "$CHROME_WAS_INSTALLED" -eq 0 ]]; then
     CHROME_INSTALLED_BY_SCRIPT=1
-    "$AUR_HELPER" -S --needed --noconfirm google-chrome
+    # Feed the package transaction confirmation explicitly: some yay/pacman
+    # combinations still show the transaction prompt despite --noconfirm.
+    if ! printf 'Y\n' | aur_install google-chrome; then
+        CHROME_INSTALLED_BY_SCRIPT=0
+        warn "Could not install temporary Google Chrome; skipping the DRM fixer run."
+    fi
 else
     echo "  - Google Chrome is already installed. Keeping the existing installation."
 fi
 
 # Run the DRM fix
 cd "$HELIUM_DRM_DIR"
-bun install
-# Note: The script might pause here if cli.ts requires (Y/n) confirmation
-bun run cli.ts
+if ! bun install || ! bun run cli.ts; then
+    warn "Helium DRM Fixer failed; continuing with the remaining installer steps."
+fi
 
-echo "Uninstalling Google Chrome..."
 if [[ "$CHROME_INSTALLED_BY_SCRIPT" -eq 1 ]]; then
-    # Safely remove Chrome and its unused dependencies
-    sudo pacman -Rns --noconfirm google-chrome
-
-    echo "Cleaning up remaining Chrome traces..."
-    # Remove user config and cache files
-    rm -rf "$HOME/.config/google-chrome"
-    rm -rf "$HOME/.cache/google-chrome"
-
-    # Dynamically clear the cache for the detected AUR helper
+    echo "Uninstalling temporary Google Chrome..."
+    # Remove only the temporary package; leave browser profile data untouched.
+    # Explicit stdin confirmation covers pacman builds that still prompt despite --noconfirm.
+    if ! printf 'Y\n' | sudo pacman -Rns --noconfirm google-chrome; then
+        warn "Could not remove temporary Google Chrome automatically."
+    fi
     if [[ "$AUR_HELPER" == "yay" ]]; then
         rm -rf "$HOME/.cache/yay/google-chrome"
     elif [[ "$AUR_HELPER" == "paru" ]]; then
@@ -1148,12 +956,12 @@ else
     echo "  - Existing Google Chrome installation was left untouched."
 fi
 
-# Clean up temporary fixer repository
+# Clean up the temporary fixer repository.
 rm -rf "$HELIUM_DRM_DIR"
 trap - EXIT
-
 cd "$REPO_DIR"
-    echo "Helium DRM Fixer completed successfully!"
+fi
+    echo "Helium DRM Fixer step finished."
 
     # --------------------------------------------
     # Configure Helium Browser Flags
@@ -1200,27 +1008,35 @@ echo "Installing and configuring GameMode..."
 # 1. Install GameMode and 32-bit support
 sudo pacman -S --needed --noconfirm gamemode lib32-gamemode
 
-# 2. Enable and start systemd user service
-if command -v systemctl &>/dev/null; then
-    systemctl --user daemon-reload 2>/dev/null || true
-    systemctl --user enable --now gamemoded.service 2>/dev/null || true
-    echo "  - Enabled gamemoded user service."
+# 2. Test GameMode instead of enabling a service that may not exist. The
+# daemon is normally activated on demand over D-Bus when a game requests it.
+if command -v gamemoded >/dev/null 2>&1; then
+    if gamemoded -t; then
+        echo "  - GameMode diagnostic test passed."
+    else
+        warn "GameMode diagnostic test failed; inspect the output above before relying on it."
+    fi
+else
+    warn "gamemoded was not found after package installation."
 fi
 
 # 3. Download default configuration file from official repository
 if [[ ! -f "$CONFIG_DIR/gamemode.ini" ]]; then
-    curl -sLo "$CONFIG_DIR/gamemode.ini" https://raw.githubusercontent.com/FeralInteractive/gamemode/master/example/gamemode.ini
-    echo "  - Downloaded default gamemode.ini to $CONFIG_DIR/"
+    if command -v curl >/dev/null 2>&1 && curl -fsSL https://raw.githubusercontent.com/FeralInteractive/gamemode/master/example/gamemode.ini -o "$CONFIG_DIR/gamemode.ini"; then
+        echo "  - Downloaded default gamemode.ini to $CONFIG_DIR/"
+    else
+        rm -f "$CONFIG_DIR/gamemode.ini"
+        warn "Could not download the default gamemode.ini; continuing."
+    fi
 fi
 
-echo "GameMode setup completed successfully!"
+echo "GameMode package/configuration step finished; see diagnostic result above."
 
 # --------------------------------------------
 # Configure cpupower for Performance mode
 # --------------------------------------------
 HAS_CPUPOWER=0
-
-if grep -qE '^[[:space:]]*cpupower[[:space:]]*$' "$REPO_DIR/packages.txt"; then
+if [[ -f "$REPO_DIR/packages.txt" ]] && grep -qE '^[[:space:]]*cpupower[[:space:]]*$' "$REPO_DIR/packages.txt"; then
     HAS_CPUPOWER=1
 fi
 
@@ -1230,11 +1046,16 @@ if [[ "$HAS_CPUPOWER" -eq 1 ]]; then
     if [[ -f /etc/default/cpupower-service.conf ]]; then
         sudo sed -i '/GOVERNOR/d' /etc/default/cpupower-service.conf
         echo 'GOVERNOR="performance"' | sudo tee -a /etc/default/cpupower-service.conf > /dev/null
-        sudo systemctl enable --now cpupower.service
-        echo "  - cpupower service enabled with 'performance' governor."
+        if sudo systemctl enable --now cpupower.service; then
+            echo "  - cpupower service enabled with 'performance' governor."
+        else
+            warn "Could not enable cpupower.service; the configuration file was updated."
+        fi
     else
         echo "  - cpupower-service.conf not found, skipping."
     fi
+else
+    echo "  - cpupower is not listed in packages.txt; skipping configuration."
 fi
 
 # --------------------------------------------
@@ -1246,19 +1067,25 @@ if [[ "$HAS_CLOUDFLARE_WARP" -eq 1 ]]; then
 
 # Enable and start the WARP background service
 if command -v systemctl &>/dev/null; then
-    sudo systemctl enable --now warp-svc
-    echo "  - warp-svc service enabled and started."
+    if sudo systemctl enable --now warp-svc; then
+        echo "  - warp-svc service enabled and started."
+    else
+        warn "Could not enable warp-svc; WARP CLI configuration may not work."
+    fi
     
     # Wait a few seconds for the daemon to fully initialize
     sleep 3
 fi
 
-# Register the client and accept terms without connecting automatically
+# Preserve an existing registration. Never delete/recreate it automatically:
+# doing so can invalidate the account/device registration already on this machine.
 if command -v warp-cli &>/dev/null; then
-    if warp-cli --accept-tos registration new; then
-        echo "  - Cloudflare WARP registered successfully (not connected)."
+    if warp-cli registration show >/dev/null 2>&1; then
+        echo "  - Existing Cloudflare WARP registration found; keeping it."
+    elif warp-cli --accept-tos registration new; then
+        echo "  - Cloudflare WARP registration created (not connected)."
     else
-        echo "  - Existing WARP registration detected or registration could not be recreated; keeping the current registration."
+        warn "Could not verify or create a WARP registration; existing data was not deleted."
     fi
 
     if warp-cli mode warp+doh; then
@@ -1282,57 +1109,102 @@ echo "Checking GPU vendor to adjust Hyprland environment variables..."
 
 ENV_LUA_FILE="$HOME/.config/hypr/environment.lua"
 
-if ! lspci -nn | grep -iE 'vga|3d' | grep -iEq 'nvidia'; then
-    echo "  - NVIDIA GPU not detected. Removing NVIDIA environment variables..."
-    if [[ -f "$ENV_LUA_FILE" ]]; then
-
-        sed -i -E '/(LIBVA_DRIVER_NAME|__GLX_VENDOR_LIBRARY_NAME|GBM_BACKEND|NVD_BACKEND|VDPAU_DRIVER|__GL_SHADER_DISK_CACHE|__GL_SYNC_TO_VBLANK)/I d' "$ENV_LUA_FILE"
-        
-        sed -i '/-- NVIDIA/d' "$ENV_LUA_FILE"
-        
-        echo "  - NVIDIA environment variables successfully removed from environment.lua."
-    else
-        echo "  - Warning: $ENV_LUA_FILE not found, skipping GPU env adjustment."
-    fi
-else
+if ! command -v lspci >/dev/null 2>&1; then
+    warn "lspci is unavailable; leaving NVIDIA environment variables unchanged. Install pciutils to enable GPU detection."
+elif lspci -nn 2>/dev/null | grep -iE 'vga|3d|display' | grep -iEq 'nvidia'; then
     echo "  - NVIDIA GPU detected, keeping original environment variables."
+else
+    echo "  - No NVIDIA GPU detected. Removing NVIDIA environment variables..."
+    if [[ -f "$ENV_LUA_FILE" ]]; then
+        sed -i -E '/(LIBVA_DRIVER_NAME|__GLX_VENDOR_LIBRARY_NAME|GBM_BACKEND|NVD_BACKEND|VDPAU_DRIVER|__GL_SHADER_DISK_CACHE|__GL_SYNC_TO_VBLANK)/I d' "$ENV_LUA_FILE"
+        sed -i '/-- NVIDIA/d' "$ENV_LUA_FILE"
+        echo "  - NVIDIA environment variables removed from environment.lua."
+    else
+        warn "$ENV_LUA_FILE not found; skipping GPU environment adjustment."
+    fi
 fi
 
 # --------------------------------------------
 # Install MacTahoe Icon Theme
 # --------------------------------------------
-
 echo
-
 echo "Installing MacTahoe icon theme..."
 
-MACOS_ICON_DIR="/tmp/MacTahoe-icon-theme"
+MACOS_ICON_DIR="$(mktemp -d /tmp/MacTahoe-icon-theme.XXXXXX)"
+MACOS_ICON_READY=0
+MACOS_ICON_URL="https://github.com/vinceliuice/MacTahoe-icon-theme.git"
 
+# Retry shallow clone; if Git transport is unavailable, try GitHub's source archive.
+for attempt in 1 2 3; do
+    rm -rf "$MACOS_ICON_DIR"/* "$MACOS_ICON_DIR"/.[!.]* "$MACOS_ICON_DIR"/..?* 2>/dev/null || true
+    if git -c http.connectTimeout=15 clone --depth=1 "$MACOS_ICON_URL" "$MACOS_ICON_DIR"; then
+        MACOS_ICON_READY=1
+        break
+    fi
+    warn "MacTahoe clone attempt $attempt/3 failed."
+    [[ "$attempt" -eq 3 ]] || sleep 2
+done
+
+if [[ "$MACOS_ICON_READY" -eq 0 ]] && command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
+    MACOS_ICON_ARCHIVE="$(mktemp /tmp/MacTahoe-icon-theme.XXXXXX.tar.gz)"
+    if curl -fL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 \
+        "https://codeload.github.com/vinceliuice/MacTahoe-icon-theme/tar.gz/refs/heads/main" \
+        -o "$MACOS_ICON_ARCHIVE"; then
+        if tar -xzf "$MACOS_ICON_ARCHIVE" --strip-components=1 -C "$MACOS_ICON_DIR"; then
+            MACOS_ICON_READY=1
+        fi
+    fi
+    rm -f "$MACOS_ICON_ARCHIVE"
+fi
+
+MACOS_ICON_INSTALLED=0
+if [[ "$MACOS_ICON_READY" -eq 1 && -f "$MACOS_ICON_DIR/install.sh" ]]; then
+    if (cd "$MACOS_ICON_DIR" && bash ./install.sh -t nord); then
+        if [[ -d "$HOME/.local/share/icons/MacTahoe-nord-dark" ]]; then
+            MACOS_ICON_INSTALLED=1
+            echo "  - Installed MacTahoe-nord-dark icon theme."
+        elif [[ -d "$HOME/.local/share/icons/MacTahoe-nord" ]]; then
+            MACOS_ICON_INSTALLED=1
+            echo "  - Installed MacTahoe-nord icon theme."
+        else
+            warn "MacTahoe installer exited successfully, but the expected theme directory was not found."
+        fi
+    else
+        warn "MacTahoe upstream installer failed."
+    fi
+else
+    warn "Could not download the official MacTahoe icon theme; skipping it without affecting the rest of setup."
+fi
 rm -rf "$MACOS_ICON_DIR"
-
-git clone --depth=1 \
-    "https://github.com/PHNexus/MacTahoe-icon-theme.git" \
-    "$MACOS_ICON_DIR"
-
-cd "$MACOS_ICON_DIR"
-
-./install.sh
-
-cd "$REPO_DIR"
-
-rm -rf "$MACOS_ICON_DIR"
-
-echo "  - MacTahoe icon theme installed."
 
 # --------------------------------------------
-# Configure GTK and Icon Themes
+# Configure GTK and Icon Themes (GNOME)
 # --------------------------------------------
 echo
 echo "Applying GTK and icon themes..."
-gsettings set org.gnome.desktop.interface gtk-theme "Materia-dark-compact"
-gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-gsettings set org.gnome.desktop.interface icon-theme "MacTahoe"
-echo "  - Themes applied successfully!"
+if command -v gsettings >/dev/null 2>&1; then
+    theme_changes_ok=1
+    gsettings set org.gnome.desktop.interface gtk-theme "Materia-dark-compact" || theme_changes_ok=0
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || theme_changes_ok=0
+
+    if [[ "$MACOS_ICON_INSTALLED" -eq 1 ]]; then
+        if [[ -d "$HOME/.local/share/icons/MacTahoe-nord-dark" ]]; then
+            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-nord-dark" || theme_changes_ok=0
+        else
+            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-nord" || theme_changes_ok=0
+        fi
+    else
+        echo "  - MacTahoe was not installed; leaving the current icon theme unchanged."
+    fi
+
+    if [[ "$theme_changes_ok" -eq 1 ]]; then
+        echo "  - Available GTK/dark-mode settings applied."
+    else
+        warn "One or more theme settings could not be applied in this desktop session."
+    fi
+else
+    warn "gsettings is unavailable; skipping GTK and icon theme settings."
+fi
 
 # --------------------------------------------
 # Configure Cloudflare DNS (1.1.1.1)
@@ -1351,10 +1223,13 @@ if command -v nmcli &>/dev/null; then
     ACTIVE_CONN=$(nmcli -t -f NAME,DEVICE connection show --active | grep -v ':lo$' | head -n1 | cut -d: -f1 || true)
 
     if [[ -n "$ACTIVE_CONN" ]]; then
-        sudo nmcli connection modify "$ACTIVE_CONN" ipv4.dns "1.1.1.1,1.0.0.1"
-        sudo nmcli connection modify "$ACTIVE_CONN" ipv4.ignore-auto-dns yes
-        sudo nmcli connection up "$ACTIVE_CONN"
-        echo "  - DNS updated to Cloudflare on connection: $ACTIVE_CONN"
+        if sudo nmcli connection modify "$ACTIVE_CONN" ipv4.dns "1.1.1.1,1.0.0.1" && \
+           sudo nmcli connection modify "$ACTIVE_CONN" ipv4.ignore-auto-dns yes && \
+           sudo nmcli connection up "$ACTIVE_CONN"; then
+            echo "  - DNS updated to Cloudflare on connection: $ACTIVE_CONN"
+        else
+            warn "Could not apply Cloudflare DNS to connection: $ACTIVE_CONN"
+        fi
     else
         echo "  - No active network connection found to update DNS."
     fi
@@ -1397,7 +1272,7 @@ else
 fi
 
 echo
-echo "Installation complete!"
+echo "Installer reached the end. Review any warnings above for components that were skipped or need attention."
 echo "Reloading Hyprland configurations..."
 hyprctl reload 2>/dev/null || true
 read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
