@@ -1,0 +1,16 @@
+{
+  "monitors": {
+    "DP-1": {
+      "mode": "1920x1080@180.00",
+      "scale": 1,
+      "position": "0x0",
+      "disabled": false
+    },
+    "HDMI-A-1": {
+      "mode": "1366x768@59.79",
+      "scale": 1,
+      "position": "-1344x-130",
+      "disabled": false
+    }
+  }
+}
