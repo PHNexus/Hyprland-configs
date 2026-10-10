@@ -75,6 +75,14 @@ Other repos used by this dotfiles:
 | [![helium-drm-fixer](https://img.shields.io/badge/-helium--drm--fixer-blue?logo=github)](https://github.com/PHNexus/helium-drm-fixer) | Fork of https://github.com/vikas5914/helium-drm-fixer — fixes DRM (Widevine) for the Helium browser. Run automatically by `install.sh`. |
 | [![MacTahoe Icons](https://img.shields.io/badge/-MacTahoe--Icons-blue?logo=github)](https://github.com/PHNexus/MacTahoe-icon-theme) | Fork of https://github.com/vinceliuice/MacTahoe-icon-theme — macOS Tahoe-style icon theme. Cloned directly by `install.sh` to bypass slow AUR packaging. |
 
+### Hyprquickpaper — Bug Fixes
+
+Fixes horizontal scrolling boundaries and hover animations during mouse-wheel scrolling.
+
+- [Config](configs/quickshell/hyprquickpaper/)
+- [Fix documentation](configs/quickshell/hyprquickpaper/docs/debugging/README.md)
+- [Debug logs](configs/quickshell/hyprquickpaper/docs/debugging/logs/)
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
