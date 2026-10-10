@@ -170,7 +170,7 @@ Item {
 
                 ConfigButton {
                     label: "PROGRAMS - AUTOSTART - INPUT"
-                    path: "~/.config/hypr/hyprland.lua"
+                    path: "~/.config/hypr/autostart.lua"
                 }
 
                 ConfigButton {
