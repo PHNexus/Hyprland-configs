@@ -17,11 +17,11 @@ function M.setup()
     hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
     hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
     hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("qs ipc call settings toggle || (quickshell & sleep 0.5 && qs ipc call settings toggle)"))
-    hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh")
-hl.bind(
-    mainMod .. " + W",
-    hl.dsp.exec_cmd("qs ipc call hyprquickpaper toggle")
-)
+    hl.bind(mainMod .. " + SHIFT + R",
+        hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
+    hl.bind(
+    mainMod .. " + W", --If you have 2 monitors it will open a WOFI menu to select one of the 2 if you have one it goes straight
+    hl.dsp.exec_cmd("qs ipc call hyprquickpaper toggle"))
 -- TOGGLE WAYBARa
     -- ============================================================
     hl.bind(mainMod .. " + SHIFT + W",
