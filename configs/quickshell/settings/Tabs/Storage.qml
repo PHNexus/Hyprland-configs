@@ -1,5 +1,4 @@
-
-import QtQuick
+ import QtQuick
 import QtQuick.Controls
 import Quickshell.Io
 import "../"
@@ -761,23 +760,26 @@ Item {
                                 title: "CLEAR YAY CACHE?",
                                 message: "Deletes the contents of the Yay cache.",
                                 command: "mkdir -p \"$HOME/.cache/yay\" && find \"$HOME/.cache/yay\" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +"
-                            },
+                            },  
                             {
                                 key: "pacman",
                                 label: "PACMAN CACHE",
-                                action: "CLEAN",
-                                title: "CLEAN PACMAN CACHE?",
-                                message: "Removes cached package versions while retaining the installed versions.",
-                                command: "pkexec paccache -r"
+                                action: "CLEAN ALL",
+                                title: "DELETE ALL PACMAN CACHE?",
+                                message: "Permanently deletes all cached package files and download directories. Installed packages are not uninstalled, but cached packages cannot be reinstalled offline.",
+                                command: "pkexec find /var/cache/pacman/pkg -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +"
                             },
                             {
                                 key: "journal",
                                 label: "JOURNAL",
-                                action: "7 DAYS",
+                                action: "2 DAYS",
                                 title: "VACUUM JOURNAL?",
-                                message: "Keeps only the last 7 days of system journal entries.",
-                                command: "pkexec journalctl --vacuum-time=7d"
-                            },
+                                message: "Keeps journal entries from the last 2 days and removes older archived entries.",
+                                command: "pkexec journalctl --vacuum-time=2d"
+                             },
+
+ 
+
                             {
                                 key: "flatpak",
                                 label: "FLATPAK UNUSED",
