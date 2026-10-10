@@ -606,6 +606,136 @@ else
 fi
 
 # --------------------------------------------
+# Install HyprQuickpaper Controller
+# --------------------------------------------
+echo
+echo "Installing HyprQuickpaper controller..."
+
+HYPRQUICKPAPER_DIR="$CONFIG_DIR/quickshell/hyprquickpaper"
+HYPRQUICKPAPER_BIN="$HOME/.local/bin/hyprquickpaper"
+
+if ! command -v qs >/dev/null 2>&1; then
+    echo "  - Quickshell (qs) not found. Skipping HyprQuickpaper controller."
+else
+    mkdir -p "$HOME/.local/bin"
+
+    cat > "$HYPRQUICKPAPER_BIN" <<'HYPRQUICKPAPER_EOF'
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+PICKER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/hyprquickpaper"
+IPC_TARGET="hyprquickpaper"
+LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hyprquickpaper"
+LOG_FILE="$LOG_DIR/quickshell.log"
+IPC_LOG="$LOG_DIR/ipc.log"
+ACTION="${1:-start}"
+
+usage() {
+    cat <<'USAGE'
+Usage: hyprquickpaper [command]
+
+Commands:
+  start    Start the HyprQuickpaper shell
+  stop     Stop the independent shell
+  restart  Restart the shell
+  toggle   Toggle the wallpaper picker
+  show     Show the wallpaper picker
+  hide     Hide the wallpaper picker
+  log      Display the latest shell log
+  help     Display this help message
+USAGE
+}
+
+if ! command -v qs >/dev/null 2>&1; then
+    echo "ERROR: Quickshell (qs) was not found in PATH." >&2
+    exit 127
+fi
+
+if [[ ! -f "$PICKER_DIR/shell.qml" ]]; then
+    echo "ERROR: HyprQuickpaper shell not found at:" >&2
+    echo "  $PICKER_DIR/shell.qml" >&2
+    exit 1
+fi
+
+mkdir -p "$LOG_DIR"
+
+start_shell() {
+    qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1
+}
+
+call_ipc() {
+    qs -p "$PICKER_DIR" ipc call "$IPC_TARGET" "$1"
+}
+
+case "$ACTION" in
+    start)
+        exec qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1
+        ;;
+
+    stop)
+        qs kill -p "$PICKER_DIR"
+        ;;
+
+    restart)
+        qs kill -p "$PICKER_DIR" >/dev/null 2>&1 || true
+        exec qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1
+        ;;
+
+    toggle|show|hide)
+        if call_ipc "$ACTION"; then
+            exit 0
+        fi
+
+        start_shell &
+        SHELL_PID=$!
+
+        for _ in {1..40}; do
+            if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
+                cat "$IPC_LOG"
+                exit 0
+            fi
+
+            if ! kill -0 "$SHELL_PID" 2>/dev/null; then
+                break
+            fi
+
+            sleep 0.1
+        done
+
+        echo "ERROR: Failed to execute IPC command '$ACTION'." >&2
+        echo "Shell log: $LOG_FILE" >&2
+        echo >&2
+        echo "--- Latest shell log entries ---" >&2
+        tail -n 60 "$LOG_FILE" >&2 || true
+        echo >&2
+        echo "--- Latest IPC error ---" >&2
+        cat "$IPC_LOG" >&2 2>/dev/null || true
+        exit 1
+        ;;
+
+    log)
+        tail -n 100 "$LOG_FILE"
+        ;;
+
+    help|-h|--help)
+        usage
+        ;;
+
+    *)
+        echo "ERROR: Unknown command: $ACTION" >&2
+        usage >&2
+        exit 2
+        ;;
+esac
+HYPRQUICKPAPER_EOF
+
+    chmod 755 "$HYPRQUICKPAPER_BIN"
+
+    echo "  - Controller installed at: $HYPRQUICKPAPER_BIN"
+fi
+
+# --------------------------------------------
 # Configure Waybar output (auto-detect to prevent hidden bar)
 # --------------------------------------------
 echo
