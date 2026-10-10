@@ -17,6 +17,7 @@ function M.setup()
         hl.exec_cmd("systemctl --user start hyprpolkitagent")
         hl.exec_cmd("xrandr --output DP-1 --primary")
         hl.exec_cmd("waybar")
+        hl.exec_cmd("quickshell &")
         hl.exec_cmd("~/.local/bin/dock-bar")
         os.execute("nvibrant 0 512 512 0 >/dev/null 2>&1 &")
         hl.exec_cmd(
