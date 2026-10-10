@@ -1,17 +1,15 @@
-
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 import QtQuick
 import Qt.labs.folderlistmodel
+import Quickshell.Wayland
 
 PanelWindow {
     id: main
 
+    property bool pickerOpen: false
     property int imageHeight: 450
     property int inactiveImageHeight: 350
-
-    visible: true
 
     anchors {
         top: true
@@ -20,30 +18,74 @@ PanelWindow {
         right: true
     }
 
+    visible: pickerOpen
     color: "transparent"
+
     aboveWindows: true
-    exclusionMode: ExclusionMode.Ignore
+    exclusionMode: "Ignore"
     exclusiveZone: 0
 
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+    WlrLayershell.keyboardFocus: pickerOpen
+        ? WlrKeyboardFocus.Exclusive
+        : WlrKeyboardFocus.None
+
+    function showPicker() {
+        if (pickerOpen)
+            return
+
+        pickerOpen = true
+        Qt.callLater(function() {
+            if (!main.pickerOpen)
+                return
+            list.forceActiveFocus()
+            list.wheelTargetX = list.contentX
+            cacheRetryTimer.start()
+        })
+    }
+
+    function hidePicker() {
+        pickerOpen = false
+        list.stopAnimations()
+        cacheRetryTimer.stop()
+    }
 
     Component.onCompleted: {
         Quickshell.execDetached([
             "bash",
-            Quickshell.shellPath("hyprquickpaper/cache.sh"),
+            Quickshell.shellPath("cache.sh"),
             Quickshell.shellDir
         ])
     }
 
     Component.onDestruction: {
         cacheRetryTimer.stop()
+        list.stopAnimations()
+    }
+
+    IpcHandler {
+        target: "hyprquickpaper"
+
+        function toggle() {
+            if (main.pickerOpen)
+                main.hidePicker()
+            else
+                main.showPicker()
+        }
+
+        function show() {
+            main.showPicker()
+        }
+
+        function hide() {
+            main.hidePicker()
+        }
     }
 
     FileView {
         id: configFile
 
-        path: Quickshell.shellPath("hyprquickpaper/config.json")
+        path: Quickshell.shellPath("config.json")
         watchChanges: true
         onFileChanged: reload()
 
@@ -53,19 +95,17 @@ PanelWindow {
             property string wallpaper_path: ""
             property string cache_path: ""
             property int number_of_pictures: 5
-            property string border_color: "#ffffff"
+            property string border_color: "#89b4fa"
         }
     }
 
     FolderListModel {
         id: folderModel
 
-        folder: configs.wallpaper_path !== ""
-            ? "file://" + encodeURI(configs.wallpaper_path)
-            : ""
+        folder: "file://" + configs.wallpaper_path
 
         showDirs: false
-        nameFilters: ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+        nameFilters: ["*.png", "*.jpg", "*.jpeg"]
         sortField: FolderListModel.Name
     }
 
@@ -74,9 +114,8 @@ PanelWindow {
 
         anchors.fill: parent
         z: 0
-        enabled: true
 
-        onClicked: Qt.quit()
+        onClicked: main.hidePicker()
     }
 
     HoverHandler {
@@ -88,8 +127,9 @@ PanelWindow {
             if (
                 point.position.x === lastPosition.x &&
                 point.position.y === lastPosition.y
-            )
+            ) {
                 return
+            }
 
             lastPosition = point.position
             list.mouseEnabled = true
@@ -108,14 +148,12 @@ PanelWindow {
 
         height: main.imageHeight
         z: 1
-        visible: true
-        opacity: 1
-        focus: true
-        clip: true
+        focus: main.pickerOpen
 
         model: folderModel
         orientation: ListView.Horizontal
         spacing: 0
+        clip: true
         cacheBuffer: width * 2
 
         property int selectedIndex: 0
@@ -128,6 +166,12 @@ PanelWindow {
             : 0
 
         property real wheelTargetX: contentX
+
+        function stopAnimations() {
+            keyboardScrollAnimation.stop()
+            wheelAnimation.stop()
+            wheelTargetX = contentX
+        }
 
         function selectIndex(index) {
             if (count <= 0)
@@ -143,75 +187,65 @@ PanelWindow {
         }
 
         function keyboardSelect(index) {
-            if (count <= 0)
-                return
-
             keyboardMode = true
             mouseEnabled = false
-
-            mouseMovementHandler.lastPosition =
-                mouseMovementHandler.point.position
-
+            mouseMovementHandler.lastPosition = mouseMovementHandler.point.position
             selectIndex(index)
             ensureVisibleAnimated(selectedIndex)
         }
 
         function activateCurrent() {
-            if (count <= 0)
+            if (folderModel.count <= 0 || selectedIndex < 0 || selectedIndex >= folderModel.count)
                 return
 
             const path = folderModel.get(selectedIndex, "filePath")
-
-            if (!path)
+            if (!path || String(path).length === 0) {
+                console.warn("HyprQuickpaper: empty wallpaper path for index", selectedIndex)
                 return
+            }
 
             Quickshell.execDetached([
                 "bash",
-                Quickshell.shellPath("hyprquickpaper/commands.sh"),
-                path
+                Quickshell.shellPath("commands.sh"),
+                String(path)
             ])
 
-            Qt.quit()
+            main.hidePicker()
         }
 
         function clampX(x) {
             const maxX = Math.max(0, contentWidth - width)
-            return Math.max(0, Math.min(x, maxX))
+            return Math.max(0, Math.min(Number(x) || 0, maxX))
         }
 
         function ensureVisibleAnimated(i) {
             const item = list.itemAtIndex(i)
-
             if (!item)
                 return
 
             if (i === 0) {
                 keyboardScrollAnimation.stop()
-
                 if (contentX !== 0) {
                     keyboardScrollAnimation.from = contentX
                     keyboardScrollAnimation.to = 0
                     keyboardScrollAnimation.start()
                 }
-
                 return
             }
 
-            const expandedWidth = tileWidth * 1.50 + 40
-            const extraWidth = Math.max(0, expandedWidth - tileWidth)
-
+            const expandedWidth = list.tileWidth * 1.50 + 40
+            const extraWidth = Math.max(0, expandedWidth - list.tileWidth)
             const itemStart = item.x - extraWidth / 2
             const itemEnd = item.x + item.width + extraWidth / 2
 
             let target = contentX
-
-            if (itemStart < contentX)
+            if (itemStart < contentX) {
                 target = itemStart
-            else if (itemEnd > contentX + width)
+            } else if (itemEnd > contentX + width) {
                 target = itemEnd - width
+            }
 
             target = clampX(target)
-
             if (target !== contentX) {
                 keyboardScrollAnimation.stop()
                 keyboardScrollAnimation.from = contentX
@@ -222,7 +256,6 @@ PanelWindow {
 
         NumberAnimation {
             id: keyboardScrollAnimation
-
             target: list
             property: "contentX"
             duration: 1000
@@ -231,7 +264,6 @@ PanelWindow {
 
         NumberAnimation {
             id: wheelAnimation
-
             target: list
             property: "contentX"
             duration: 750
@@ -240,15 +272,13 @@ PanelWindow {
 
         Timer {
             id: cacheRetryTimer
-
             interval: 2000
             repeat: true
-            running: true
+            running: main.pickerOpen
 
             onTriggered: {
                 for (let i = 0; i < list.count; i++) {
                     const item = list.itemAtIndex(i)
-
                     if (item)
                         item.retryImage()
                 }
@@ -257,7 +287,6 @@ PanelWindow {
 
         delegate: Item {
             id: delegateItem
-
             required property int index
 
             property bool active: index === list.selectedIndex
@@ -270,7 +299,6 @@ PanelWindow {
                 const source = img.source
                 img.source = ""
                 img.source = source
-
                 return true
             }
 
@@ -280,14 +308,12 @@ PanelWindow {
             z: {
                 if (index === list.selectedIndex)
                     return 10
-
                 if (index === list.previousSelectedIndex)
                     return 9
-
                 return 0
             }
 
-            opacity: 1
+            opacity: 0
 
             Item {
                 id: wallpaperItem
@@ -298,9 +324,7 @@ PanelWindow {
                 }
 
                 width: active ? list.tileWidth * 1.50 + 40 : list.tileWidth
-                height: active
-                    ? main.imageHeight
-                    : main.inactiveImageHeight
+                height: active ? main.imageHeight : main.inactiveImageHeight
 
                 transform: Translate {
                     y: delegateItem.entranceOffset
@@ -322,11 +346,10 @@ PanelWindow {
 
                 Text {
                     id: alt
-
-                    anchors.centerIn: parent
                     visible: img.status === Image.Error
                     text: "Caching"
                     color: configs.border_color
+                    anchors.centerIn: parent
                     font.pixelSize: 16
 
                     transform: Shear {
@@ -336,21 +359,13 @@ PanelWindow {
 
                 Image {
                     id: img
-
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
-
                     asynchronous: true
                     cache: true
                     smooth: true
 
-                    source: configs.cache_path !== ""
-                        ? "file://" + encodeURI(
-                            configs.cache_path +
-                            folderModel.get(index, "fileName")
-                        )
-                        : ""
-
+                    source: "file://" + configs.cache_path + folderModel.get(index, "fileName")
                     sourceSize.width: list.tileWidth * 1.50 + 40
                     sourceSize.height: main.imageHeight
 
@@ -361,15 +376,12 @@ PanelWindow {
 
                 Rectangle {
                     id: border
-
                     anchors.fill: parent
                     z: 10
-
                     color: "transparent"
                     border.width: 2
                     border.color: configs.border_color
                     radius: 4
-
                     opacity: delegateItem.active ? 1 : 0
 
                     transform: Shear {
@@ -395,7 +407,6 @@ PanelWindow {
 
                 width: wallpaperItem.width
                 height: wallpaperItem.height
-
                 z: 20
                 hoverEnabled: true
 
@@ -405,7 +416,6 @@ PanelWindow {
 
                 Timer {
                     id: hoverTimer
-
                     interval: 30
                     repeat: false
 
@@ -444,7 +454,6 @@ PanelWindow {
                     wheelAnimation.from = list.contentX
                     wheelAnimation.to = list.wheelTargetX
                     wheelAnimation.start()
-
                     wheel.accepted = true
                 }
             }
@@ -460,10 +469,8 @@ PanelWindow {
 
             Timer {
                 id: entranceTimer
-
                 interval: index * 30
                 repeat: false
-
                 onTriggered: entranceAnimation.start()
             }
 
@@ -493,38 +500,36 @@ PanelWindow {
         Keys.onPressed: function(event) {
             const step = 1
 
-            if (
-                event.key === Qt.Key_L ||
-                event.key === Qt.Key_Right
-            ) {
+            if (event.key === Qt.Key_L || event.key === Qt.Key_Right) {
                 keyboardSelect(selectedIndex + step)
-            } else if (
-                event.key === Qt.Key_H ||
-                event.key === Qt.Key_Left
-            ) {
+            } else if (event.key === Qt.Key_H || event.key === Qt.Key_Left) {
                 keyboardSelect(selectedIndex - step)
-            } else if (
-                event.key === Qt.Key_J ||
-                event.key === Qt.Key_Down
-            ) {
+            } else if (event.key === Qt.Key_J || event.key === Qt.Key_Down) {
                 keyboardSelect(selectedIndex + 5)
-            } else if (
-                event.key === Qt.Key_K ||
-                event.key === Qt.Key_Up
-            ) {
+            } else if (event.key === Qt.Key_K || event.key === Qt.Key_Up) {
                 keyboardSelect(selectedIndex - 5)
-            } else if (
-                event.key === Qt.Key_Space ||
-                event.key === Qt.Key_Return
-            ) {
+            } else if (event.key === Qt.Key_Space || event.key === Qt.Key_Return) {
                 activateCurrent()
             } else if (event.key === Qt.Key_Escape) {
-                Qt.quit()
+                main.hidePicker()
             } else {
                 return
             }
 
             event.accepted = true
+        }
+    }
+
+    onPickerOpenChanged: {
+        if (pickerOpen) {
+            cacheRetryTimer.start()
+            Qt.callLater(function() {
+                if (main.pickerOpen)
+                    list.forceActiveFocus()
+            })
+        } else {
+            cacheRetryTimer.stop()
+            list.stopAnimations()
         }
     }
 }
