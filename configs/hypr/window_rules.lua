@@ -134,13 +134,24 @@ function M.setup()
         fullscreen = true,
         immediate = true,
     })
+    hl.window_rule({
+        name = "ESO",
+        match = {
+            class = "^(Albion-Online)$",
+            title = "^(Albion Online Client).*$"
+        },
+        fullscreen = true,
+        immediate = true,
+        float = false,
+    })
+    
     -- ============================================================
     -- GENERAL BEHAVIOR
     -- ============================================================
     hl.window_rule({
-        name = "suppress-maximize-events",
-        match = { class = ".*" },
-        suppress_event = "maximize",
+       name = "suppress-maximize-events",
+       match = { class = ".*" },
+       suppress_event = "maximize",
     })
     hl.window_rule({
         name = "fix-xwayland-drags",
