@@ -16,18 +16,20 @@ function M.setup()
     hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
     hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
     hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
-    hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("qs ipc call settings toggle"))    hl.bind(mainMod .. " + SHIFT + R",
+    hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("~/.local/bin/settings toggle"))
+    hl.bind(mainMod .. " + SHIFT + R",
     hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
     hl.bind(mainMod .. " + W",--If you have 2 monitors it will open a WOFI menu to select one of the 2 if you have one it goes straight
     hl.dsp.exec_cmd("~/.local/bin/hyprquickpaper toggle"))
 
+    -- ============================================================
     -- TOGGLE WAYBAR
     -- ============================================================
     hl.bind(mainMod .. " + SHIFT + W",
         hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
 
     -- ============================================================
-    -- TOGGLE Dock-Bar
+    -- TOGGLE DOCK-BAR
     -- ============================================================
     hl.bind(mainMod .. " + SHIFT + D",
         hl.dsp.exec_cmd("dock-bar autohideToggle"))

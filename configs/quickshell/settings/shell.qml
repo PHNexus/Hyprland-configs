@@ -1,5 +1,5 @@
 import Quickshell
-import "settings"
+import "."
 
 ShellRoot {
     Settings {}
