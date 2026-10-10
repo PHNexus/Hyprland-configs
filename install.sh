@@ -212,9 +212,30 @@ fi
 # --------------------------------------------
 echo
 echo "Updating XDG user directories..."
+
 if ! command -v xdg-user-dirs-update &>/dev/null; then
     sudo pacman -S --needed --noconfirm xdg-user-dirs
 fi
+
+# Remove Projects from global XDG defaults.
+XDG_DEFAULTS="/etc/xdg/user-dirs.defaults"
+
+if [[ -f "$XDG_DEFAULTS" ]] &&
+   grep -qE '^[[:space:]]*PROJECTS[[:space:]]*=' "$XDG_DEFAULTS"; then
+    sudo sed -i '/^[[:space:]]*PROJECTS[[:space:]]*=/d' "$XDG_DEFAULTS"
+    echo "Removed Projects from global XDG defaults."
+fi
+
+# Remove any existing per-user Projects mapping.
+# This does NOT delete ~/Projects or any other directory.
+USER_DIRS_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs"
+
+if [[ -f "$USER_DIRS_CONFIG" ]]; then
+    sed -i '/^[[:space:]]*XDG_PROJECTS_DIR[[:space:]]*=/d' \
+        "$USER_DIRS_CONFIG"
+fi
+
+# Update the remaining XDG user directories.
 xdg-user-dirs-update
 
 if command -v xdg-mime &>/dev/null; then
