@@ -101,6 +101,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + N` | Toggle SwayNC control center |
 | `SUPER + SHIFT + R` | Set random wallpaper |
 | `SUPER + W` | Open wallpaper picker (`quickshell`) |
+| `SUPER + Esc` | Settings Center keybind (`quickshell`) |
 
 ## Window Management
 
