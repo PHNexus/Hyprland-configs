@@ -9,21 +9,17 @@
   "notification-icon-size": 56,
   "notification-body-image-height": 200,
   "notification-body-image-width": 200,
-
   "timeout": 0,
   "timeout-low": 0,
   "timeout-critical": 0,
-
   "fit-to-screen": true,
   "control-center-width": 450,
   "notification-window-width": 600,
   "keyboard-shortcuts": true,
   "image-visibility": "when-available",
   "transition-time": 300,
-
   "hide-on-clear": false,
   "hide-on-action": false,
-
   "widgets": [
     "menubar",
     "buttons-grid",
@@ -59,9 +55,9 @@
         {
           "label": "󰖩",
           "type": "toggle",
-          "active": true,
-          "command": "sh -c '[[ $SWAYNC_TOGGLE_STATE == true ]] && nmcli radio wifi on || nmcli radio wifi off >/dev/null 2>&1'",
-          "update-command": "sh -c '[[ $(nmcli radio wifi) == \"enabled\" ]] && echo true || echo false'"
+          "active": false,
+          "command": "sh -c 'if [ \"$SWAYNC_TOGGLE_STATE\" = true ]; then nmcli networking on; else nmcli networking off; fi'",
+          "update-command": "sh -c 'if command -v curl >/dev/null 2>&1; then for url in https://connectivitycheck.gstatic.com/generate_204 https://www.google.com/generate_204 https://www.cloudflare.com/cdn-cgi/trace https://example.com/; do code=$(curl -sSL --connect-timeout 2 --max-time 4 -o /dev/null -w \"%{http_code}\" \"$url\" 2>/dev/null || true); case \"$url\" in *generate_204) if [ \"$code\" = 204 ]; then echo true; exit 0; fi ;; */cdn-cgi/trace|https://example.com/) if [ \"$code\" = 200 ]; then echo true; exit 0; fi ;; esac; done; fi; if timeout 2 bash -c \":</dev/tcp/1.1.1.1/443\" 2>/dev/null || timeout 2 bash -c \":</dev/tcp/8.8.8.8/443\" 2>/dev/null; then echo true; else echo false; fi'"
         },
         {
           "label": "󰂯",
@@ -104,11 +100,11 @@
           "update-command": "pgrep -x wf-recorder >/dev/null && echo true || echo false"
         },
         {
-    "label": "󰈉",
-    "type": "toggle",
-    "active": false,
-    "command": "$HOME/.local/bin/dock-bar autohideToggle",
-    "update-command": "jq -r '.dock.autohide // false' $HOME/.config/dock-bar/config.json"
+          "label": "󰈉",
+          "type": "toggle",
+          "active": false,
+          "command": "$HOME/.local/bin/dock-bar autohideToggle",
+          "update-command": "jq -r '.dock.autohide // false' $HOME/.config/dock-bar/config.json"
         }
       ]
     },
