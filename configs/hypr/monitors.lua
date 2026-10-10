@@ -2,7 +2,7 @@ local M = {}
 
 function M.setup()
     hl.monitor({ output = "DP-1", mode = "1920x1080@180.00", position = "20x-219", scale = 1 })
-    hl.monitor({ output = "HDMI-A-1", mode = "1366x768@59.79", position = "-1344x-130", scale = 1})
+    hl.monitor({ output = "HDMI-A-1", mode = "1366x768@59.79", position = "-1349x-100", scale = 1})
 
     -- ============================================================
     -- WORKSPACES

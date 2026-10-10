@@ -1,3 +1,33 @@
+/*
+ * HyprQuickPaper — Scrolling and Hover Regression Notes
+ *
+ * Background, diagnostic excerpts, and the fixes documented here:
+ *   docs/debugging/README.md
+ *
+ * Diagnostic log excerpts captured while investigating the issues:
+ *   docs/debugging/logs/scroll-origin-before-fix.log
+ *   docs/debugging/logs/hover-input-before-fix.log
+ *   docs/debugging/logs/wheel-hover-before-fix.log
+ *
+ * Fix summary:
+ *   1. Use ListView.originX as the minimum horizontal scroll position,
+ *      and calculate the maximum relative to that origin.
+ *   2. Do not ignore real pointer movement solely because HoverHandler.active
+ *      is false; restore mouse mode and re-check the hovered delegate.
+ *   3. Keep wheel scrolling in mouse mode instead of disabling hover input.
+ *   4. During wheel animation, ignore MouseArea.onEntered transitions caused
+ *      by delegates moving beneath a stationary pointer. Cancel pending hover
+ *      timers at wheel start; let actual pointer movement re-evaluate hover.
+ *
+ * Animation settings intentionally preserved in this configuration:
+ *   - Keyboard scrolling: 1000 ms
+ *   - Wheel scrolling: 750 ms
+ *   - Wallpaper size and border opacity transitions: 500 ms
+ *
+ * These changes were tested in one customized Quickshell setup. Other versions
+ * may need adaptation. Diagnostic excerpts are evidence, not full session logs.
+ */
+
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -34,12 +64,16 @@ PanelWindow {
         if (pickerOpen)
             return
 
+        list.stopAnimations()
+        list.mouseEnabled = false
+        list.keyboardMode = true
+        mouseMovementHandler.lastPosition = mouseMovementHandler.point.position
         pickerOpen = true
         Qt.callLater(function() {
             if (!main.pickerOpen)
                 return
             list.forceActiveFocus()
-            list.wheelTargetX = list.contentX
+            list.wheelTargetX = list.clampX(list.contentX)
             cacheRetryTimer.start()
         })
     }
@@ -47,6 +81,8 @@ PanelWindow {
     function hidePicker() {
         pickerOpen = false
         list.stopAnimations()
+        list.mouseEnabled = false
+        list.keyboardMode = true
         cacheRetryTimer.stop()
     }
 
@@ -123,7 +159,20 @@ PanelWindow {
 
         property point lastPosition: point.position
 
+        onActiveChanged: {
+            if (!active) {
+                list.mouseEnabled = false
+                list.keyboardMode = true
+            } else {
+                lastPosition = point.position
+                list.mouseEnabled = false
+                list.keyboardMode = true
+            }
+        }
+
         onPointChanged: {
+            // Pointer position changes are observable even while HoverHandler.active is false.
+            // Do not discard those movement events, or mouse mode can remain disabled indefinitely.
             if (
                 point.position.x === lastPosition.x &&
                 point.position.y === lastPosition.y
@@ -134,6 +183,11 @@ PanelWindow {
             lastPosition = point.position
             list.mouseEnabled = true
             list.keyboardMode = false
+
+            // The pointer may already be inside a MouseArea, so onEntered may not fire again.
+            Qt.callLater(function() {
+                list.activateHoveredDelegate()
+            })
         }
     }
 
@@ -167,10 +221,45 @@ PanelWindow {
 
         property real wheelTargetX: contentX
 
+        function traceScroll(cause) {
+            console.warn(
+                "[QKP_TRACE]", cause,
+                "contentX=" + Number(contentX).toFixed(2),
+                "targetX=" + Number(wheelTargetX).toFixed(2),
+                "originX=" + Number(originX).toFixed(2),
+                "contentWidth=" + Number(contentWidth).toFixed(2),
+                "viewWidth=" + Number(width).toFixed(2),
+                "selectedIndex=" + selectedIndex,
+                "keyboardAnimation=" + keyboardScrollAnimation.running,
+                "wheelAnimation=" + wheelAnimation.running,
+                "mouseEnabled=" + mouseEnabled,
+                "keyboardMode=" + keyboardMode
+            )
+        }
+
+        onContentXChanged: traceScroll("contentXChanged")
+        onOriginXChanged: traceScroll("originXChanged")
+        onContentWidthChanged: traceScroll("contentWidthChanged")
+        onCountChanged: traceScroll("countChanged")
+        onSelectedIndexChanged: traceScroll("selectedIndexChanged")
+
         function stopAnimations() {
             keyboardScrollAnimation.stop()
             wheelAnimation.stop()
-            wheelTargetX = contentX
+            wheelTargetX = clampX(contentX)
+        }
+
+        function activateHoveredDelegate() {
+            if (keyboardMode || !mouseEnabled)
+                return
+
+            for (let i = 0; i < count; i++) {
+                const item = itemAtIndex(i)
+                if (item && item.pointerHovered) {
+                    item.scheduleHover()
+                    return
+                }
+            }
         }
 
         function selectIndex(index) {
@@ -187,9 +276,12 @@ PanelWindow {
         }
 
         function keyboardSelect(index) {
+            traceScroll("keyboardSelect index=" + index)
             keyboardMode = true
             mouseEnabled = false
             mouseMovementHandler.lastPosition = mouseMovementHandler.point.position
+            wheelAnimation.stop()
+            wheelTargetX = clampX(contentX)
             selectIndex(index)
             ensureVisibleAnimated(selectedIndex)
         }
@@ -214,8 +306,13 @@ PanelWindow {
         }
 
         function clampX(x) {
-            const maxX = Math.max(0, contentWidth - width)
-            return Math.max(0, Math.min(Number(x) || 0, maxX))
+            const minX = originX
+            const maxX = minX + Math.max(0, contentWidth - width)
+            const value = Number(x)
+            return Math.max(
+                minX,
+                Math.min(isFinite(value) ? value : minX, maxX)
+            )
         }
 
         function ensureVisibleAnimated(i) {
@@ -223,11 +320,15 @@ PanelWindow {
             if (!item)
                 return
 
+            wheelAnimation.stop()
+            keyboardScrollAnimation.stop()
+            wheelTargetX = clampX(contentX)
+
             if (i === 0) {
                 keyboardScrollAnimation.stop()
-                if (contentX !== 0) {
+                if (Math.abs(contentX - originX) > 0.5) {
                     keyboardScrollAnimation.from = contentX
-                    keyboardScrollAnimation.to = 0
+                    keyboardScrollAnimation.to = originX
                     keyboardScrollAnimation.start()
                 }
                 return
@@ -290,7 +391,17 @@ PanelWindow {
             required property int index
 
             property bool active: index === list.selectedIndex
+            property bool pointerHovered: hitArea.containsMouse
             property real entranceOffset: 25
+
+            function scheduleHover() {
+                if (!list.keyboardMode && list.mouseEnabled)
+                    hoverTimer.start()
+            }
+
+            function cancelHover() {
+                hoverTimer.stop()
+            }
 
             function retryImage() {
                 if (img.status !== Image.Error)
@@ -405,7 +516,9 @@ PanelWindow {
                     verticalCenter: parent.verticalCenter
                 }
 
-                width: wallpaperItem.width
+                // Keep the hit area within the fixed delegate slot.
+                // The selected image grows visually, but its hit area must not overlap neighbors.
+                width: list.tileWidth
                 height: wallpaperItem.height
                 z: 20
                 hoverEnabled: true
@@ -420,12 +533,31 @@ PanelWindow {
                     repeat: false
 
                     onTriggered: {
-                        if (!list.keyboardMode)
-                            list.selectIndex(index)
+                        list.traceScroll("hoverTimer triggered index=" + index)
+
+                        if (list.keyboardMode || !list.mouseEnabled)
+                            return
+
+                        // Delay hover only while keyboard navigation is still repositioning the list.
+                        // Wheel scrolling may continue while the hovered wallpaper expands.
+                        if (keyboardScrollAnimation.running) {
+                            start()
+                            return
+                        }
+
+                        list.selectIndex(index)
                     }
                 }
 
                 onEntered: {
+                    list.traceScroll("MouseArea entered index=" + index)
+
+                    // Scrolling moves delegates beneath a stationary pointer.
+                    // Ignore those synthetic hover transitions while the wheel animates.
+                    // Real pointer movement is handled by HoverHandler and activateHoveredDelegate().
+                    if (wheelAnimation.running)
+                        return
+
                     if (!list.keyboardMode && list.mouseEnabled)
                         hoverTimer.start()
                 }
@@ -440,14 +572,29 @@ PanelWindow {
                 }
 
                 onWheel: function(wheel) {
-                    hoverTimer.stop()
+                    keyboardScrollAnimation.stop()
+                    // Wheel input is mouse interaction; keep hover enabled during wheel animation.
                     list.keyboardMode = false
+                    list.mouseEnabled = true
+
+                    // Cancel pending hover timers before scrolling starts. Otherwise a timer
+                    // started by a previous delegate entry can change selection mid-scroll.
+                    for (let i = 0; i < list.count; i++) {
+                        const item = list.itemAtIndex(i)
+                        if (item)
+                            item.cancelHover()
+                    }
 
                     if (!wheelAnimation.running)
-                        list.wheelTargetX = list.contentX
+                        list.wheelTargetX = list.clampX(list.contentX)
 
+                    const delta = wheel.angleDelta.y !== 0
+                        ? wheel.angleDelta.y
+                        : wheel.angleDelta.x
+
+                    list.traceScroll("wheel event delta=" + delta)
                     list.wheelTargetX = list.clampX(
-                        list.wheelTargetX - wheel.angleDelta.y * 0.8
+                        list.wheelTargetX - delta * 0.8
                     )
 
                     wheelAnimation.stop()
@@ -521,6 +668,11 @@ PanelWindow {
     }
 
     onPickerOpenChanged: {
+        list.traceScroll("pickerOpenChanged open=" + pickerOpen)
+        list.mouseEnabled = false
+        list.keyboardMode = true
+        mouseMovementHandler.lastPosition = mouseMovementHandler.point.position
+
         if (pickerOpen) {
             cacheRetryTimer.start()
             Qt.callLater(function() {

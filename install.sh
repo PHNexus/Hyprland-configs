@@ -736,6 +736,100 @@ HYPRQUICKPAPER_EOF
 fi
 
 # --------------------------------------------
+# Install Settings Controller
+# --------------------------------------------
+echo
+echo "Installing Settings controller..."
+
+SETTINGS_DIR="$CONFIG_DIR/quickshell/settings"
+SETTINGS_BIN="$HOME/.local/bin/settings"
+SETTINGS_LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/settings"
+
+if ! command -v qs >/dev/null 2>&1; then
+    echo "  - Quickshell (qs) not found. Skipping Settings controller."
+elif [[ ! -f "$SETTINGS_DIR/shell.qml" ]]; then
+    echo "  - Settings shell not found at $SETTINGS_DIR/shell.qml"
+    echo "  - Skipping Settings controller."
+else
+    mkdir -p "$HOME/.local/bin" "$SETTINGS_LOG_DIR"
+
+    cat > "$SETTINGS_BIN" <<'SETTINGS_EOF'
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/settings"
+LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/settings"
+LOG_FILE="$LOG_DIR/quickshell.log"
+ACTION="${1:-toggle}"
+
+case "$ACTION" in
+    toggle|show|hide)
+        ;;
+    *)
+        echo "Usage: settings [toggle|show|hide]" >&2
+        exit 2
+        ;;
+esac
+
+if [[ ! -f "$CONFIG/shell.qml" ]]; then
+    echo "ERROR: Settings configuration not found: $CONFIG/shell.qml" >&2
+    exit 1
+fi
+
+if ! command -v qs >/dev/null 2>&1; then
+    echo "ERROR: Quickshell (qs) was not found in PATH." >&2
+    exit 127
+fi
+
+if qs -p "$CONFIG" ipc call settings "$ACTION" >/dev/null 2>&1; then
+    exit 0
+fi
+
+if [[ "$ACTION" == "hide" ]]; then
+    exit 0
+fi
+
+if ! command -v hyprctl >/dev/null 2>&1 ||
+   ! command -v jq >/dev/null 2>&1; then
+    echo "ERROR: hyprctl and jq are required to detect the focused monitor." >&2
+    exit 1
+fi
+
+if ! MONITOR="$(hyprctl monitors -j 2>/dev/null |
+    jq -er '.[] | select(.focused == true) | .name' 2>/dev/null)"; then
+    echo "ERROR: Could not detect the focused monitor." >&2
+    exit 1
+fi
+
+mkdir -p "$LOG_DIR"
+
+QS_SETTINGS_MONITOR="$MONITOR" qs -p "$CONFIG" >>"$LOG_FILE" 2>&1 &
+SHELL_PID=$!
+
+for _ in {1..50}; do
+    sleep 0.1
+
+    if qs -p "$CONFIG" ipc call settings "$ACTION" >/dev/null 2>&1; then
+        exit 0
+    fi
+
+    if ! kill -0 "$SHELL_PID" 2>/dev/null; then
+        break
+    fi
+done
+
+echo "ERROR: Failed to open Settings on monitor $MONITOR." >&2
+echo "Recent log entries:" >&2
+tail -n 60 "$LOG_FILE" >&2 2>/dev/null || true
+exit 1
+SETTINGS_EOF
+
+    chmod 755 "$SETTINGS_BIN"
+    echo "  - Settings controller installed at $SETTINGS_BIN"
+fi
+
+# --------------------------------------------
 # Configure Waybar output (auto-detect to prevent hidden bar)
 # --------------------------------------------
 echo
