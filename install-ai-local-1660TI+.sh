@@ -25,7 +25,7 @@ MODEL_REPO="zaakirio/LFM2.5-8B-A1B-Uncensored-GGUF"
 
 # Model id exposed by llama-server at /v1/models
 MODEL_ID="LFM2.5-8B-A1B-Uncensored-Q3_K_M"
-MODEL_LABEL="LFM2.5 8B A1B Uncensored (local)"
+MODEL_LABEL="LFM2.5 8B A1B Uncensored Q3_K_M (local)"
 
 # Context and generation
 CTX_SIZE=32768
@@ -64,7 +64,7 @@ Local AI Installer — Arch Linux + NVIDIA
   -h, --help      show this message
 EOF
             exit 0
-            ;;
+        ;;
         *) die "unknown option: $arg" ;;
     esac
 done
@@ -167,9 +167,9 @@ mkdir -p "$MODELS_DIR"
 
 if [[ $SKIP_MODELS -eq 1 ]]; then
     warn "Skipping model download (--skip-models)"
-elif [[ ! -f "$MODELS_DIR/$MODEL_FILE" ]]; then
+    elif [[ ! -f "$MODELS_DIR/$MODEL_FILE" ]]; then
     say "Downloading $MODEL_FILE ..."
-    hf download "$MODEL_REPO" "$MODEL_FILE" --local-dir "$MODELS_DIR" --quiet
+    hf download "$MODEL_REPO" --include "$MODEL_FILE" --local-dir "$MODELS_DIR" --quiet
     ok "LFM2.5-8B-A1B-Uncensored downloaded"
 else
     ok "LFM2.5-8B-A1B-Uncensored already present"
@@ -233,7 +233,7 @@ fi
 # ─── Step 7: OpenCode ────────────────────────────────────────
 if [[ $WITH_OPENCODE -eq 1 ]]; then
     say "Step 7/7 — Setting up OpenCode..."
-
+    
     if ! command -v opencode >/dev/null 2>&1; then
         if [[ -n "$AUR" ]]; then
             say "Installing opencode-bin via $AUR..."
@@ -242,15 +242,15 @@ if [[ $WITH_OPENCODE -eq 1 ]]; then
             warn "No AUR helper found — install opencode-bin manually"
         fi
     else
-    ok "OpenCode already installed"
+        ok "OpenCode already installed"
     fi
-
+    
     if command -v opencode >/dev/null 2>&1; then
         mkdir -p "$(dirname "$OPENCODE_CONFIG")"
         if [[ -f "$OPENCODE_CONFIG" ]]; then
             cp "$OPENCODE_CONFIG" "$OPENCODE_CONFIG.backup-$(date +%Y%m%d-%H%M%S)"
         fi
-
+        
         cat > "$OPENCODE_CONFIG" <<EOF
 {
   "\$schema": "https://opencode.ai/config.json",
