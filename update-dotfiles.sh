@@ -77,17 +77,24 @@ else
     warn "File not found: .gtkrc-2.0"
 fi
 
-# Include the local AI installer in the repository root when it exists.
+# Include the existing local AI installer in the managed Git paths.
+LOCAL_AI_INSTALLER="$REPO_DIR/install-ai-local-1660TI+.sh"
+
 if [[ -f "$LOCAL_AI_INSTALLER" ]]; then
-    install -m 755 -- "$LOCAL_AI_INSTALLER" "$REPO_DIR/install-ai-local-LFM2.5-8B-A1B.sh"
-    ok "File: install-ai-local-LFM2.5-8B-A1B.sh"
+    ok "File: install-ai-local-1660TI+.sh"
 else
-    warn "Local AI installer not found: $LOCAL_AI_INSTALLER"
+    warn "File not found: $LOCAL_AI_INSTALLER"
 fi
 
 # Stage only paths managed by this script.
 managed_paths=()
-for path in "configs" "Wallpapers" "dock-bar" "update-dotfiles.sh" "install.sh" "install-ai-local-LFM2.5-8B-A1B.sh"; do
+for path in \
+    "configs" \
+    "Wallpapers" \
+    "dock-bar" \
+    "update-dotfiles.sh" \
+    "install.sh" \
+    "install-ai-local-1660TI+.sh"; do
     [[ -e "$path" ]] && managed_paths+=("$path")
 done
 
