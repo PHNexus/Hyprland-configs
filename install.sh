@@ -12,7 +12,7 @@ warn() { printf '  Warning: %s\n' "$*" >&2; }
 for arg in "$@"; do
     case "$arg" in
         --skip-appmanager) SKIP_APPMANAGER=1 ;;
-        -h|--help)
+        -h | --help)
             printf 'Usage: %s [--skip-appmanager]\n' "${0##*/}"
             exit 0
             ;;
@@ -60,7 +60,6 @@ echo -e "║ ${YELLOW}Review the script before running. Configs in ~/.config are
 echo -e "║ ${YELLOW}backed up but immediately replaced. Reboot required after.${RED}         ║"
 echo "╚════════════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
-
 
 # --------------------------------------------
 # Check OS & Root Execution
@@ -206,7 +205,7 @@ if [[ -f "$REPO_DIR/packages.txt" ]]; then
         else
             aur_packages+=("$line")
         fi
-    done < "$REPO_DIR/packages.txt"
+    done <"$REPO_DIR/packages.txt"
 
     if [[ ${#official_packages[@]} -gt 0 ]]; then
         echo "Installing official packages via pacman..."
@@ -374,7 +373,7 @@ if command -v awww &>/dev/null && [[ -f "$DEFAULT_WALLPAPER" ]]; then
         awww init || true
         for MONITOR in $MONITORS; do
             awww img -o "$MONITOR" "$DEFAULT_WALLPAPER" -t random --transition-duration 1
-            echo "$DEFAULT_WALLPAPER" > "$CACHE_DIR/$MONITOR"
+            echo "$DEFAULT_WALLPAPER" >"$CACHE_DIR/$MONITOR"
         done
         echo "  - Initial default wallpaper applied and saved to cache for all monitors!"
     else
@@ -436,8 +435,8 @@ else
     echo "  - Fetching latest AppManager release..."
 
     API_URL="https://api.github.com/repos/PHNexus/AppManager/releases/latest"
-    APPIMAGE_URL=$(curl -fsSL "$API_URL" 2>/dev/null \
-        | jq -r '[.assets[]? | select(.name | endswith(".AppImage")) | .browser_download_url][0] // empty' 2>/dev/null || true)
+    APPIMAGE_URL=$(curl -fsSL "$API_URL" 2>/dev/null |
+        jq -r '[.assets[]? | select(.name | endswith(".AppImage")) | .browser_download_url][0] // empty' 2>/dev/null || true)
 
     if [[ -z "$APPIMAGE_URL" || "$APPIMAGE_URL" == "null" ]]; then
         echo "  - Warning: no AppImage found in latest release"
@@ -603,7 +602,7 @@ mkdir -p "$(dirname "$MONITORS_LUA_CONFIG")"
         echo "    -- ============================================================"
         echo "    -- WORKSPACES"
         echo "    -- ============================================================"
-        
+
         if [[ ${#monitor_entries[@]} -eq 1 ]]; then
             for w in {1..6}; do
                 printf '    hl.workspace_rule({ workspace = %d, monitor = "%s", persistent = true })\n' "$w" "$first_monitor"
@@ -626,10 +625,10 @@ mkdir -p "$(dirname "$MONITORS_LUA_CONFIG")"
     echo "end"
     echo ""
     echo "return M"
-} > "$MONITORS_LUA_CONFIG"
+} >"$MONITORS_LUA_CONFIG"
 
 if [[ -f "$KEYBINDS_LUA_CONFIG" ]] && [[ ${#monitor_entries[@]} -le 1 ]]; then
-perl -0777 -pi -e 's/\n    -- ============================================================\n    -- MOVE WINDOW BETWEEN WORKSPACES \(6 = HDMI\)\n    -- ============================================================\n\n   hl.bind\(mainMod \.\. " \+ R", function\(\).*?end\)\n\n//s' "$KEYBINDS_LUA_CONFIG"
+    perl -0777 -pi -e 's/\n    -- ============================================================\n    -- MOVE WINDOW BETWEEN WORKSPACES \(6 = HDMI\)\n    -- ============================================================\n\n   hl.bind\(mainMod \.\. " \+ R", function\(\).*?end\)\n\n//s' "$KEYBINDS_LUA_CONFIG"
 fi
 
 if [[ ${#monitor_entries[@]} -gt 0 ]]; then
@@ -661,9 +660,9 @@ if [[ -n "$WAYBAR_CONFIG" ]]; then
                 if type == "array" then map(if type == "object" and has("output") then .output = $monitor else . end)
                 elif type == "object" then if has("output") then .output = $monitor else . end
                 else . end
-            ' "$WAYBAR_CONFIG" > "$WAYBAR_TMP"; then
+            ' "$WAYBAR_CONFIG" >"$WAYBAR_TMP"; then
                 if jq -e 'if type == "array" then any(.[]; type == "object" and has("output")) elif type == "object" then has("output") else false end' "$WAYBAR_CONFIG" >/dev/null; then
-                    cat "$WAYBAR_TMP" > "$WAYBAR_CONFIG"
+                    cat "$WAYBAR_TMP" >"$WAYBAR_CONFIG"
                     echo "  - Updated Waybar output to detected monitor: $first_monitor."
                 else
                     warn "Waybar config has no output field; leaving it unchanged."
@@ -672,8 +671,8 @@ if [[ -n "$WAYBAR_CONFIG" ]]; then
                 warn "Could not update Waybar JSON; original file was preserved."
             fi
         else
-            if jq 'if type == "array" then map(if type == "object" then del(.output) else . end) elif type == "object" then del(.output) else . end' "$WAYBAR_CONFIG" > "$WAYBAR_TMP"; then
-                cat "$WAYBAR_TMP" > "$WAYBAR_CONFIG"
+            if jq 'if type == "array" then map(if type == "object" then del(.output) else . end) elif type == "object" then del(.output) else . end' "$WAYBAR_CONFIG" >"$WAYBAR_TMP"; then
+                cat "$WAYBAR_TMP" >"$WAYBAR_CONFIG"
                 echo "  - No monitor detected. Removed any hardcoded output from Waybar JSON."
             else
                 warn "Could not update Waybar JSON; original file was preserved."
@@ -706,7 +705,7 @@ if [[ "$HAS_EASYEFFECTS" -eq 1 ]]; then
 
     mkdir -p "$SYSTEMD_USER_DIR"
 
-    cat > "$EASYEFFECTS_SERVICE" <<'EOF'
+    cat >"$EASYEFFECTS_SERVICE" <<'EOF'
 [Unit]
 Description=EasyEffects Service
 Wants=pipewire-pulse.service
@@ -751,31 +750,31 @@ create_desktop_entry() {
     local dest_name="$2"
     local exec_cmd="$3"
     local local_file="$DESKTOP_DIR/$dest_name"
-    
+
     if [[ ! -f "$src_file" ]]; then
         echo "  Warning: Source file not found: $src_file"
         return 1
     fi
-    
+
     cp "$src_file" "$local_file"
-    
+
     if [[ ! -f "$local_file" ]]; then
         echo "  Error: Failed to copy $src_file"
         return 1
     fi
-    
+
     if grep -q "^Exec=" "$local_file"; then
         sed -i "s|^Exec=.*|Exec=$exec_cmd|" "$local_file"
     else
-        echo "Exec=$exec_cmd" >> "$local_file"
+        echo "Exec=$exec_cmd" >>"$local_file"
     fi
-    
+
     if grep -q "^Terminal=" "$local_file"; then
         sed -i "s|^Terminal=.*|Terminal=false|" "$local_file"
     else
-        echo "Terminal=false" >> "$local_file"
+        echo "Terminal=false" >>"$local_file"
     fi
-    
+
     chmod 644 "$local_file"
     echo "  Configured: $dest_name"
     return 0
@@ -861,7 +860,7 @@ if command -v flatpak &>/dev/null; then
             if [[ $is_flatpaks -eq 1 ]]; then
                 flatpak_packages+=("$line")
             fi
-        done < "$REPO_DIR/packages.txt"
+        done <"$REPO_DIR/packages.txt"
 
         # Install everything listed in the section without prompting
         if [[ ${#flatpak_packages[@]} -gt 0 ]]; then
@@ -884,181 +883,63 @@ if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
     echo
     echo "Starting Helium DRM Fixer setup..."
 
-# Install bun
-sudo pacman -S --needed --noconfirm bun
+    sudo pacman -S --needed --noconfirm bun
 
-# Prepare temporary directory
-HELIUM_DRM_DIR="/tmp/helium-drm-fixer"
-CHROME_WAS_INSTALLED=0
-CHROME_INSTALLED_BY_SCRIPT=0
+    HELIUM_DRM_DIR="/tmp/helium-drm-fixer"
+    CHROME_WAS_INSTALLED=0
+    CHROME_INSTALLED_BY_SCRIPT=0
 
-if pacman -Qi google-chrome &>/dev/null; then
-    CHROME_WAS_INSTALLED=1
-fi
+    if pacman -Qi google-chrome &>/dev/null; then
+        CHROME_WAS_INSTALLED=1
+    fi
 
-cleanup_helium_drm() {
-    if [[ -n "${HELIUM_DRM_DIR:-}" ]]; then
+    cleanup_helium_drm() {
         rm -rf -- "$HELIUM_DRM_DIR"
-    fi
 
-    if [[ "$CHROME_INSTALLED_BY_SCRIPT" -eq 1 ]]; then
-        sudo pacman -Rns --noconfirm google-chrome &>/dev/null || true
-        if [[ "$AUR_HELPER" == "yay" ]]; then
-            rm -rf "$HOME/.cache/yay/google-chrome"
-        elif [[ "$AUR_HELPER" == "paru" ]]; then
-            rm -rf "$HOME/.cache/paru/clone/google-chrome"
+        if [[ "$CHROME_INSTALLED_BY_SCRIPT" -eq 1 ]]; then
+            sudo pacman -Rns --noconfirm google-chrome &>/dev/null || true
+
+            if [[ "$AUR_HELPER" == "yay" ]]; then
+                rm -rf -- "$HOME/.cache/yay/google-chrome"
+            elif [[ "$AUR_HELPER" == "paru" ]]; then
+                rm -rf -- "$HOME/.cache/paru/clone/google-chrome"
+            fi
         fi
-    fi
-}
-trap cleanup_helium_drm EXIT
+    }
 
-rm -rf "$HELIUM_DRM_DIR"
-if ! git clone https://github.com/PHNexus/helium-drm-fixer.git "$HELIUM_DRM_DIR"; then
-    warn "Could not clone Helium DRM Fixer; skipping this optional step."
-    HELIUM_DRM_DIR=""
-fi
+    trap cleanup_helium_drm EXIT
 
-if [[ -z "$HELIUM_DRM_DIR" || ! -d "$HELIUM_DRM_DIR" ]]; then
-    echo "  - Helium DRM Fixer unavailable; continuing without running it."
-else
-echo "Installing Google Chrome temporarily via $AUR_HELPER..."
-if [[ "$CHROME_WAS_INSTALLED" -eq 0 ]]; then
-    CHROME_INSTALLED_BY_SCRIPT=1
-    # Feed the package transaction confirmation explicitly: some yay/pacman
-    # combinations still show the transaction prompt despite --noconfirm.
-    if ! printf 'Y\n' | aur_install google-chrome; then
-        CHROME_INSTALLED_BY_SCRIPT=0
-        warn "Could not install temporary Google Chrome; skipping the DRM fixer run."
-    fi
-else
-    echo "  - Google Chrome is already installed. Keeping the existing installation."
-fi
+    rm -rf -- "$HELIUM_DRM_DIR"
 
-# Run the DRM fix
-cd "$HELIUM_DRM_DIR"
-if ! bun install || ! bun run cli.ts; then
-    warn "Helium DRM Fixer failed; continuing with the remaining installer steps."
-fi# --------------------------------------------
-# Install MacTahoe Icon Theme
-# --------------------------------------------
-echo
-echo "Installing MacTahoe icon theme..."
+    if git clone https://github.com/PHNexus/helium-drm-fixer.git "$HELIUM_DRM_DIR"; then
+        if [[ "$CHROME_WAS_INSTALLED" -eq 0 ]]; then
+            echo "Installing Google Chrome temporarily via $AUR_HELPER..."
 
-MACOS_ICON_DIR="$(mktemp -d /tmp/MacTahoe-icon-theme.XXXXXX)"
-MACOS_ICON_READY=0
-MACOS_ICON_URL="https://github.com/PHNexus/MacTahoe-icon-theme.git"
-
-# Retry shallow clone; if Git transport is unavailable, try GitHub's source archive.
-for attempt in 1 2 3; do
-    rm -rf "$MACOS_ICON_DIR"/* "$MACOS_ICON_DIR"/.[!.]* "$MACOS_ICON_DIR"/..?* 2>/dev/null || true
-    if git -c http.connectTimeout=15 clone --depth=1 "$MACOS_ICON_URL" "$MACOS_ICON_DIR"; then
-        MACOS_ICON_READY=1
-        break
-    fi
-    warn "MacTahoe clone attempt $attempt/3 failed."
-    [[ "$attempt" -eq 3 ]] || sleep 2
-done
-
-if [[ "$MACOS_ICON_READY" -eq 0 ]] && command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
-    MACOS_ICON_ARCHIVE="$(mktemp /tmp/MacTahoe-icon-theme.XXXXXX.tar.gz)"
-    if curl -fL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 \
-        "https://codeload.github.com/PHNexus/MacTahoe-icon-theme/tar.gz/refs/heads/main" \
-        -o "$MACOS_ICON_ARCHIVE"; then
-        if tar -xzf "$MACOS_ICON_ARCHIVE" --strip-components=1 -C "$MACOS_ICON_DIR"; then
-            MACOS_ICON_READY=1
-        fi
-    fi
-    rm -f "$MACOS_ICON_ARCHIVE"
-fi
-
-MACOS_ICON_INSTALLED=0
-if [[ "$MACOS_ICON_READY" -eq 1 && -f "$MACOS_ICON_DIR/install.sh" ]]; then
-    if (cd "$MACOS_ICON_DIR" && bash ./install.sh); then
-        if [[ -d "$HOME/.local/share/icons/MacTahoe" ]]; then
-            MACOS_ICON_INSTALLED=1
-            echo "  - Installed MacTahoe icon theme."
+            if printf 'Y\n' | aur_install google-chrome; then
+                CHROME_INSTALLED_BY_SCRIPT=1
+            else
+                warn "Could not install temporary Google Chrome."
+            fi
         else
-            warn "MacTahoe installer exited successfully, but the expected theme directory was not found."
+            echo "  - Existing Google Chrome installation detected."
+        fi
+
+        if pacman -Qi google-chrome &>/dev/null; then
+            if (cd "$HELIUM_DRM_DIR" && bun install && bun run cli.ts); then
+                echo "  - Helium DRM Fixer completed."
+            else
+                warn "Helium DRM Fixer failed; continuing."
+            fi
+        else
+            warn "Google Chrome is unavailable; skipping the DRM fixer."
         fi
     else
-        warn "MacTahoe upstream installer failed."
+        warn "Could not clone Helium DRM Fixer; skipping this optional step."
     fi
-else
-    warn "Could not download MacTahoe icon theme; skipping it without affecting the rest of setup."
-fi
 
-rm -rf "$MACOS_ICON_DIR"
+    cleanup_helium_drm
+    trap - EXIT
 
-if [[ "$CHROME_INSTALLED_BY_SCRIPT" -eq 1 ]]; then
-    echo "Uninstalling temporary Google Chrome..."
-    # Remove only the temporary package; leave browser profile data untouched.
-    # Explicit stdin confirmation covers pacman builds that still prompt despite --noconfirm.
-    if ! printf 'Y\n' | sudo pacman -Rns --noconfirm google-chrome; then
-        warn "Could not remove temporary Google Chrome automatically."
-    fi
-    if [[ "$AUR_HELPER" == "yay" ]]; then
-        rm -rf "$HOME/.cache/yay/google-chrome"
-    elif [[ "$AUR_HELPER" == "paru" ]]; then
-        rm -rf "$HOME/.cache/paru/clone/google-chrome"
-    fi
-else
-    echo "  - Existing Google Chrome installation was left untouched."
-fi
-
-# Clean up the temporary fixer repository.
-rm -rf "$HELIUM_DRM_DIR"
-trap - EXIT
-cd "$RE# --------------------------------------------
-# Install MacTahoe Icon Theme
-# --------------------------------------------
-echo
-echo "Installing MacTahoe icon theme..."
-
-MACOS_ICON_DIR="$(mktemp -d /tmp/MacTahoe-icon-theme.XXXXXX)"
-MACOS_ICON_READY=0
-MACOS_ICON_URL="https://github.com/PHNexus/MacTahoe-icon-theme.git"
-
-# Retry shallow clone; if Git transport is unavailable, try GitHub's source archive.
-for attempt in 1 2 3; do
-    rm -rf "$MACOS_ICON_DIR"/* "$MACOS_ICON_DIR"/.[!.]* "$MACOS_ICON_DIR"/..?* 2>/dev/null || true
-    if git -c http.connectTimeout=15 clone --depth=1 "$MACOS_ICON_URL" "$MACOS_ICON_DIR"; then
-        MACOS_ICON_READY=1
-        break
-    fi
-    warn "MacTahoe clone attempt $attempt/3 failed."
-    [[ "$attempt" -eq 3 ]] || sleep 2
-done
-
-if [[ "$MACOS_ICON_READY" -eq 0 ]] && command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
-    MACOS_ICON_ARCHIVE="$(mktemp /tmp/MacTahoe-icon-theme.XXXXXX.tar.gz)"
-    if curl -fL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 \
-        "https://codeload.github.com/PHNexus/MacTahoe-icon-theme/tar.gz/refs/heads/main" \
-        -o "$MACOS_ICON_ARCHIVE"; then
-        if tar -xzf "$MACOS_ICON_ARCHIVE" --strip-components=1 -C "$MACOS_ICON_DIR"; then
-            MACOS_ICON_READY=1
-        fi
-    fi
-    rm -f "$MACOS_ICON_ARCHIVE"
-fi
-
-MACOS_ICON_INSTALLED=0
-if [[ "$MACOS_ICON_READY" -eq 1 && -f "$MACOS_ICON_DIR/install.sh" ]]; then
-    if (cd "$MACOS_ICON_DIR" && bash ./install.sh); then
-        if [[ -d "$HOME/.local/share/icons/MacTahoe" ]]; then
-            MACOS_ICON_INSTALLED=1
-            echo "  - Installed MacTahoe icon theme."
-        else
-            warn "MacTahoe installer exited successfully, but the expected theme directory was not found."
-        fi
-    else
-        warn "MacTahoe upstream installer failed."
-    fi
-else
-    warn "Could not download MacTahoe icon theme; skipping it without affecting the rest of setup."
-fi
-
-rm -rf "$MACOS_ICON_DIR"PO_DIR"
-fi
     echo "Helium DRM Fixer step finished."
 
     # --------------------------------------------
@@ -1066,13 +947,16 @@ fi
     # --------------------------------------------
     echo
     echo "Configuring Helium browser flags..."
+
     mkdir -p "$CONFIG_DIR"
-    cat << 'EOF' > "$CONFIG_DIR/helium-browser-flags.conf"
+
+    cat >"$CONFIG_DIR/helium-browser-flags.conf" <<'EOF'
 --enable-features=VaapiVideoDecoder,AcceleratedVideoDecodeLinuxGL
 --ignore-gpu-blocklist
 --enable-zero-copy
 --ozone-platform=wayland
 EOF
+
     echo "  - Created helium-browser-flags.conf successfully."
 
     # --------------------------------------------
@@ -1080,8 +964,10 @@ EOF
     # --------------------------------------------
     echo
     echo "Configuring Helium cookie exceptions..."
+
     sudo mkdir -p /etc/chromium/policies/managed
-    sudo tee /etc/chromium/policies/managed/cookie_exceptions.json > /dev/null << 'EOF'
+
+    sudo tee /etc/chromium/policies/managed/cookie_exceptions.json >/dev/null <<'EOF'
 {
   "CookiesAllowedForUrls": [
     "[*.]google.com",
@@ -1091,6 +977,7 @@ EOF
   ]
 }
 EOF
+
     echo "  - Cookie exceptions policy configured successfully."
 else
     echo
@@ -1143,7 +1030,7 @@ if [[ "$HAS_CPUPOWER" -eq 1 ]]; then
     echo "Configuring cpupower for Performance mode..."
     if [[ -f /etc/default/cpupower-service.conf ]]; then
         sudo sed -i '/GOVERNOR/d' /etc/default/cpupower-service.conf
-        echo 'GOVERNOR="performance"' | sudo tee -a /etc/default/cpupower-service.conf > /dev/null
+        echo 'GOVERNOR="performance"' | sudo tee -a /etc/default/cpupower-service.conf >/dev/null
         if sudo systemctl enable --now cpupower.service; then
             echo "  - cpupower service enabled with 'performance' governor."
         else
@@ -1163,37 +1050,37 @@ if [[ "$HAS_CLOUDFLARE_WARP" -eq 1 ]]; then
     echo
     echo "Configuring Cloudflare WARP..."
 
-# Enable and start the WARP background service
-if command -v systemctl &>/dev/null; then
-    if sudo systemctl enable --now warp-svc; then
-        echo "  - warp-svc service enabled and started."
-    else
-        warn "Could not enable warp-svc; WARP CLI configuration may not work."
-    fi
-    
-    # Wait a few seconds for the daemon to fully initialize
-    sleep 3
-fi
+    # Enable and start the WARP background service
+    if command -v systemctl &>/dev/null; then
+        if sudo systemctl enable --now warp-svc; then
+            echo "  - warp-svc service enabled and started."
+        else
+            warn "Could not enable warp-svc; WARP CLI configuration may not work."
+        fi
 
-# Preserve an existing registration. Never delete/recreate it automatically:
-# doing so can invalidate the account/device registration already on this machine.
-if command -v warp-cli &>/dev/null; then
-    if warp-cli registration show >/dev/null 2>&1; then
-        echo "  - Existing Cloudflare WARP registration found; keeping it."
-    elif warp-cli --accept-tos registration new; then
-        echo "  - Cloudflare WARP registration created (not connected)."
-    else
-        warn "Could not verify or create a WARP registration; existing data was not deleted."
+        # Wait a few seconds for the daemon to fully initialize
+        sleep 3
     fi
 
-    if warp-cli mode warp+doh; then
-        echo "  - WARP mode set to warp+doh."
+    # Preserve an existing registration. Never delete/recreate it automatically:
+    # doing so can invalidate the account/device registration already on this machine.
+    if command -v warp-cli &>/dev/null; then
+        if warp-cli registration show >/dev/null 2>&1; then
+            echo "  - Existing Cloudflare WARP registration found; keeping it."
+        elif warp-cli --accept-tos registration new; then
+            echo "  - Cloudflare WARP registration created (not connected)."
+        else
+            warn "Could not verify or create a WARP registration; existing data was not deleted."
+        fi
+
+        if warp-cli mode warp+doh; then
+            echo "  - WARP mode set to warp+doh."
+        else
+            echo "  Warning: failed to set WARP mode to warp+doh."
+        fi
     else
-        echo "  Warning: failed to set WARP mode to warp+doh."
+        echo "  - warp-cli not found, skipping configuration."
     fi
-else
-    echo "  - warp-cli not found, skipping configuration."
-fi
 else
     echo
     echo "Skipping Cloudflare WARP configuration: cloudflare-warp-bin is not listed in packages.txt."
@@ -1309,29 +1196,29 @@ if [[ "$HAS_CLOUDFLARE_WARP" -eq 1 ]]; then
     echo
     echo "Configuring Cloudflare DNS..."
 
-# Ensure NetworkManager is running before using nmcli
-if command -v systemctl &>/dev/null; then
-    sudo systemctl enable --now NetworkManager.service 2>/dev/null || true
-fi
+    # Ensure NetworkManager is running before using nmcli
+    if command -v systemctl &>/dev/null; then
+        sudo systemctl enable --now NetworkManager.service 2>/dev/null || true
+    fi
 
-# Automatically discover the active ethernet/network connection name
-if command -v nmcli &>/dev/null; then
-    ACTIVE_CONN=$(nmcli -t -f NAME,DEVICE connection show --active | grep -v ':lo$' | head -n1 | cut -d: -f1 || true)
+    # Automatically discover the active ethernet/network connection name
+    if command -v nmcli &>/dev/null; then
+        ACTIVE_CONN=$(nmcli -t -f NAME,DEVICE connection show --active | grep -v ':lo$' | head -n1 | cut -d: -f1 || true)
 
-    if [[ -n "$ACTIVE_CONN" ]]; then
-        if sudo nmcli connection modify "$ACTIVE_CONN" ipv4.dns "1.1.1.1,1.0.0.1" && \
-           sudo nmcli connection modify "$ACTIVE_CONN" ipv4.ignore-auto-dns yes && \
-           sudo nmcli connection up "$ACTIVE_CONN"; then
-            echo "  - DNS updated to Cloudflare on connection: $ACTIVE_CONN"
+        if [[ -n "$ACTIVE_CONN" ]]; then
+            if sudo nmcli connection modify "$ACTIVE_CONN" ipv4.dns "1.1.1.1,1.0.0.1" &&
+                sudo nmcli connection modify "$ACTIVE_CONN" ipv4.ignore-auto-dns yes &&
+                sudo nmcli connection up "$ACTIVE_CONN"; then
+                echo "  - DNS updated to Cloudflare on connection: $ACTIVE_CONN"
+            else
+                warn "Could not apply Cloudflare DNS to connection: $ACTIVE_CONN"
+            fi
         else
-            warn "Could not apply Cloudflare DNS to connection: $ACTIVE_CONN"
+            echo "  - No active network connection found to update DNS."
         fi
     else
-        echo "  - No active network connection found to update DNS."
+        echo "  - NetworkManager/nmcli not found, skipping Cloudflare DNS configuration."
     fi
-else
-    echo "  - NetworkManager/nmcli not found, skipping Cloudflare DNS configuration."
-fi
 else
     echo
     echo "Skipping Cloudflare DNS configuration: cloudflare-warp-bin is not listed in packages.txt."
@@ -1346,7 +1233,7 @@ if command -v fish &>/dev/null; then
     FISH_PATH="$(command -v fish)"
 
     if ! grep -qxF "$FISH_PATH" /etc/shells; then
-        echo "$FISH_PATH" | sudo tee -a /etc/shells > /dev/null
+        echo "$FISH_PATH" | sudo tee -a /etc/shells >/dev/null
     fi
 
     CURRENT_SHELL="$(getent passwd "$USER" | cut -d: -f7)"

@@ -28,7 +28,8 @@ function M.setup()
     hl.window_rule({
         name = "float-blueman-manager",
         match = { class = "^(blueman-manager)$" },
-        float = true,        center = true,
+        float = true,
+        center = true,
     })
     hl.window_rule({
         name = "float-bitwarden-popup",
@@ -79,12 +80,12 @@ function M.setup()
         center = true,
         size = "1000 600",
     })
-     hl.window_rule({
+    hl.window_rule({
         name = "file-extract",
         match = {
             class = "^(org.gnome.FileRoller)$",
             title = "^(Extract).*$"
-       },
+        },
         float = true,
         center = true,
         size = "1000 600",
@@ -144,14 +145,14 @@ function M.setup()
         immediate = true,
         float = false,
     })
-    
+
     -- ============================================================
     -- GENERAL BEHAVIOR
     -- ============================================================
     hl.window_rule({
-       name = "suppress-maximize-events",
-       match = { class = ".*" },
-       suppress_event = "maximize",
+        name = "suppress-maximize-events",
+        match = { class = ".*" },
+        suppress_event = "maximize",
     })
     hl.window_rule({
         name = "fix-xwayland-drags",
@@ -184,6 +185,12 @@ function M.setup()
         match = { namespace = "wofi" },
         animation = "popin 60%",
         blur = true,
+    })
+    hl.layer_rule({
+        name = "hyprquickpaper-slide",
+        match = { namespace = "hyprquickpaper" },
+        animation = "popin 60%",
+        blur = false,
     })
 end
 
