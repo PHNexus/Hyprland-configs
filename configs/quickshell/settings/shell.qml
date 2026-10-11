@@ -1,6 +1,8 @@
-import Quickshell
 import "."
+import Quickshell
 
 ShellRoot {
-    Settings {}
+    Settings {
+    }
+
 }

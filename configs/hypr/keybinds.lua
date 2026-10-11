@@ -18,9 +18,9 @@ function M.setup()
     hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
     hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("~/.local/bin/settings toggle"))
     hl.bind(mainMod .. " + SHIFT + R",
-    hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
-    hl.bind(mainMod .. " + W",--If you have 2 monitors it will open a WOFI menu to select one of the 2 if you have one it goes straight
-    hl.dsp.exec_cmd("~/.local/bin/hyprquickpaper toggle"))
+        hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
+    hl.bind(mainMod .. " + W", --If you have 2 monitors it will open a WOFI menu to select one of the 2 if you have one it goes straight
+        hl.dsp.exec_cmd("~/.local/bin/hyprquickpaper toggle"))
 
     -- ============================================================
     -- TOGGLE WAYBAR
@@ -39,7 +39,7 @@ function M.setup()
     -- ============================================================
     hl.bind(mainMod .. " + S", function()
         hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "unset" }))
-        hl.dispatch(hl.dsp.window.fullscreen({ mode = "fullscreen", action = "unset" }))        
+        hl.dispatch(hl.dsp.window.fullscreen({ mode = "fullscreen", action = "unset" }))
 
         hl.dispatch(hl.dsp.window.float())
         hl.dispatch(hl.dsp.window.center())
@@ -54,10 +54,10 @@ function M.setup()
     hl.bind(mainMod .. " + M", hl.dsp.exit())
     hl.bind(mainMod .. " + D", hl.dsp.layout("move +col"))
     hl.bind(mainMod .. " + A", hl.dsp.layout("move -col"))
-    hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle"}))
+    hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
     hl.bind(mainMod .. " + equal", hl.dsp.layout("colresize +conf"))
     hl.bind(mainMod .. " + minus", hl.dsp.layout("colresize -conf"))
-    
+
     -- ============================================================
     -- WINDOW FOCUS
     -- ============================================================
@@ -84,29 +84,29 @@ function M.setup()
 
     -- keybind to shufttle between layouts
     hl.bind(mainMod .. " + ALT + L", function()
-	local layouts = { "scrolling", "dwindle", "master", "monocle" }
-	local workspace = hl.get_active_workspace()
-	if hl.get_active_special_workspace() then
-		workspace = hl.get_active_special_workspace()
-	end
-	local next_layout = "dwindle"
-	if not workspace then
-		return
-	end
-	for i = 1, #layouts do
-		if layouts[i] == workspace.tiled_layout then
-			local next_layout_idx = (i % #layouts) + 1
-			next_layout = layouts[next_layout_idx]
-			break
-		end
-	end
+        local layouts = { "scrolling", "dwindle", "master", "monocle" }
+        local workspace = hl.get_active_workspace()
+        if hl.get_active_special_workspace() then
+            workspace = hl.get_active_special_workspace()
+        end
+        local next_layout = "dwindle"
+        if not workspace then
+            return
+        end
+        for i = 1, #layouts do
+            if layouts[i] == workspace.tiled_layout then
+                local next_layout_idx = (i % #layouts) + 1
+                next_layout = layouts[next_layout_idx]
+                break
+            end
+        end
 
-	if workspace.special then
-		hl.workspace_rule({ workspace = tostring(workspace.name), layout = next_layout })
-	else
-		hl.workspace_rule({ workspace = tostring(workspace.id), layout = next_layout })
-	end
-end)
+        if workspace.special then
+            hl.workspace_rule({ workspace = tostring(workspace.name), layout = next_layout })
+        else
+            hl.workspace_rule({ workspace = tostring(workspace.id), layout = next_layout })
+        end
+    end)
 
     hl.bind("ALT + Tab", function()
         hl.dispatch(hl.dsp.window.cycle_next())
@@ -114,7 +114,7 @@ end)
     end)
     hl.bind("ALT + SHIFT + Tab", function()
         hl.dispatch(hl.dsp.window.cycle_next({ prev = true }))
-        hl.dispatch(hl.dsp.window.bring_to_top())       
+        hl.dispatch(hl.dsp.window.bring_to_top())
     end)
     hl.bind(mainMod .. " + ALT + left", hl.dsp.exec_cmd("hyprctl dispatch workspace m-1"))
     hl.bind(mainMod .. " + ALT + right", hl.dsp.exec_cmd("hyprctl dispatch workspace m+1"))
@@ -151,12 +151,21 @@ end)
     -- ============================================================
     -- MULTIMEDIA KEYS (volume, brightness, mic)
     -- ============================================================
-    hl.bind("XF86AudioRaiseVolume",hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+ && swayosd-client --output-volume raise"),{ locked = true, repeating = true })
-    hl.bind("XF86AudioLowerVolume",hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && swayosd-client --output-volume lower"),{ locked = true, repeating = true })
-    hl.bind("XF86AudioMute",hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && swayosd-client --output-volume mute-toggle"),{ locked = true, repeating = true })
-    hl.bind("XF86AudioMicMute",hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && swayosd-client --input-volume mute-toggle"),{ locked = true, repeating = true })
+    hl.bind("XF86AudioRaiseVolume",
+        hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+ && swayosd-client --output-volume raise"),
+        { locked = true, repeating = true })
+    hl.bind("XF86AudioLowerVolume",
+        hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && swayosd-client --output-volume lower"),
+        { locked = true, repeating = true })
+    hl.bind("XF86AudioMute",
+        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && swayosd-client --output-volume mute-toggle"),
+        { locked = true, repeating = true })
+    hl.bind("XF86AudioMicMute",
+        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && swayosd-client --input-volume mute-toggle"),
+        { locked = true, repeating = true })
     hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"), { locked = true, repeating = true })
-    hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"), { locked = true, repeating = true })
+    hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),
+        { locked = true, repeating = true })
     hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
     hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
     hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -171,7 +180,8 @@ end)
     -- SCREEN RECORDING If you have 2 monitors it will open a WOFI menu to select one of the 2 if you have one it goes straight
     -- ============================================================
     hl.bind(mainMod .. " + G", -- Audio and Microphone
-    hl.dsp.exec_cmd([[bash -c 'if pgrep -x wf-recorder >/dev/null; then killall -2 wf-recorder && sleep 1; for id in $(pactl list short modules | grep Combined | cut -f1); do pactl unload-module $id >/dev/null 2>&1; done; notify-send Recording_Stopped Video_saved_in_Videos; else M=$(hyprctl monitors -j | jq -r .[].name | head -n1); [ $(hyprctl monitors -j | jq length) -gt 1 ] && M=$(hyprctl monitors -j | jq -r .[].name | wofi --dmenu --prompt Select_monitor); [ -z "$M" ] && exit 0; SINK=$(pactl get-default-sink); SOURCE=$(pactl get-default-source); pactl load-module module-null-sink sink_name=Combined rate=48000 channels=2 sink_properties=device.description=Combined >/dev/null; pactl load-module module-loopback sink=Combined source=${SINK}.monitor latency_msec=100 rate=48000 channels=2 >/dev/null; pactl load-module module-loopback sink=Combined source=${SOURCE} latency_msec=100 rate=48000 channels=2 >/dev/null; pactl set-sink-mute Combined 0 >/dev/null 2>&1; pactl set-source-mute Combined.monitor 0 >/dev/null 2>&1; mkdir -p ~/Videos; notify-send Starting_Recorder Capturing_$M; wf-recorder --audio=Combined.monitor -o $M -p yuv420p -f ~/Videos/rec_$(date +%d-%H%M%S).mp4 >/dev/null 2>&1 & disown; fi']]))
-  end
+        hl.dsp.exec_cmd(
+            [[bash -c 'if pgrep -x wf-recorder >/dev/null; then killall -2 wf-recorder && sleep 1; for id in $(pactl list short modules | grep Combined | cut -f1); do pactl unload-module $id >/dev/null 2>&1; done; notify-send Recording_Stopped Video_saved_in_Videos; else M=$(hyprctl monitors -j | jq -r .[].name | head -n1); [ $(hyprctl monitors -j | jq length) -gt 1 ] && M=$(hyprctl monitors -j | jq -r .[].name | wofi --dmenu --prompt Select_monitor); [ -z "$M" ] && exit 0; SINK=$(pactl get-default-sink); SOURCE=$(pactl get-default-source); pactl load-module module-null-sink sink_name=Combined rate=48000 channels=2 sink_properties=device.description=Combined >/dev/null; pactl load-module module-loopback sink=Combined source=${SINK}.monitor latency_msec=100 rate=48000 channels=2 >/dev/null; pactl load-module module-loopback sink=Combined source=${SOURCE} latency_msec=100 rate=48000 channels=2 >/dev/null; pactl set-sink-mute Combined 0 >/dev/null 2>&1; pactl set-source-mute Combined.monitor 0 >/dev/null 2>&1; mkdir -p ~/Videos; notify-send Starting_Recorder Capturing_$M; wf-recorder --audio=Combined.monitor -o $M -p yuv420p -f ~/Videos/rec_$(date +%d-%H%M%S).mp4 >/dev/null 2>&1 & disown; fi']]))
+end
 
 return M

@@ -1,6 +1,6 @@
+import "../"
 import QtQuick
 import Quickshell.Io
-import "../"
 
 Item {
     id: page
@@ -9,29 +9,24 @@ Item {
     property bool wifiEnabled: true
     property var networks: []
     property string pendingSsid: ""
-
     // Ethernet status (device, connection state, active connection name)
     property var ethernet: ({
-        device: "",
-        state: "disconnected",
-        connection: ""
+        "device": "",
+        "state": "disconnected",
+        "connection": ""
     })
-
     // Fonts
     property string monoFont: "Noto Sans"
-
     // Speed stats (bytes / second)
     property real downSpeed: 0
     property real upSpeed: 0
     property real lastRx: -1
     property real lastTx: -1
     property real lastTs: 0
-
     property real marginLeft: 0
     property real marginRight: 55
     property real marginTop: 0
     property real marginBottom: 0
-
     // Nerd Font glyphs
     readonly property string icDown: "\uf019"
     readonly property string icUp: "\uf093"
@@ -40,56 +35,86 @@ Item {
     readonly property string icEth: "\uf6ff"
 
     function formatSpeed(bps) {
-        if (bps < 1024) return bps.toFixed(0) + " B/s"
-        if (bps < 1024 * 1024) return (bps / 1024).toFixed(1) + " KB/s"
-        if (bps < 1024 * 1024 * 1024) return (bps / 1024 / 1024).toFixed(2) + " MB/s"
-        return (bps / 1024 / 1024 / 1024).toFixed(2) + " GB/s"
+        if (bps < 1024)
+            return bps.toFixed(0) + " B/s";
+
+        if (bps < 1024 * 1024)
+            return (bps / 1024).toFixed(1) + " KB/s";
+
+        if (bps < 1024 * 1024 * 1024)
+            return (bps / 1024 / 1024).toFixed(2) + " MB/s";
+
+        return (bps / 1024 / 1024 / 1024).toFixed(2) + " GB/s";
+    }
+
+    function setWifiEnabled(on) {
+        pRadioSet.command = ["nmcli", "radio", "wifi", on ? "on" : "off"];
+        pRadioSet.running = true;
+    }
+
+    function connectOpen(ssid) {
+        pConnect.command = ["nmcli", "device", "wifi", "connect", ssid];
+        pConnect.running = true;
+    }
+
+    function connectSecured(ssid, password) {
+        pConnect.command = ["nmcli", "device", "wifi", "connect", ssid, "password", password];
+        pConnect.running = true;
+    }
+
+    function disconnect(ssid) {
+        pConnect.command = ["nmcli", "connection", "down", "id", ssid];
+        pConnect.running = true;
+    }
+
+    Component.onCompleted: {
+        pRadioGet.running = true;
+        pList.running = true;
+        pEthernet.running = true;
     }
 
     // ── Network speed (all real interfaces, wifi + ethernet) ───────
     Process {
         id: pNet
+
         command: ["cat", "/proc/net/dev"]
 
         stdout: StdioCollector {
             onStreamFinished: {
-                var lines = text.split("\n")
-                var rx = 0
-                var tx = 0
-
+                var lines = text.split("\n");
+                var rx = 0;
+                var tx = 0;
                 for (var i = 2; i < lines.length; ++i) {
-                    var line = lines[i].trim()
-                    if (!line) continue
+                    var line = lines[i].trim();
+                    if (!line)
+                        continue;
 
-                    var idx = line.indexOf(":")
-                    if (idx < 0) continue
+                    var idx = line.indexOf(":");
+                    if (idx < 0)
+                        continue;
 
-                    var name = line.slice(0, idx).trim()
-                    if (name === "lo"
-                        || name.indexOf("veth") === 0
-                        || name.indexOf("docker") === 0
-                        || name.indexOf("br-") === 0
-                        || name.indexOf("virbr") === 0) continue
+                    var name = line.slice(0, idx).trim();
+                    if (name === "lo" || name.indexOf("veth") === 0 || name.indexOf("docker") === 0 || name.indexOf("br-") === 0 || name.indexOf("virbr") === 0)
+                        continue;
 
-                    var parts = line.slice(idx + 1).trim().split(/\s+/)
-                    rx += parseFloat(parts[0]) || 0
-                    tx += parseFloat(parts[8]) || 0
+                    var parts = line.slice(idx + 1).trim().split(/\s+/);
+                    rx += parseFloat(parts[0]) || 0;
+                    tx += parseFloat(parts[8]) || 0;
                 }
-
-                var now = Date.now()
+                var now = Date.now();
                 if (page.lastTs > 0) {
-                    var dt = (now - page.lastTs) / 1000
+                    var dt = (now - page.lastTs) / 1000;
                     if (dt > 0) {
-                        page.downSpeed = Math.max(0, (rx - page.lastRx) / dt)
-                        page.upSpeed = Math.max(0, (tx - page.lastTx) / dt)
+                        page.downSpeed = Math.max(0, (rx - page.lastRx) / dt);
+                        page.upSpeed = Math.max(0, (tx - page.lastTx) / dt);
                     }
                 }
-
-                page.lastRx = rx
-                page.lastTx = tx
-                page.lastTs = now
+                page.lastRx = rx;
+                page.lastTx = tx;
+                page.lastTs = now;
             }
         }
+
     }
 
     Timer {
@@ -97,43 +122,53 @@ Item {
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: if (!pNet.running) pNet.running = true
+        onTriggered: {
+            if (!pNet.running)
+                pNet.running = true;
+
+        }
     }
 
     // ── Ethernet status (device / state / connection name) ─────────
     Process {
         id: pEthernet
+
         command: ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device"]
 
         stdout: StdioCollector {
             onStreamFinished: {
-                var result = { device: "", state: "disconnected", connection: "" }
-                var raw = text.trim()
-
+                var result = {
+                    "device": "",
+                    "state": "disconnected",
+                    "connection": ""
+                };
+                var raw = text.trim();
                 if (raw) {
-                    var lines = raw.split("\n")
-
+                    var lines = raw.split("\n");
                     for (var i = 0; i < lines.length; ++i) {
-                        var line = lines[i].trim()
-                        if (!line) continue
+                        var line = lines[i].trim();
+                        if (!line)
+                            continue;
 
-                        var fields = line.split(":")
-                        if (fields.length < 4) continue
+                        var fields = line.split(":");
+                        if (fields.length < 4)
+                            continue;
 
                         if (fields[1] === "ethernet") {
-                            result.device = fields[0]
-                            result.state = fields[2]
-                            result.connection = fields.slice(3).join(":")
-                            break
+                            result.device = fields[0];
+                            result.state = fields[2];
+                            result.connection = fields.slice(3).join(":");
+                            break;
                         }
                     }
                 }
-
-                page.ethernet = result
+                page.ethernet = result;
             }
         }
 
-        stderr: StdioCollector {}
+        stderr: StdioCollector {
+        }
+
     }
 
     Timer {
@@ -141,145 +176,154 @@ Item {
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: if (!pEthernet.running) pEthernet.running = true
+        onTriggered: {
+            if (!pEthernet.running)
+                pEthernet.running = true;
+
+        }
     }
+
     Process {
         id: pRadioGet
+
         command: ["nmcli", "radio", "wifi"]
         running: true
 
         stdout: StdioCollector {
             onStreamFinished: page.wifiEnabled = text.trim() === "enabled"
         }
-    }
-    Process {
-        id: pRadioSet
-        stdout: StdioCollector {
-            onStreamFinished: {
-                pRadioGet.running = true
-                if (page.wifiEnabled) pList.running = true
-                else page.networks = []
-            }
-        }
+
     }
 
-    function setWifiEnabled(on) {
-        pRadioSet.command = ["nmcli", "radio", "wifi", on ? "on" : "off"]
-        pRadioSet.running = true
+    Process {
+        id: pRadioSet
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                pRadioGet.running = true;
+                if (page.wifiEnabled)
+                    pList.running = true;
+                else
+                    page.networks = [];
+            }
+        }
+
     }
+
     Process {
         id: pList
+
         command: ["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "device", "wifi", "list"]
 
         stdout: StdioCollector {
             onStreamFinished: {
-                var out = []
-                var raw = text.trim()
-
+                var out = [];
+                var raw = text.trim();
                 if (raw) {
-                    var lines = raw.split("\n")
-
+                    var lines = raw.split("\n");
                     for (var i = 0; i < lines.length; ++i) {
-                        var line = lines[i].trim()
-                        if (!line) continue
+                        var line = lines[i].trim();
+                        if (!line)
+                            continue;
 
-                        var fields = []
-                        var current = ""
-                        var escaped = false
-
+                        var fields = [];
+                        var current = "";
+                        var escaped = false;
                         for (var j = 0; j < line.length; ++j) {
-                            var ch = line[j]
-
+                            var ch = line[j];
                             if (escaped) {
-                                current += ch
-                                escaped = false
+                                current += ch;
+                                escaped = false;
                             } else if (ch === "\\") {
-                                escaped = true
+                                escaped = true;
                             } else if (ch === ":" && fields.length < 3) {
-                                fields.push(current)
-                                current = ""
+                                fields.push(current);
+                                current = "";
                             } else {
-                                current += ch
+                                current += ch;
                             }
                         }
+                        fields.push(current);
+                        if (fields.length < 4 || !fields[1])
+                            continue;
 
-                        fields.push(current)
-                        if (fields.length < 4 || !fields[1]) continue
-
-                        var signal = parseInt(fields[2])
-                        if (isNaN(signal)) signal = 0
+                        var signal = parseInt(fields[2]);
+                        if (isNaN(signal))
+                            signal = 0;
 
                         out.push({
-                            ssid: fields[1],
-                            signal: signal,
-                            secured: fields[3] !== "" && fields[3] !== "--",
-                            connected: fields[0] === "*"
-                        })
+                            "ssid": fields[1],
+                            "signal": signal,
+                            "secured": fields[3] !== "" && fields[3] !== "--",
+                            "connected": fields[0] === "*"
+                        });
                     }
                 }
-
-                page.networks = out
+                page.networks = out;
             }
         }
 
-        stderr: StdioCollector {}
+        stderr: StdioCollector {
+        }
+
     }
 
     Process {
         id: pConnect
+
         function refresh() {
-            page.pendingSsid = ""
-            pEthernet.running = true
-            if (page.wifiEnabled) pList.running = true
+            page.pendingSsid = "";
+            pEthernet.running = true;
+            if (page.wifiEnabled)
+                pList.running = true;
+
         }
-        stdout: StdioCollector { onStreamFinished: pConnect.refresh() }
-        stderr: StdioCollector { onStreamFinished: pConnect.refresh() }
-    }
 
-    function connectOpen(ssid) {
-        pConnect.command = ["nmcli", "device", "wifi", "connect", ssid]
-        pConnect.running = true
-    }
+        stdout: StdioCollector {
+            onStreamFinished: pConnect.refresh()
+        }
 
-    function connectSecured(ssid, password) {
-        pConnect.command = ["nmcli", "device", "wifi", "connect", ssid, "password", password]
-        pConnect.running = true
-    }
+        stderr: StdioCollector {
+            onStreamFinished: pConnect.refresh()
+        }
 
-    function disconnect(ssid) {
-        pConnect.command = ["nmcli", "connection", "down", "id", ssid]
-        pConnect.running = true
-    }
-
-    Component.onCompleted: {
-        pRadioGet.running = true
-        pList.running = true
-        pEthernet.running = true
     }
 
     Column {
         anchors.fill: parent
-        anchors.leftMargin: page.marginLeft; anchors.rightMargin: page.marginRight
-        anchors.topMargin: page.marginTop; anchors.bottomMargin: page.marginBottom
+        anchors.leftMargin: page.marginLeft
+        anchors.rightMargin: page.marginRight
+        anchors.topMargin: page.marginTop
+        anchors.bottomMargin: page.marginBottom
         spacing: 14
+
         Text {
-            text: "NETWORK"; color: Theme.text
-            font.family: page.monoFont; font.pixelSize: 19; font.letterSpacing: 3
+            text: "NETWORK"
+            color: Theme.text
+            font.family: page.monoFont
+            font.pixelSize: 19
+            font.letterSpacing: 3
         }
-        Rectangle { width: parent.width; height: 1; color: Theme.border }
+
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.border
+        }
+
         Column {
             id: statsRow
+
             width: parent.width
             spacing: 9
 
             Rectangle {
                 id: wifiToggle
+
                 width: parent.width
                 height: 36
                 radius: Theme.radius
-                color: page.wifiEnabled
-                    ? Theme.alpha(Theme.accent, 0.1)
-                    : Theme.alpha(Theme.textFaint, 0.15)
+                color: page.wifiEnabled ? Theme.alpha(Theme.accent, 0.1) : Theme.alpha(Theme.textFaint, 0.15)
                 border.width: 1
                 border.color: page.wifiEnabled ? Theme.accent : Theme.textFaint
 
@@ -297,22 +341,32 @@ Item {
                     anchors.fill: parent
                     onClicked: page.setWifiEnabled(!page.wifiEnabled)
                 }
+
             }
 
             Row {
                 id: statsInner
+
                 width: parent.width
                 height: 40
                 spacing: 9
 
                 Repeater {
-                    model: [
-                        { icon: page.icDown, label: "DOWNLOAD", value: page.downSpeed, down: true },
-                        { icon: page.icUp,   label: "UPLOAD",   value: page.upSpeed,   down: false }
-                    ]
+                    model: [{
+                        "icon": page.icDown,
+                        "label": "DOWNLOAD",
+                        "value": page.downSpeed,
+                        "down": true
+                    }, {
+                        "icon": page.icUp,
+                        "label": "UPLOAD",
+                        "value": page.upSpeed,
+                        "down": false
+                    }]
 
                     delegate: Rectangle {
                         required property var modelData
+
                         width: (statsInner.width - statsInner.spacing) / 2
                         height: statsInner.height
                         radius: Theme.radius
@@ -322,6 +376,7 @@ Item {
 
                         Text {
                             id: statIcon
+
                             anchors.left: parent.left
                             anchors.leftMargin: 14
                             anchors.verticalCenter: parent.verticalCenter
@@ -352,20 +407,23 @@ Item {
                             font.pixelSize: 12
                             font.bold: true
                         }
+
                     }
+
                 }
+
             }
+
         }
 
         // ── Ethernet status card (always shown) ─────────────────
         Rectangle {
             id: ethCard
+
             width: parent.width
             height: 46
             radius: Theme.radius
-            color: page.ethernet.state === "connected"
-                ? Theme.alpha(Theme.accent2, 0.10)
-                : "#00000000"
+            color: page.ethernet.state === "connected" ? Theme.alpha(Theme.accent2, 0.1) : "#00000000"
             border.width: 1
             border.color: page.ethernet.state === "connected" ? Theme.accent2 : Theme.border
 
@@ -394,14 +452,14 @@ Item {
                     }
 
                     Text {
-                        text: page.ethernet.state === "connected"
-                            ? (page.ethernet.connection || page.ethernet.device)
-                            : "Disconnected"
+                        text: page.ethernet.state === "connected" ? (page.ethernet.connection || page.ethernet.device) : "Disconnected"
                         color: Theme.textDim
                         font.family: page.monoFont
                         font.pixelSize: 10
                     }
+
                 }
+
             }
 
             Text {
@@ -414,11 +472,13 @@ Item {
                 font.pixelSize: 10
                 font.letterSpacing: 1
             }
+
         }
 
         // ── Wi-Fi network list ───────────────────────────────────
         Item {
             id: listContainer
+
             width: parent.width
             height: parent.height - y
 
@@ -430,6 +490,7 @@ Item {
 
                 Column {
                     id: list
+
                     width: parent.width
                     spacing: 6
 
@@ -458,6 +519,7 @@ Item {
 
                         delegate: Column {
                             required property var modelData
+
                             width: list.width
                             spacing: 6
 
@@ -465,14 +527,13 @@ Item {
                                 width: parent.width
                                 height: 46
                                 radius: Theme.radius
-                                color: modelData.connected
-                                    ? Theme.alpha(Theme.accent, 0.10)
-                                    : "#00000000"
+                                color: modelData.connected ? Theme.alpha(Theme.accent, 0.1) : "#00000000"
                                 border.width: 1
                                 border.color: modelData.connected ? Theme.accent : Theme.border
 
                                 Text {
                                     id: connectBtn
+
                                     anchors.left: parent.left
                                     anchors.leftMargin: 14
                                     anchors.verticalCenter: parent.verticalCenter
@@ -484,19 +545,16 @@ Item {
 
                                     MouseArea {
                                         anchors.fill: parent
-
                                         onClicked: {
-                                            if (modelData.connected) {
-                                                page.disconnect(modelData.ssid)
-                                            } else if (modelData.secured) {
-                                                page.pendingSsid = page.pendingSsid === modelData.ssid
-                                                    ? ""
-                                                    : modelData.ssid
-                                            } else {
-                                                page.connectOpen(modelData.ssid)
-                                            }
+                                            if (modelData.connected)
+                                                page.disconnect(modelData.ssid);
+                                            else if (modelData.secured)
+                                                page.pendingSsid = page.pendingSsid === modelData.ssid ? "" : modelData.ssid;
+                                            else
+                                                page.connectOpen(modelData.ssid);
                                         }
                                     }
+
                                 }
 
                                 Row {
@@ -529,7 +587,9 @@ Item {
                                         elide: Text.ElideRight
                                         width: Math.min(implicitWidth, list.width - 190)
                                     }
+
                                 }
+
                             }
 
                             Row {
@@ -548,6 +608,7 @@ Item {
 
                                     TextInput {
                                         id: pwField
+
                                         anchors.fill: parent
                                         anchors.margins: 8
                                         color: Theme.text
@@ -555,12 +616,9 @@ Item {
                                         font.pixelSize: 12
                                         echoMode: TextInput.Password
                                         focus: page.pendingSsid === modelData.ssid
-
-                                        Keys.onReturnPressed: page.connectSecured(
-                                            modelData.ssid,
-                                            text
-                                        )
+                                        Keys.onReturnPressed: page.connectSecured(modelData.ssid, text)
                                     }
+
                                 }
 
                                 Text {
@@ -572,17 +630,23 @@ Item {
 
                                     MouseArea {
                                         anchors.fill: parent
-                                        onClicked: page.connectSecured(
-                                            modelData.ssid,
-                                            pwField.text
-                                        )
+                                        onClicked: page.connectSecured(modelData.ssid, pwField.text)
                                     }
+
                                 }
+
                             }
+
                         }
+
                     }
+
                 }
+
             }
+
         }
+
     }
+
 }

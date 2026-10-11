@@ -113,7 +113,7 @@ else
     echo
     git diff --cached --stat
     echo
-
+    
     DATE=$(date '+%Y-%m-%d')
     TIME=$(date '+%H:%M:%S')
     COMMIT_MESSAGE="update: configs - $DATE $TIME"
