@@ -6,6 +6,7 @@ REPO_DIR="$HOME/Documents/GitHub/Hyprland-configs"
 CONFIG_DIR="$REPO_DIR/configs"
 WALLPAPER_SOURCE="$HOME/Pictures/Wallpapers"
 DOCKBAR_SOURCE="$HOME/.local/share/dock-bar"
+LOCAL_AI_INSTALLER="$HOME/bin/install-ai-local-LFM2.5-8B-A1B.sh"
 MAX_NEW_DOCKBAR_ASSET_SIZE_MB=5
 
 CONFIG_FOLDERS=(
@@ -40,7 +41,7 @@ else
     warn "Wallpapers folder not found: $WALLPAPER_SOURCE"
 fi
 
-# Mirror dock-bar, excluding its own Git metadata. New files above the size limit are skipped.
+# Mirror dock-bar, excluding its own Git metadata.
 if [[ -d "$DOCKBAR_SOURCE" ]]; then
     mkdir -p "$REPO_DIR/dock-bar"
     rsync -a --checksum --delete --exclude='.git' -- "$DOCKBAR_SOURCE/" "$REPO_DIR/dock-bar/"
@@ -76,10 +77,17 @@ else
     warn "File not found: .gtkrc-2.0"
 fi
 
-# Stage only paths managed by this script. Git reuses identical content objects,
-# so unchanged files are not stored again in each commit.
+# Include the local AI installer in the repository root when it exists.
+if [[ -f "$LOCAL_AI_INSTALLER" ]]; then
+    install -m 755 -- "$LOCAL_AI_INSTALLER" "$REPO_DIR/install-ai-local-LFM2.5-8B-A1B.sh"
+    ok "File: install-ai-local-LFM2.5-8B-A1B.sh"
+else
+    warn "Local AI installer not found: $LOCAL_AI_INSTALLER"
+fi
+
+# Stage only paths managed by this script.
 managed_paths=()
-for path in "configs" "Wallpapers" "dock-bar" "update-dotfiles.sh" "install.sh"; do
+for path in "configs" "Wallpapers" "dock-bar" "update-dotfiles.sh" "install.sh" "install-ai-local-LFM2.5-8B-A1B.sh"; do
     [[ -e "$path" ]] && managed_paths+=("$path")
 done
 
@@ -113,7 +121,6 @@ else
     echo
     git diff --cached --stat
     echo
-    
     DATE=$(date '+%Y-%m-%d')
     TIME=$(date '+%H:%M:%S')
     COMMIT_MESSAGE="update: configs - $DATE $TIME"
