@@ -50,6 +50,7 @@ PanelWindow {
         list.keyboardMode = true;
         mouseMovementHandler.lastPosition = mouseMovementHandler.point.position;
         pickerOpen = true;
+        Quickshell.execDetached(["bash", Quickshell.shellPath("cache.sh"), Quickshell.shellDir]);
         Qt.callLater(function() {
             if (!main.pickerOpen)
                 return ;
@@ -206,10 +207,7 @@ PanelWindow {
             if (configs.number_of_pictures <= 0)
                 return 1;
 
-            return Math.max(
-                1,
-                effectiveWidth / configs.number_of_pictures - 10
-            );
+            return Math.max(1, effectiveWidth / configs.number_of_pictures - 10);
         }
         property real wheelTargetX: contentX
 
@@ -325,21 +323,16 @@ PanelWindow {
         onWidthChanged: {
             if (width > 1) {
                 lastValidWidth = width;
-
                 Qt.callLater(function() {
                     if (!main.pickerOpen || list.width <= 1)
-                        return;
+                        return ;
 
                     list.forceLayout();
-                    list.positionViewAtIndex(
-                        list.selectedIndex,
-                        ListView.Contain
-                    );
+                    list.positionViewAtIndex(list.selectedIndex, ListView.Contain);
                     list.forceLayout();
                     list.wheelTargetX = list.clampX(list.contentX);
                 });
             }
-
             traceScroll("widthChanged");
         }
         onContentXChanged: traceScroll("contentXChanged")
