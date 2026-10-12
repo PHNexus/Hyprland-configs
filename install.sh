@@ -944,10 +944,13 @@ if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
     mkdir -p "$CONFIG_DIR"
 
     cat >"$CONFIG_DIR/helium-browser-flags.conf" <<'EOF'
---enable-features=VaapiVideoDecoder,AcceleratedVideoDecodeLinuxGL
+--enable-features=VaapiVideoDecoder,AcceleratedVideoDecodeLinuxGL,VaapiVideoEncoder
 --ignore-gpu-blocklist
 --enable-zero-copy
 --ozone-platform=wayland
+--enable-gpu-rasterization
+--use-gl=angle
+--use-angle=gl
 EOF
 
     echo "  - Created helium-browser-flags.conf successfully."
