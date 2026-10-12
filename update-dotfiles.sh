@@ -10,8 +10,8 @@ MAX_NEW_DOCKBAR_ASSET_SIZE_MB=5
 
 CONFIG_FOLDERS=(
     "btop" "nvim" "cava" "fastfetch" "fish" "hypr" "kitty"
-    "quickshell" "swaync" "waybar" "gtk-3.0" "gtk-4.0"
-    "wlogout" "wofi" "xdg-desktop-portal" "dock-bar"
+    "quickshell" "swaync" "waybar" "wlogout" "wofi" 
+    "xdg-desktop-portal" "dock-bar"
 )
 
 msg()  { printf '\033[1;34m[INFO]\033[0m %s\n' "$1"; }
@@ -69,12 +69,6 @@ else
     warn "File not found: starship.toml"
 fi
 
-if [[ -f "$HOME/.gtkrc-2.0" ]]; then
-    cp -fL -- "$HOME/.gtkrc-2.0" "$CONFIG_DIR/.gtkrc-2.0"
-    ok "File: .gtkrc-2.0"
-else
-    warn "File not found: .gtkrc-2.0"
-fi
 
 # Include the existing local AI installer in the managed Git paths.
 LOCAL_AI_INSTALLER="$REPO_DIR/install-ai-local-1660TI+.sh"
