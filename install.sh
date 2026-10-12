@@ -282,7 +282,7 @@ echo "Checking for existing configurations and wallpapers..."
 configs=(
     btop nvim cava fastfetch fish hypr kitty
     quickshell swaync waybar wlogout
-     wofi xdg-desktop-portal dock-bar
+    wofi xdg-desktop-portal dock-bar
 )
 
 existing_configs=()
