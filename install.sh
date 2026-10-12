@@ -349,7 +349,7 @@ fi
 # -----------------------------------------------------------------
 # Set Initial Default Wallpaper with Cache
 # -----------------------------------------------------------------
-DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/30.png"
+DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/22.png"
 CACHE_DIR="$HOME/.cache/wallpapers_state"
 mkdir -p "$CACHE_DIR"
 
