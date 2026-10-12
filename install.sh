@@ -143,8 +143,6 @@ fi
 
 echo "Using AUR helper: $AUR_HELPER"
 
-# Use explicit answers for yay's clean-build/diff/edit menus. --noconfirm alone
-# does not suppress these menus on some yay configurations.
 aur_install() {
     if [[ "$AUR_HELPER" == "yay" ]]; then
         yay -S --needed --noconfirm --answerclean None --answerdiff None --answeredit None "$@"
@@ -254,8 +252,6 @@ if ! command -v xdg-user-dirs-update &>/dev/null; then
     sudo pacman -S --needed --noconfirm xdg-user-dirs
 fi
 
-# Remove Projects from the global defaults and this user's XDG mappings.
-# This does not delete ~/Projects or any other directory.
 XDG_DEFAULTS="/etc/xdg/user-dirs.defaults"
 if [[ -f "$XDG_DEFAULTS" ]] && grep -qE '^[[:space:]]*PROJECTS[[:space:]]*=' "$XDG_DEFAULTS"; then
     sudo sed -i '/^[[:space:]]*PROJECTS[[:space:]]*=/d' "$XDG_DEFAULTS"
@@ -386,22 +382,14 @@ if command -v qs &>/dev/null; then
     if [[ ! -d "$REPO_DIR/dock-bar" ]]; then
         echo "  Warning: $REPO_DIR/dock-bar not found, skipping"
     else
-        # Remove any previous install to avoid stale files
         rm -rf "$DOCK_DIR"
-
-        # Copy the dock source from this repo
         mkdir -p "$DOCK_DIR"
         cp -r "$REPO_DIR/dock-bar/." "$DOCK_DIR/"
-
-        # Make the launcher executable
         chmod +x "$DOCK_DIR/bin/dock-bar" 2>/dev/null || true
-
-        # Symlink the launcher
         mkdir -p "$HOME/.local/bin"
         ln -sf "$DOCK_DIR/bin/dock-bar" "$HOME/.local/bin/dock-bar"
         echo "  - Dock Bar installed at ~/.local/share/dock-bar"
 
-        # Warn if ~/.local/bin is not in PATH
         if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
             echo "  Warning: ~/.local/bin is not in \$PATH."
             echo "  Add this to your shell config:"
@@ -411,6 +399,242 @@ if command -v qs &>/dev/null; then
 else
     echo "  - Quickshell (qs) not found, skipping Dock Bar"
 fi
+
+# --------------------------------------------
+# Install and Configure HyprQuickpaper Wrapper
+# --------------------------------------------
+echo
+echo "Installing HyprQuickpaper wrapper script..."
+
+HYPRQUICKPAPER_BIN_DIR="$HOME/.local/bin"
+mkdir -p "$HYPRQUICKPAPER_BIN_DIR"
+
+cat <<'EOF' > "$HYPRQUICKPAPER_BIN_DIR/hyprquickpaper"
+#!/usr/bin/env bash
+# Start HyprQuickpaper independently or send it an IPC action.
+
+set -uo pipefail
+
+PICKER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/hyprquickpaper"
+IPC_TARGET="hyprquickpaper"
+LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hyprquickpaper"
+LOG_FILE="$LOG_DIR/quickshell.log"
+IPC_LOG="$LOG_DIR/ipc.log"
+ACTION="${1:-toggle}"
+
+usage() {
+    cat <<'USAGE'
+Usage: hyprquickpaper [command]
+
+Commands:
+  start    Start the independent HyprQuickpaper shell (default)
+  stop     Stop the independent shell
+  restart  Restart the independent shell
+  toggle   Toggle the wallpaper picker
+  show     Show the wallpaper picker
+  hide     Hide the wallpaper picker
+  log      Display the latest shell log
+  help     Display this help message
+USAGE
+}
+
+if ! command -v qs >/dev/null 2>&1; then
+    echo "ERROR: Quickshell (qs) was not found in PATH." >&2
+    exit 127
+fi
+
+if [[ ! -f "$PICKER_DIR/shell.qml" ]]; then
+    echo "ERROR: HyprQuickpaper shell not found at $PICKER_DIR/shell.qml" >&2
+    exit 1
+fi
+
+mkdir -p "$LOG_DIR"
+
+call_ipc() {
+    qs -p "$PICKER_DIR" ipc call "$IPC_TARGET" "$1"
+}
+
+case "$ACTION" in
+    start)
+        exec qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1
+        ;;
+    stop)
+        qs kill -p "$PICKER_DIR"
+        ;;
+    restart)
+        qs kill -p "$PICKER_DIR" >/dev/null 2>&1 || true
+        exec qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1
+        ;;
+    log)
+        tail -n 100 "$LOG_FILE"
+        ;;
+    toggle|show|hide)
+        if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
+            cat "$IPC_LOG"
+            exit 0
+        fi
+
+        if [[ "$ACTION" == "hide" ]]; then
+            exit 0
+        fi
+
+        qs kill -p "$PICKER_DIR" >/dev/null 2>&1 || true
+
+        MONITOR=""
+        if command -v hyprctl >/dev/null 2>&1 &&
+           command -v jq >/dev/null 2>&1; then
+            MONITOR="$(hyprctl monitors -j 2>/dev/null |
+                jq -er '.[] | select(.focused == true) | .name' 2>/dev/null)" || MONITOR=""
+        fi
+
+        if [[ -n "$MONITOR" ]]; then
+            HYPRQUICKPAPER_MONITOR="$MONITOR" qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1 &
+        else
+            qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1 &
+        fi
+        SHELL_PID=$!
+
+        for _ in {1..50}; do
+            if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
+                cat "$IPC_LOG"
+                exit 0
+            fi
+
+            if ! kill -0 "$SHELL_PID" 2>/dev/null; then
+                break
+            fi
+
+            sleep 0.1
+        done
+
+        echo "ERROR: Failed to execute IPC command $IPC_TARGET $ACTION." >&2
+        echo "Configuration log: $LOG_FILE" >&2
+        tail -n 40 "$LOG_FILE" >&2 || true
+        cat "$IPC_LOG" >&2 2>/dev/null || true
+        exit 1
+        ;;
+    help|-h|--help)
+        usage
+        ;;
+    *)
+        usage
+        exit 2
+        ;;
+esac
+EOF
+
+chmod +x "$HYPRQUICKPAPER_BIN_DIR/hyprquickpaper"
+echo "  - HyprQuickpaper wrapper installed at $HYPRQUICKPAPER_BIN_DIR/hyprquickpaper"
+
+# --------------------------------------------
+# Install and Configure Settings Wrapper
+# --------------------------------------------
+echo
+echo "Installing Settings wrapper script..."
+
+SETTINGS_BIN_DIR="$HOME/.local/bin"
+mkdir -p "$SETTINGS_BIN_DIR"
+
+cat <<'EOF' > "$SETTINGS_BIN_DIR/settings"
+#!/usr/bin/env bash
+set -uo pipefail
+
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/settings"
+IPC_TARGET="settings"
+LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/settings"
+LOG_FILE="$LOG_DIR/quickshell.log"
+IPC_LOG="$LOG_DIR/ipc.log"
+ACTION="${1:-toggle}"
+
+usage() {
+    echo "Usage: settings [start|stop|restart|toggle|show|hide|log|audio|display|network|bluetooth|storage|power|configs]" >&2
+}
+
+if ! command -v qs >/dev/null 2>&1; then
+    echo "ERROR: Quickshell (qs) was not found in PATH." >&2
+    exit 127
+fi
+
+if [[ ! -f "$CONFIG/shell.qml" ]]; then
+    echo "ERROR: Settings shell not found at $CONFIG/shell.qml" >&2
+    exit 1
+fi
+
+mkdir -p "$LOG_DIR"
+
+call_ipc() {
+    qs -p "$CONFIG" ipc call "$IPC_TARGET" "$1"
+}
+
+case "$ACTION" in
+    start)
+        exec qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1
+        ;;
+    stop)
+        qs kill -p "$CONFIG"
+        ;;
+    restart)
+        qs kill -p "$CONFIG" >/dev/null 2>&1 || true
+        exec qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1
+        ;;
+    log)
+        tail -n 100 "$LOG_FILE"
+        ;;
+    toggle|show|hide|audio|display|network|bluetooth|storage|power|configs)
+        if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
+            cat "$IPC_LOG"
+            exit 0
+        fi
+
+        if [[ "$ACTION" == "hide" ]]; then
+            exit 0
+        fi
+
+        MONITOR=""
+        if command -v hyprctl >/dev/null 2>&1 &&
+           command -v jq >/dev/null 2>&1; then
+            MONITOR="$(hyprctl monitors -j 2>/dev/null |
+                jq -er '.[] | select(.focused == true) | .name' 2>/dev/null)" || MONITOR=""
+        fi
+
+        if [[ -n "$MONITOR" ]]; then
+            QS_SETTINGS_MONITOR="$MONITOR" qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1 &
+        else
+            qs -n -p "$CONFIG" >>"$LOG_FILE" 2>&1 &
+        fi
+        SHELL_PID=$!
+
+        for _ in {1..50}; do
+            if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
+                cat "$IPC_LOG"
+                exit 0
+            fi
+
+            if ! kill -0 "$SHELL_PID" 2>/dev/null; then
+                break
+            fi
+
+            sleep 0.1
+        done
+
+        echo "ERROR: Failed to execute IPC command $IPC_TARGET $ACTION." >&2
+        echo "Configuration log: $LOG_FILE" >&2
+        tail -n 40 "$LOG_FILE" >&2 || true
+        cat "$IPC_LOG" >&2 2>/dev/null || true
+        exit 1
+        ;;
+    help|-h|--help)
+        usage
+        ;;
+    *)
+        usage
+        exit 2
+        ;;
+esac
+EOF
+
+chmod +x "$SETTINGS_BIN_DIR/settings"
+echo "  - Settings wrapper installed at $SETTINGS_BIN_DIR/settings"
 
 # --------------------------------------------
 # Install AppManager (AppImage manager)
@@ -631,6 +855,19 @@ else
 fi
 
 # --------------------------------------------
+# Configure vm.max_map_count for games 
+# --------------------------------------------
+echo
+echo "Configuring vm.max_map_count for heavy games..."
+if [[ ! -f /etc/sysctl.d/99-max_map_count.conf ]]; then
+    echo "vm.max_map_count=1048576" | sudo tee /etc/sysctl.d/99-max_map_count.conf >/dev/null
+    sudo sysctl --system &>/dev/null
+    echo "  - vm.max_map_count set to 1048576 permanently."
+else
+    echo "  - vm.max_map_count configuration already exists."
+fi
+
+# --------------------------------------------
 # Configure Waybar output (auto-detect to prevent hidden bar)
 # --------------------------------------------
 echo
@@ -678,6 +915,7 @@ if [[ -n "$WAYBAR_CONFIG" ]]; then
 else
     echo "  - No Waybar config found (checked config.jsonc, config and config.json); skipping."
 fi
+
 echo "Reloading Hyprland configurations..."
 hyprctl reload 2>/dev/null || true
 
@@ -829,7 +1067,6 @@ if command -v flatpak &>/dev/null; then
     if ! flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
         warn "Could not configure the Flathub user remote; skipping Flatpak packages."
     elif [[ -f "$REPO_DIR/packages.txt" ]]; then
-        # Read and automatically install Flatpaks from the #Flatpaks section in packages.txt
         flatpak_packages=()
         is_flatpaks=0
 
@@ -842,7 +1079,6 @@ if command -v flatpak &>/dev/null; then
                 continue
             fi
 
-            # Any other section header ends the Flatpak section.
             if [[ "$line" =~ ^# ]]; then
                 is_flatpaks=0
                 continue
@@ -855,7 +1091,6 @@ if command -v flatpak &>/dev/null; then
             fi
         done <"$REPO_DIR/packages.txt"
 
-        # Install everything listed in the section without prompting
         if [[ ${#flatpak_packages[@]} -gt 0 ]]; then
             for app in "${flatpak_packages[@]}"; do
                 echo "  - Installing Flatpak: $app..."
@@ -986,11 +1221,8 @@ fi
 echo
 echo "Installing and configuring GameMode..."
 
-# 1. Install GameMode and 32-bit support
 sudo pacman -S --needed --noconfirm gamemode lib32-gamemode
 
-# 2. Test GameMode instead of enabling a service that may not exist. The
-# daemon is normally activated on demand over D-Bus when a game requests it.
 if command -v gamemoded >/dev/null 2>&1; then
     if gamemoded -t; then
         echo "  - GameMode diagnostic test passed."
@@ -1001,7 +1233,6 @@ else
     warn "gamemoded was not found after package installation."
 fi
 
-# 3. Download default configuration file from official repository
 if [[ ! -f "$CONFIG_DIR/gamemode.ini" ]]; then
     if command -v curl >/dev/null 2>&1 && curl -fsSL https://raw.githubusercontent.com/FeralInteractive/gamemode/master/example/gamemode.ini -o "$CONFIG_DIR/gamemode.ini"; then
         echo "  - Downloaded default gamemode.ini to $CONFIG_DIR/"
@@ -1046,7 +1277,6 @@ if [[ "$HAS_CLOUDFLARE_WARP" -eq 1 ]]; then
     echo
     echo "Configuring Cloudflare WARP..."
 
-    # Enable and start the WARP background service
     if command -v systemctl &>/dev/null; then
         if sudo systemctl enable --now warp-svc; then
             echo "  - warp-svc service enabled and started."
@@ -1054,12 +1284,9 @@ if [[ "$HAS_CLOUDFLARE_WARP" -eq 1 ]]; then
             warn "Could not enable warp-svc; WARP CLI configuration may not work."
         fi
 
-        # Wait a few seconds for the daemon to fully initialize
         sleep 3
     fi
 
-    # Preserve an existing registration. Never delete/recreate it automatically:
-    # doing so can invalidate the account/device registration already on this machine.
     if command -v warp-cli &>/dev/null; then
         if warp-cli registration show >/dev/null 2>&1; then
             echo "  - Existing Cloudflare WARP registration found; keeping it."
@@ -1115,7 +1342,6 @@ MACOS_ICON_DIR="$(mktemp -d /tmp/MacTahoe-icon-theme.XXXXXX)"
 MACOS_ICON_READY=0
 MACOS_ICON_URL="https://github.com/PHNexus/MacTahoe-icon-theme.git"
 
-# Retry shallow clone; if Git transport is unavailable, try GitHub's source archive.
 for attempt in 1 2 3; do
     rm -rf "$MACOS_ICON_DIR"/* "$MACOS_ICON_DIR"/.[!.]* "$MACOS_ICON_DIR"/..?* 2>/dev/null || true
     if git -c http.connectTimeout=15 clone --depth=1 "$MACOS_ICON_URL" "$MACOS_ICON_DIR"; then
@@ -1192,12 +1418,10 @@ if [[ "$HAS_CLOUDFLARE_WARP" -eq 1 ]]; then
     echo
     echo "Configuring Cloudflare DNS..."
 
-    # Ensure NetworkManager is running before using nmcli
     if command -v systemctl &>/dev/null; then
         sudo systemctl enable --now NetworkManager.service 2>/dev/null || true
     fi
 
-    # Automatically discover the active ethernet/network connection name
     if command -v nmcli &>/dev/null; then
         ACTIVE_CONN=$(nmcli -t -f NAME,DEVICE connection show --active | grep -v ':lo$' | head -n1 | cut -d: -f1 || true)
 
