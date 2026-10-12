@@ -200,7 +200,17 @@ PanelWindow {
         property int previousSelectedIndex: 0
         property bool keyboardMode: false
         property bool mouseEnabled: false
-        property real tileWidth: configs.number_of_pictures > 0 ? Math.max(1, width / configs.number_of_pictures - 10) : 0
+        property real lastValidWidth: 0
+        property real effectiveWidth: width > 1 ? width : lastValidWidth
+        property real tileWidth: {
+            if (configs.number_of_pictures <= 0)
+                return 1;
+
+            return Math.max(
+                1,
+                effectiveWidth / configs.number_of_pictures - 10
+            );
+        }
         property real wheelTargetX: contentX
 
         function traceScroll(cause) {
@@ -311,7 +321,27 @@ PanelWindow {
         orientation: ListView.Horizontal
         spacing: 0
         clip: true
-        cacheBuffer: width * 2
+        cacheBuffer: effectiveWidth * 2
+        onWidthChanged: {
+            if (width > 1) {
+                lastValidWidth = width;
+
+                Qt.callLater(function() {
+                    if (!main.pickerOpen || list.width <= 1)
+                        return;
+
+                    list.forceLayout();
+                    list.positionViewAtIndex(
+                        list.selectedIndex,
+                        ListView.Contain
+                    );
+                    list.forceLayout();
+                    list.wheelTargetX = list.clampX(list.contentX);
+                });
+            }
+
+            traceScroll("widthChanged");
+        }
         onContentXChanged: traceScroll("contentXChanged")
         onOriginXChanged: traceScroll("originXChanged")
         onContentWidthChanged: traceScroll("contentWidthChanged")
