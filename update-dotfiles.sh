@@ -6,7 +6,6 @@ REPO_DIR="$HOME/Documents/GitHub/Hyprland-configs"
 CONFIG_DIR="$REPO_DIR/configs"
 WALLPAPER_SOURCE="$HOME/Pictures/Wallpapers"
 DOCKBAR_SOURCE="$HOME/.local/share/dock-bar"
-LOCAL_AI_INSTALLER="$HOME/bin/install-ai-local-LFM2.5-8B-A1B.sh"
 MAX_NEW_DOCKBAR_ASSET_SIZE_MB=5
 
 CONFIG_FOLDERS=(
