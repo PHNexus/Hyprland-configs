@@ -167,10 +167,13 @@ mkdir -p "$MODELS_DIR"
 
 if [[ $SKIP_MODELS -eq 1 ]]; then
     warn "Skipping model download (--skip-models)"
-    elif [[ ! -f "$MODELS_DIR/$MODEL_FILE" ]]; then
+elif [[ ! -f "$MODELS_DIR/$MODEL_FILE" ]]; then
     say "Downloading $MODEL_FILE ..."
-    hf download "$MODEL_REPO" --include "$MODEL_FILE" --local-dir "$MODELS_DIR" --quiet
-    ok "LFM2.5-8B-A1B-Uncensored downloaded"
+    if hf download "$MODEL_REPO" --include "$MODEL_FILE" --local-dir "$MODELS_DIR" --quiet; then
+        ok "LFM2.5-8B-A1B-Uncensored downloaded"
+    else
+        die "Failed to download $MODEL_FILE"
+    fi
 else
     ok "LFM2.5-8B-A1B-Uncensored already present"
 fi
