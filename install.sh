@@ -281,8 +281,8 @@ echo "Checking for existing configurations and wallpapers..."
 
 configs=(
     btop nvim cava fastfetch fish hypr kitty
-    quickshell swaync waybar wlogout gtk-3.0
-    gtk-4.0 wofi xdg-desktop-portal dock-bar
+    quickshell swaync waybar wlogout
+     wofi xdg-desktop-portal dock-bar
 )
 
 existing_configs=()
@@ -294,7 +294,6 @@ for config in "${configs[@]}"; do
 done
 
 [[ -f "$CONFIG_DIR/starship.toml" ]] && existing_configs+=("starship.toml")
-[[ -f "$HOME/.gtkrc-2.0" ]] && existing_configs+=(".gtkrc-2.0")
 [[ -d "$PICTURES_DIR/Wallpapers" ]] && existing_configs+=("Pictures/Wallpapers")
 
 if [[ ${#existing_configs[@]} -gt 0 ]]; then
@@ -310,8 +309,6 @@ if [[ ${#existing_configs[@]} -gt 0 ]]; then
             cp -r "$PICTURES_DIR/Wallpapers" "$BACKUP_DIR/Pictures/"
         elif [[ "$item" == "starship.toml" ]]; then
             cp "$CONFIG_DIR/starship.toml" "$BACKUP_DIR/"
-        elif [[ "$item" == ".gtkrc-2.0" ]]; then
-            cp "$HOME/.gtkrc-2.0" "$BACKUP_DIR/"
         else
             cp -r "$CONFIG_DIR/$item" "$BACKUP_DIR/"
         fi
@@ -342,10 +339,6 @@ fi
 
 if [[ -f "$REPO_DIR/configs/starship.toml" ]]; then
     cp -f "$REPO_DIR/configs/starship.toml" "$CONFIG_DIR/"
-fi
-
-if [[ -f "$REPO_DIR/configs/.gtkrc-2.0" ]]; then
-    cp -f "$REPO_DIR/configs/.gtkrc-2.0" "$HOME/"
 fi
 
 if [[ -d "$REPO_DIR/Wallpapers" ]]; then
