@@ -140,4 +140,3 @@ jdtls
 google-java-format
 
 #Flatpaks
-org.onlyoffice.desktopeditors
