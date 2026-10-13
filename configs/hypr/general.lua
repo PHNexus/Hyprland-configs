@@ -52,7 +52,7 @@ function M.setup()
     -- ============================================================
     hl.config({
         decoration = {
-            rounding = 8,
+            rounding = 16,
             rounding_power = 10,
             active_opacity = 0.9,
             inactive_opacity = 0.9,
