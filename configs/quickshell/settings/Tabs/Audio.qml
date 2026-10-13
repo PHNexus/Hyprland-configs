@@ -29,12 +29,10 @@ Item {
     property var inputSources: Pipewire.nodes.values.filter(n => !n.isSink && !n.isStream && n.audio)
     property var appStreams: Pipewire.nodes.values.filter(n => n.isStream && n.isSink && n.audio)
 
-    // Display the best available friendly name for physical devices and app streams.
     function displayName(node, fallback) {
         return node?.description || node?.nickname || node?.name || fallback
     }
 
-    // These properties are managed by PipeWire/WirePlumber and are shared with other clients.
     function setDefaultOutput(output) {
         if (output)
             Pipewire.preferredDefaultAudioSink = output
@@ -98,9 +96,11 @@ Item {
                 color: Theme.border
             }
 
-            // OUTPUT
             Row {
-                width: parent.width - 28 - 76 + 5 - page.sliderMarginRight
+                id: outputRow
+
+                width: parent.width
+                spacing: 6
 
                 Rectangle {
                     width: 28
@@ -140,7 +140,7 @@ Item {
                 }
 
                 Slider {
-                    width: parent.width - 28 - 76 + 91 - page.sliderMarginRight
+                    width: outputRow.width - 28 - 76 - outputRow.spacing * 2
                     height: 72
                     anchors.verticalCenter: parent.verticalCenter
                     label: ""
@@ -220,9 +220,11 @@ Item {
                 }
             }
 
-            // INPUT
             Row {
-                width: parent.width - 28 - 76 + 20 - page.sliderMarginRight
+                id: inputRow
+
+                width: parent.width
+                spacing: 6
 
                 Rectangle {
                     width: 28
@@ -262,14 +264,13 @@ Item {
                 }
 
                 Slider {
-                    width: parent.width - 28 - 82 + 71 - page.sliderMarginRight
+                    width: inputRow.width - 28 - 76 - inputRow.spacing * 2
                     height: 72
                     anchors.verticalCenter: parent.verticalCenter
                     label: ""
                     icon: ""
                     value: page.inputMuted ? 0 : page.inputVolume
 
-                    // Apply microphone volume on every slider movement.
                     onMoved: v => {
                         const audio = page.source?.audio
                         if (!audio)
@@ -279,7 +280,6 @@ Item {
                         audio.volume = v
                     }
 
-                    // Confirm the final microphone volume when dragging ends.
                     onCommitted: v => {
                         const audio = page.source?.audio
                         if (!audio)
@@ -361,7 +361,6 @@ Item {
                 color: Theme.border
             }
 
-            // Per-app volume
             Row {
                 width: parent.width
                 spacing: 10
@@ -392,6 +391,8 @@ Item {
                     model: page.appStreams
 
                     delegate: Rectangle {
+                        id: appCard
+
                         required property var modelData
                         property var stream: modelData
                         property bool streamMuted: stream?.audio?.muted ?? false
@@ -405,6 +406,8 @@ Item {
                         border.color: streamMuted ? Theme.alpha(Theme.danger, 0.5) : Theme.border
 
                         Row {
+                            id: appRow
+
                             anchors.fill: parent
                             anchors.leftMargin: 10
                             anchors.rightMargin: 14
@@ -448,12 +451,19 @@ Item {
                             }
 
                             Slider {
-                                width: parent.width - 28 - 82 + 71 - page.sliderMarginRight
+                                width: appRow.width - 28 - 82 - appRow.spacing * 2
                                 height: 72
                                 anchors.verticalCenter: parent.verticalCenter
                                 label: ""
                                 icon: ""
                                 value: streamMuted ? 0 : streamVolume
+
+                                onMoved: v => {
+                                    if (stream?.audio) {
+                                        stream.audio.muted = false
+                                        stream.audio.volume = v
+                                    }
+                                }
 
                                 onCommitted: v => {
                                     if (stream?.audio) {
