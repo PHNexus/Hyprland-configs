@@ -18,10 +18,10 @@ FloatingWindow {
         "page": "Display"
     }, {
         "group": "DISPLAY & SOUND",
-        "name": "Audio",
+        "name": "Sound",
         "short": "2",
         "icon": "\uf028",
-        "page": "Audio"
+        "page": "Sound"
     }, {
         "group": "CONNECTIVITY",
         "name": "Network",
@@ -149,11 +149,6 @@ FloatingWindow {
         }
 
         function sound() {
-            root.selectedIndex = 0;
-            root.show();
-        }
-
-        function audio() {
             root.selectedIndex = 1;
             root.show();
         }
@@ -180,6 +175,16 @@ FloatingWindow {
 
         function power() {
             root.selectedIndex = 5;
+            root.show();
+        }
+
+        function keybinds() {
+            root.selectedIndex = 6;
+            root.show();
+        }
+
+        function autostart() {
+            root.selectedIndex = 7;
             root.show();
         }
 
