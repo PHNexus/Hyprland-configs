@@ -94,7 +94,6 @@ return {
       local sorters = require "telescope.sorters"
       return {
         defaults = {
-          -- Prioritizes filename over full path
           file_sorter = sorters.get_fuzzy_file,
           generic_sorter = sorters.get_fzy_sorter,
           sorting_strategy = "ascending",
@@ -128,7 +127,6 @@ return {
             hidden = true,
             no_ignore = true,
             no_ignore_parent = true,
-            -- Use fd with scan-level excludes (fast + fewer results)
             find_command = {
               "fd",
               "--type",
@@ -248,13 +246,33 @@ return {
   {
     "nvim-tree/nvim-tree.lua",
     lazy = false,
-    cmd = { "NvimTreeToggle", "NvimTreeFocus" },
+    cmd = { "NvimTreeToggle", "NvimTreeFocus", "NvimTreeOpen", "NvimTreeClose" },
     keys = {
       { "<C-n>", "<cmd>NvimTreeToggle<CR>", desc = "Toggle NvimTree" },
+      {
+        "<C-b>",
+        function()
+          vim.g.nvimtree_collapsed = not (vim.g.nvimtree_collapsed or false)
+          local cur = vim.api.nvim_get_current_win()
+          vim.cmd "NvimTreeClose"
+          vim.cmd "NvimTreeOpen"
+          vim.defer_fn(function()
+            if vim.api.nvim_win_is_valid(cur) then
+              vim.api.nvim_set_current_win(cur)
+            end
+          end, 20)
+        end,
+        desc = "Collapse/Expand NvimTree",
+      },
     },
     opts = {
       view = {
-        width = 35,
+        width = function()
+          if vim.g.nvimtree_collapsed then
+            return 1
+          end
+          return 35
+        end,
         side = "left",
       },
       filters = {
@@ -280,11 +298,21 @@ return {
         callback = function()
           if vim.bo.filetype ~= "NvimTree" and vim.fn.expand("%:t") ~= "" then
             local file_buf = vim.api.nvim_get_current_buf()
-            vim.cmd("NvimTreeOpen")
+            vim.cmd "NvimTreeOpen"
             vim.defer_fn(function()
-              if vim.api.nvim_buf_is_valid(file_buf) then
-                vim.api.nvim_set_current_buf(file_buf)
-              end
+              vim.g.nvimtree_collapsed = true
+              vim.cmd "NvimTreeClose"
+              vim.cmd "NvimTreeOpen"
+              vim.defer_fn(function()
+                if vim.api.nvim_buf_is_valid(file_buf) then
+                  local wins = vim.fn.win_findbuf(file_buf)
+                  if #wins > 0 then
+                    vim.api.nvim_set_current_win(wins[1])
+                  else
+                    vim.api.nvim_set_current_buf(file_buf)
+                  end
+                end
+              end, 20)
             end, 50)
           end
         end,
@@ -292,8 +320,8 @@ return {
 
       vim.api.nvim_create_autocmd("QuitPre", {
         callback = function()
-          if vim.fn.exists(":NvimTreeClose") == 2 then
-            vim.cmd("NvimTreeClose")
+          if vim.fn.exists ":NvimTreeClose" == 2 then
+            vim.cmd "NvimTreeClose"
           end
         end,
       })

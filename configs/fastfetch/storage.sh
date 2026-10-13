@@ -61,20 +61,10 @@ case "$1" in
             lsblk -dnr -o NAME,TYPE,ROTA,RM
         )
 
-        # Print all accumulated results cleanly with fixed width to prevent layout breaking
-        if [[ ${#results[@]} -gt 0 ]]; then
-            for i in "${!results[@]}"; do
-                # Aumentado para 11 caracteres para evitar estouro de string e desalinhamento
-                formatted_val=$(printf "%-11s" "${results[$i]}")
-
-                if [[ $i -eq 0 ]]; then
-                    printf "%s\n" "$formatted_val"
-                else
-                    # Alinhamento ajustado para bater com a estrutura da caixa do fetch
-                    printf "                         │ %s\n" "$formatted_val"
-                fi
-            done
-        fi
+        # Just print values, one per line. Fastfetch handles alignment.
+        for r in "${results[@]}"; do
+            printf "%s\n" "$r"
+        done
 
         exit 0
         ;;
