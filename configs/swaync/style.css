@@ -6,7 +6,7 @@
 }
 
 .notification {
-    background: rgba(12, 12, 15, 0.96);
+    background: rgba(0, 0, 0, 0.90);
     border-radius: 12px;
     padding: 12px;
     color: #fafafa;
@@ -34,8 +34,9 @@
 /* ============================================================================== */
 /* =============================== CONTROL CENTER =============================== */
 /* ============================================================================== */
+
 .control-center {
-    background: rgba(12, 12, 15, 0.96);
+    background: rgba(0, 0, 0, 0.90);
     border-radius: 12px;
     box-shadow: 10px 10px 25px rgba(0, 0, 0, 0.6);
     margin: 6px;
@@ -179,6 +180,7 @@
 /* ============================================================================== */
 /* BUTTONS GRID (toggle buttons like wifi, bluetooth, mute)                       */
 /* ============================================================================== */
+
 .widget-buttons-grid flowboxchild > button {
     border: 1px solid rgba(255, 255, 255, 0.05);
     padding: 8px 20px;
