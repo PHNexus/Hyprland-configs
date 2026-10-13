@@ -4,13 +4,13 @@ window {
   border-radius: 12px;
   background-color: transparent;
   font-family: "Fira Code", "JetBrains Mono", monospace;
-  color: #f3f3f3;
+  color: #fafafa;
 }
 
 #input {
   margin: -1px 8px;
   border: none;
-  color: #ffffff;
+  color: #fafafa;
   background-color: transparent;
   padding: 4px;
   font-size: 13px;
@@ -20,7 +20,7 @@ window {
 }
 
 #input::placeholder {
-  color: #666666;
+  color: #565656;
   font-style: italic;
 }
 
@@ -38,7 +38,7 @@ window {
   margin: 2px;
   border: none;
   padding: 2px;
-  background-color: #0d0d0d;
+  background-color: rgba(20, 20, 24, 0.75);
   border-radius: 12px;
 }
 
@@ -64,7 +64,7 @@ scrollbar, scrollbar trough, scrollbar slider {
 #text {
   margin: 2px 4px;
   border: none;
-  color: #d4d4d4;
+  color: #8a8a8a;
   font-size: 14px;
   font-weight: 400;
 }
@@ -79,22 +79,22 @@ scrollbar, scrollbar trough, scrollbar slider {
 }
 
 #entry:selected {
-  background-color: #beb68c;
+  background-color: #2a2a30;
   border-radius: 12px;
 }
 
 #entry:selected #text {
   font-weight: 600;
-  color: #1e1e1e;
+  color: #fafafa;
 }
 
 #entry:hover {
-  background-color: #1a1a1a;
+  background-color: #1e1e23;
   border-radius: 12px;
 }
 
 #entry:hover #text {
-  color: #ffffff;
+  color: #e0e0e0;
 }
 
 #entry image {

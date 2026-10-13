@@ -185,12 +185,21 @@ function M.setup()
         match = { namespace = "wofi" },
         animation = "popin 60%",
         blur = true,
+        ignore_alpha = 0.5,
     })
     hl.layer_rule({
         name = "hyprquickpaper-slide",
         match = { namespace = "hyprquickpaper" },
         animation = "popin 60%",
         blur = false,
+    })
+    hl.window_rule({
+        name = "quickshell-settings",
+        match = { title = "^(Settings)$" },
+        float = true,
+        center = true,
+        size = "940 640",
+        rounding = 16,
     })
 end
 
