@@ -124,8 +124,7 @@ else
     DATE=$(date '+%Y-%m-%d')
     TIME=$(date '+%H:%M:%S')
 
-    # Calculate total changed lines strictly inside user-edited files (excluding massive rsync metadata shifts if any)
-    # Using numstat to sum up actual line changes
+    # Calculate total changed lines strictly inside user-edited files (additions + deletions)
     total_lines=$(git diff --cached --numstat | awk '{
         if ($1 != "-") add += $1;
         if ($2 != "-") del += $2;
@@ -133,9 +132,11 @@ else
 
     total_lines=${total_lines:-0}
 
-    # If total lines changed across staged files is <= 15, name it "update". Otherwise "update configs".
+    # Set commit message based on total lines:
+    # - <= 15 lines: only "update"
+    # - > 15 lines: "update configs - DATE TIME"
     if (( total_lines <= 15 )); then
-        COMMIT_MESSAGE="update - $DATE $TIME"
+        COMMIT_MESSAGE="update"
     else
         COMMIT_MESSAGE="update configs - $DATE $TIME"
     fi
