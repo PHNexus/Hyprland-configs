@@ -130,12 +130,14 @@ Item {
 
     function getKey(raw) {
         var value = raw.trim()
-        if (/^\.\.\s*/.test(value)) return "Dynamic shortcut"
-        if (value.indexOf("..") >= 0 && /\.\.\s*[a-zA-Z_]\w*/.test(value))
-            return value.indexOf("mainMod") >= 0 ? "SUPER + dynamic" : "Dynamic shortcut"
+        // Suporte ao formato: mainMod .. " + B"
         if (value.indexOf("mainMod") >= 0) {
             var match = value.match(/["']([^"']*)["']/)
-            return match ? "SUPER" + match[1] : "SUPER"
+            if (match) {
+                var cleanMatch = match[1].replace(/^\s*\+\s*/, "")
+                return "SUPER + " + cleanMatch.toUpperCase()
+            }
+            return "SUPER"
         }
         var quoted = value.match(/^(['"])([\s\S]*)\1$/)
         if (quoted) return decodeLuaString(quoted[2])
@@ -199,14 +201,13 @@ Item {
             if (call.args.length < 2) continue
             var keyArg = call.args[0], actionArg = call.args[1]
             var keyRaw = keyArg.text, actionRaw = actionArg.text
-            var dynamic = /\.\.\s*[a-zA-Z_]\w*/.test(keyRaw) && keyRaw.indexOf("mainMod") >= 0 && keyRaw.indexOf('" + "') >= 0
             var key = getKey(keyRaw)
             var commandInfo = getCommand(actionRaw)
             var command = commandInfo.command
             parsed.push({
                 id: i, key: key, title: getTitle(key, command, actionRaw), command: command,
                 category: getCategory(key, command, actionRaw),
-                keyEditable: !dynamic && (keyRaw.indexOf("mainMod") >= 0 || /^["']/.test(keyRaw)),
+                keyEditable: keyRaw.indexOf("mainMod") >= 0 || /^["']/.test(keyRaw),
                 commandEditable: commandInfo.editable,
                 keyStart: keyArg.start, keyEnd: keyArg.end,
                 actionStart: actionArg.start, actionEnd: actionArg.end, rawAction: actionRaw
@@ -242,8 +243,17 @@ Item {
     function applyEdit() {
         if (!selectedBinding) return
         var replacements = [], b = selectedBinding
-        if (b.keyEditable && editKey.trim().length > 0 && editKey !== b.key)
-            replacements.push({ start: b.keyStart, end: b.keyEnd, text: encodeLuaString(editKey.trim()) })
+        if (b.keyEditable && editKey.trim().length > 0 && editKey !== b.key) {
+            var newKeyText = editKey.trim()
+            var formattedKey = ""
+            if (/^SUPER\s*\+\s*/i.test(newKeyText)) {
+                var actualKey = newKeyText.replace(/^SUPER\s*\+\s*/i, "").trim()
+                formattedKey = 'mainMod .. " + ' + actualKey + '"'
+            } else {
+                formattedKey = encodeLuaString(newKeyText)
+            }
+            replacements.push({ start: b.keyStart, end: b.keyEnd, text: formattedKey })
+        }
         if (b.commandEditable && editCommand !== b.command)
             replacements.push({ start: b.actionStart, end: b.actionEnd, text: "hl.dsp.exec_cmd(" + encodeLuaString(editCommand) + ")" })
         if (!replacements.length) { statusMessage = "No changes to save"; return }
@@ -583,7 +593,6 @@ Item {
         contentItem: ColumnLayout {
             spacing: 0
 
-            // Header
             RowLayout {
                 Layout.fillWidth: true
                 Layout.margins: 20
