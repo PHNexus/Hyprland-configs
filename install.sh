@@ -722,9 +722,10 @@ else
         else
             ARTCRAFT_DIR="$HOME/Applications"
             ARTCRAFT_APP="$ARTCRAFT_DIR/ArtCraft-Launcher.AppImage"
-            ARTCRAFT_TMP="$(mktemp "$ARTCRAFT_DIR/.artcraft.XXXXXX")"
 
-            mkdir -p "$ARTCRAFT_DIR"
+        mkdir -p "$ARTCRAFT_DIR"
+
+            ARTCRAFT_TMP="$(mktemp "$ARTCRAFT_DIR/.artcraft.XXXXXX")"
 
             if curl -fL --retry 3 "$ARTCRAFT_URL" -o "$ARTCRAFT_TMP"; then
                 ARTCRAFT_VALID=1
