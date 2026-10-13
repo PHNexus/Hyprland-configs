@@ -69,7 +69,6 @@ else
     warn "File not found: starship.toml"
 fi
 
-
 # Include the existing local AI installer in the managed Git paths.
 LOCAL_AI_INSTALLER="$REPO_DIR/install-ai-local-1660TI+.sh"
 
@@ -121,9 +120,31 @@ else
     echo
     git diff --cached --stat
     echo
+    
     DATE=$(date '+%Y-%m-%d')
     TIME=$(date '+%H:%M:%S')
-    COMMIT_MESSAGE="update: configs - $DATE $TIME"
+
+    # Calculate total changed lines (insertions + deletions)
+    stat_output=$(git diff --cached --shortstat)
+    total_lines=0
+
+    if [[ -n "$stat_output" ]]; then
+        insertions=$(echo "$stat_output" | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo 0)
+        deletions=$(echo "$stat_output" | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo 0)
+        
+        : "${insertions:=0}"
+        : "${deletions:=0}"
+        
+        total_lines=$((insertions + deletions))
+    fi
+
+    # Set commit message prefix based on total lines (<= 15 or > 15)
+    if (( total_lines <= 15 )); then
+        COMMIT_MESSAGE="update - $DATE $TIME"
+    else
+        COMMIT_MESSAGE="update configs - $DATE $TIME"
+    fi
+
     git commit -m "$COMMIT_MESSAGE"
     ok "Commit created: $COMMIT_MESSAGE"
 fi
