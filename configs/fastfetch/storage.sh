@@ -65,9 +65,9 @@ case "$1" in
         if [[ ${#results[@]} -gt 0 ]]; then
             for i in "${!results[@]}"; do
                 if [[ $i -eq 0 ]]; then
-                    echo "${results[$i]}"
+                    printf "%s\n" "${results[$i]}"
                 else
-                    echo " │         │ ${results[$i]}"
+                    printf " │         │ %s\n" "${results[$i]}"
                 fi
             done
         fi
