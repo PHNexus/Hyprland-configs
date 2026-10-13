@@ -141,7 +141,7 @@ window#waybar {
 #pulseaudio,
 #backlight {
     background-color: transparent;
-    color: #fafafa;
+    color: rgb(255, 255, 255);
     margin: 2px;
     padding: 0 3px; 
     min-width: 15px; 
@@ -174,7 +174,7 @@ window#waybar {
 #pulseaudio-slider highlight {
     min-width: 5px;
     border-radius: 3px;
-    background: #fafafa;
+    background: rgba(255, 255, 255, 0.15);
     box-shadow: none;
 }
 

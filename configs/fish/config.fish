@@ -39,3 +39,4 @@ abbr --add ia 'helium-browser http://localhost:8080'
 set -gx EDITOR nvim
 set -gx VISUAL nvim
 fish_add_path /home/mark/.spicetify
+fish_add_path ~/.local/share/npm-global/bin
