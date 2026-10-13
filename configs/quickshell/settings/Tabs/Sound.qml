@@ -83,7 +83,7 @@ Item {
             spacing: 14
 
             Text {
-                text: "AUDIO"
+                text: "SOUND"
                 color: Theme.text
                 font.family: "Noto Sans"
                 font.pixelSize: 19
@@ -211,7 +211,7 @@ Item {
 
                 Text {
                     visible: page.outputSinks.length === 0
-                    text: "NO AUDIO OUTPUTS"
+                    text: "NO SOUND OUTPUTS"
                     color: Theme.textFaint
                     leftPadding: 4
                     font.family: "Noto Sans"
@@ -346,7 +346,7 @@ Item {
 
                 Text {
                     visible: page.inputSources.length === 0
-                    text: "NO AUDIO INPUTS"
+                    text: "NO SOUND INPUTS"
                     color: Theme.textFaint
                     leftPadding: 4
                     font.family: "Noto Sans"
@@ -478,7 +478,7 @@ Item {
 
                 Text {
                     visible: page.appStreams.length === 0
-                    text: "NO ACTIVE AUDIO STREAMS"
+                    text: "NO ACTIVE SOUND STREAMS"
                     color: Theme.textDim
                     leftPadding: 4
                     font.family: "Noto Sans"
