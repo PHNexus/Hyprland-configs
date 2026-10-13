@@ -22,7 +22,7 @@ I use these configs daily.
 
 |<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/aafec606-5680-47d0-a6cb-b89ce05d884f" /> | <img width="1919" height="1080" alt="image" src="https://github.com/user-attachments/assets/08e972de-b8dd-4ed3-84a3-7f8468e0a18c" /> |
 |---|---|
-| <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/99cfd9e7-6a7e-4271-9a58-445325cbd7b0" /> | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" /> |
+| <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0c3f0ce9-8959-4e09-9067-3a4f16e2d51c" /> | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" /> |
 
 <div align="center">
  <h2>Preview</h2>
