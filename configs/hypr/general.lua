@@ -60,7 +60,7 @@ function M.setup()
             blur = {
                 enabled = true,
                 size = 6,
-                passes = 2,
+                passes = 3,
                 vibrancy = 0.35,
                 brightness = 0.9,
                 noise = 0.0,
