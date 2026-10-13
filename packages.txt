@@ -92,6 +92,12 @@ bluez
 bluez-utils
 blueman
 networkmanager
+jq
+dconf
+gsettings-desktop-schemas
+udisks2
+upower
+xdg-utils
 pciutils
 pacman-contrib
 ksshaskpass
