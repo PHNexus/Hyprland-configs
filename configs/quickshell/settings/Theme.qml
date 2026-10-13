@@ -4,34 +4,70 @@ pragma Singleton
 QtObject {
     id: root
 
-    // Futuristic monochrome design system.
-    readonly property int radius: 8
-    readonly property real tiltStrength: 5
-    readonly property string fontFamily: "JetBrains Mono"
+    // GEOMETRY
+
+    readonly property int radius: 16
+    readonly property int radiusLg: 20
+    readonly property int radiusSm: 10
+    readonly property int radiusXs: 6
+
+    // TYPOGRAPHY
+
+    readonly property string fontFamily: "Inter"
+    readonly property string displayFont: "Inter"
+    readonly property string monoFont: "JetBrains Mono"
     property string iconFont: "JetBrainsMono Nerd Font"
-    readonly property int animFast: 100
-    readonly property int animMed: 180
-    readonly property int animSlow: 300
-    readonly property real imageOpacity: 0.86
-    // Deep black surfaces with subtle separation.
-    readonly property color bg: "#030303"
-    readonly property color bgPanel: "#080808"
-    readonly property color bgCard: "#101010"
-    // High-contrast typography.
-    readonly property color text: "#ffffff"
-    readonly property color textDim: "#b8b8b8"
-    readonly property color textFaint: "#707070"
-    // Monochrome highlights.
-    readonly property color accent: "#ffffff"
-    readonly property color accent2: "#a6a6a6"
-    readonly property color border: "#292929"
-    readonly property color borderAccent: "#f2f2f2"
-    readonly property color danger: "#ffffff"
-    readonly property color ok: "#ffffff"
-    readonly property color trackBg: "#181818"
+
+    // MOTION
+  
+    readonly property int animMed: 200
+    readonly property int animSlow: 320
+
+    // SURFACES 
+    // Card 
+
+    readonly property color glass:         "#c0141418"
+    readonly property color bg:            "#c0141418"
+    readonly property color bgPanel:       "#14ffffff"
+    readonly property color bgCard:        "#1affffff"
+    readonly property color bgElev:        "#24ffffff"
+    readonly property color bgHover:       "#2affffff"
+    readonly property color bgActive:      "#33ffffff"
+
+    // TEXT
+
+    readonly property color text:          "#fafafa"
+    readonly property color textSoft:      "#e0e0e0"
+    readonly property color textDim:       "#8a8a8a"
+    readonly property color textFaint:     "#565656"
+    readonly property color textGhost:     "#303030"
+
+    // ACCENT
+
+    readonly property color accent:        "#ffffff"
+    readonly property color accentSoft:    "#d4d4d4"
+    readonly property color accentGlow:    "#ffffff"
+
+    // BORDERS
+
+    readonly property color ringOuter:     "#0fffffff"
+    readonly property color ringInner:     "#05ffffff"
+    readonly property color border:        "#0dffffff"
+    readonly property color borderStrong:  "#1affffff"
+    readonly property color borderAccent:  "#33ffffff"
+
+    // STATES
+
+    readonly property color danger:        "#ff5555"
+    readonly property color ok:            "#4ade80"
+    readonly property color trackBg:       "#10ffffff"
 
     function alpha(c, a) {
         return Qt.rgba(c.r, c.g, c.b, a);
     }
 
+    function tint(hex, a) {
+        var c = Qt.color(hex);
+        return Qt.rgba(c.r, c.g, c.b, a);
+    }
 }

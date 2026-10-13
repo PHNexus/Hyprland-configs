@@ -15,8 +15,6 @@ Item {
     property real marginRight: 55
     property real marginTop: 0
     property real marginBottom: 0
-    property real sliderMarginRight: 10
-    property real labelWidth: 96
     readonly property string stateDir: Quickshell.env("HOME") + "/.config/quickshell/state"
     readonly property string monitorConfigPath: Quickshell.env("HOME") + "/.config/hypr/monitors.lua"
     readonly property var activeMonitors: monitors.filter((m) => {
@@ -24,6 +22,29 @@ Item {
     })
     property var pendingScaleMonitor: null
     property real pendingScaleValue: 1
+
+    readonly property var bboxCenter: {
+        if (activeMonitors.length === 0)
+            return { "x": 0, "y": 0 };
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (let i = 0; i < activeMonitors.length; i++) {
+            const m = activeMonitors[i];
+            const s = m.scale > 0 ? m.scale : 1;
+            const x1 = Number(m.x || 0);
+            const y1 = Number(m.y || 0);
+            const x2 = x1 + m.width / s;
+            const y2 = y1 + m.height / s;
+            minX = Math.min(minX, x1, x2);
+            minY = Math.min(minY, y1, y2);
+            maxX = Math.max(maxX, x1, x2);
+            maxY = Math.max(maxY, y1, y2);
+        }
+        return {
+            "x": (minX + maxX) / 2,
+            "y": (minY + maxY) / 2
+        };
+    }
 
     function loadState() {
         try {
@@ -33,40 +54,6 @@ Item {
 
         } catch (error) {
         }
-    }
-
-    function luaFileText() {
-        const lines = [];
-        const names = Object.keys(savedState);
-        for (let i = 0; i < names.length; i++) {
-            const entry = savedState[names[i]];
-            if (!entry)
-                continue;
-
-            if (entry.disabled === true) {
-                lines.push(monitorLua({
-                    "name": names[i]
-                }, {
-                    "disabled": true
-                }));
-                continue;
-            }
-            if (typeof entry.mode !== "string")
-                continue;
-
-            lines.push(monitorLua({
-                "name": names[i]
-            }, {
-                "mode": entry.mode,
-                "position": typeof entry.position === "string" ? entry.position : "auto",
-                "scale": typeof entry.scale === "number" ? entry.scale : 1
-            }));
-        }
-        return lines.join("\n") + "\n";
-    }
-
-    function monitorPosition(mon) {
-        return page.activeMonitors.length <= 1 ? "auto" : mon.x + "x" + mon.y;
     }
 
     function rememberMonitor(mon, fields) {
@@ -98,30 +85,6 @@ Item {
         return String(value).replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
     }
 
-    function monitorLua(mon, options = {
-    }) {
-        const values = ["output = \"" + luaString(mon.name) + "\""];
-        if (options.mode !== undefined)
-            values.push("mode = \"" + luaString(options.mode) + "\"");
-
-        if (options.position !== undefined)
-            values.push("position = \"" + luaString(options.position) + "\"");
-
-        if (options.scale !== undefined)
-            values.push("scale = " + options.scale);
-
-        if (options.disabled !== undefined)
-            values.push("disabled = " + options.disabled);
-
-        if (options.mirrorOf !== undefined)
-            values.push("mirrorOf = \"" + luaString(options.mirrorOf) + "\"");
-
-        return "hl.monitor({" + values.join(",") + "})";
-    }
-
-    // Persist display settings by editing only the matching hl.monitor(...) line.
-    // Existing comments, indentation, workspaces and unrelated Lua stay untouched.
-    // mode, position and scale are the only fields changed by this page.
     function updateMonitorConfig(output, mode, position, scale, disabled) {
         const source = monitorConfigFile.text();
         if (typeof source !== "string" || source.length === 0) {
@@ -179,7 +142,7 @@ Item {
             break;
         }
         if (!found) {
-            console.warn("Display: no existing hl.monitor entry found for " + output + "; monitors.lua was not changed");
+            console.warn("Display: no existing hl.monitor entry found for " + output);
             return false;
         }
         const updatedSource = lines.join("\n");
@@ -205,17 +168,66 @@ Item {
         updateMonitorConfig(mon.name, mode, position, scale);
     }
 
+    function gluePosition(movedMon, x, y, w, h) {
+        if (activeMonitors.length <= 1)
+            return { "x": Math.round(x), "y": Math.round(y) };
+
+        let bestDist = Infinity;
+        let best = { "x": Math.round(x), "y": Math.round(y) };
+
+        for (let i = 0; i < activeMonitors.length; i++) {
+            const other = activeMonitors[i];
+            if (other.name === movedMon.name)
+                continue;
+
+            const s = other.scale > 0 ? other.scale : 1;
+            const ox = Number(other.x || 0);
+            const oy = Number(other.y || 0);
+            const ow = other.width / s;
+            const oh = other.height / s;
+
+            const candidates = [
+                { "x": ox + ow, "y": y, "dist": Math.abs(ox + ow - x) }, 
+                { "x": ox - w,  "y": y, "dist": Math.abs(ox - w - x) },  
+                { "x": x, "y": oy - h,  "dist": Math.abs(oy - h - y) },   
+                { "x": x, "y": oy + oh, "dist": Math.abs(oy + oh - y) }  
+            ];
+
+            for (let c = 0; c < candidates.length; c++) {
+                const cand = candidates[c];
+                if (cand.dist < bestDist) {
+                    bestDist = cand.dist;
+                    best = { "x": Math.round(cand.x), "y": Math.round(cand.y) };
+                }
+            }
+        }
+
+        return best;
+    }
+
     function graphScale(graphWidth, graphHeight) {
-        let maxX = 300, maxY = 180;
+        if (activeMonitors.length === 0)
+            return 0.15;
+
+        const cx = bboxCenter.x;
+        const cy = bboxCenter.y;
+        let maxHalfW = 150, maxHalfH = 100;
+
         for (let i = 0; i < activeMonitors.length; i++) {
             const m = activeMonitors[i];
-            const scale = m.scale > 0 ? m.scale : 1;
-            const x1 = Number(m.x || 0), y1 = Number(m.y || 0);
-            const x2 = x1 + m.width / scale, y2 = y1 + m.height / scale;
-            maxX = Math.max(maxX, Math.abs(x1), Math.abs(x2));
-            maxY = Math.max(maxY, Math.abs(y1), Math.abs(y2));
+            const s = m.scale > 0 ? m.scale : 1;
+            const x1 = Number(m.x || 0) - cx;
+            const y1 = Number(m.y || 0) - cy;
+            const x2 = x1 + m.width / s;
+            const y2 = y1 + m.height / s;
+            maxHalfW = Math.max(maxHalfW, Math.abs(x1), Math.abs(x2));
+            maxHalfH = Math.max(maxHalfH, Math.abs(y1), Math.abs(y2));
         }
-        return Math.max(0.025, Math.min((graphWidth / 2 - 18) / maxX, (graphHeight / 2 - 18) / maxY, 0.22));
+
+        const margin = 24;
+        const availW = Math.max(50, graphWidth / 2 - margin);
+        const availH = Math.max(50, graphHeight / 2 - margin);
+        return Math.max(0.025, Math.min(availW / maxHalfW, availH / maxHalfH, 0.25));
     }
 
     function isMain(mon) {
@@ -303,13 +315,6 @@ Item {
 
     function refresh() {
         pList.running = true;
-    }
-
-    function gcd(a, b) {
-        while (b)
-            [a, b] = [b, a % b];
-
-        return a;
     }
 
     function validScale(mon, requested) {
@@ -481,13 +486,6 @@ Item {
         updateMonitorConfig(mon.name, mode, position, scale);
     }
 
-    function editConfig() {
-        if (pEditConfig.running)
-            return ;
-
-        pEditConfig.running = true;
-    }
-
     Component.onCompleted: {
         stateDirProcess.running = true;
         loadState();
@@ -495,33 +493,28 @@ Item {
 
     Process {
         id: stateDirProcess
-
         command: ["mkdir", "-p", page.stateDir]
     }
 
     FileView {
         id: displayFile
-
         path: page.stateDir + "/display.json"
         blockLoading: true
     }
 
     FileView {
         id: displayLua
-
         path: page.stateDir + "/display.lua"
     }
 
     FileView {
         id: monitorConfigFile
-
         path: page.monitorConfigPath
         blockLoading: true
     }
 
     Timer {
         id: stateSaveTimer
-
         interval: 300
         onTriggered: {
             try {
@@ -535,7 +528,6 @@ Item {
 
     Process {
         id: pReset
-
         onExited: (exitCode) => {
             refreshTimer.restart();
         }
@@ -543,7 +535,6 @@ Item {
 
     Timer {
         id: configReloadTimer
-
         interval: 500
         repeat: false
         onTriggered: {
@@ -554,7 +545,6 @@ Item {
 
     Process {
         id: pConfigReload
-
         onExited: (exitCode) => {
             return refreshTimer.restart();
         }
@@ -562,7 +552,6 @@ Item {
 
     Process {
         id: pShell
-
         onExited: (exitCode) => {
             refreshTimer.restart();
         }
@@ -570,7 +559,6 @@ Item {
 
     Process {
         id: pList
-
         command: ["hyprctl", "monitors", "all", "-j"]
         running: true
 
@@ -583,88 +571,22 @@ Item {
                 }
             }
         }
-
-        stderr: StdioCollector {
-            onStreamFinished: {
-            }
-        }
-
-    }
-
-    Process {
-        id: pApply
-
-        property var pendingMon: null
-
-        onExited: (exitCode) => {
-            refreshTimer.restart();
-        }
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const out = text.trim();
-                if (out.length === 0)
-                    return ;
-
-                const match = out.match(/using suggested scale:\s*([\d.]+)/i);
-                if (match && pApply.pendingMon) {
-                    const suggested = parseFloat(match[1]);
-                    page.setScale(pApply.pendingMon, suggested, true);
-                }
-            }
-        }
-
-        stderr: StdioCollector {
-            onStreamFinished: {
-            }
-        }
-
-    }
-
-    Process {
-        id: pResolution
-
-        onExited: (exitCode) => {
-            refreshTimer.restart();
-        }
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-            }
-        }
-
-        stderr: StdioCollector {
-            onStreamFinished: {
-            }
-        }
-
     }
 
     Timer {
         id: scaleApplyTimer
-
         interval: 180
         repeat: false
         onTriggered: {
             if (page.pendingScaleMonitor)
                 page.setScale(page.pendingScaleMonitor, page.pendingScaleValue);
-
         }
     }
 
     Timer {
         id: refreshTimer
-
         interval: 250
         onTriggered: page.refresh()
-    }
-
-    Process {
-        id: pEditConfig
-
-        command: ["sh", "-c", "xed ~/.config/hypr/monitors.lua"]
-        onExited: (exitCode) => {
-        }
     }
 
     Flickable {
@@ -682,7 +604,6 @@ Item {
 
         Column {
             id: content
-
             width: flick.width
             spacing: 14
 
@@ -700,11 +621,12 @@ Item {
                 color: Theme.border
             }
 
-            // Visual monitor arrangement. Drag a monitor tile to change its position.
             Rectangle {
                 id: monitorGraph
 
                 property real scaleFactor: page.graphScale(width, height)
+                property real centerX: page.bboxCenter.x
+                property real centerY: page.bboxCenter.y
 
                 width: parent.width
                 height: 260
@@ -716,10 +638,8 @@ Item {
 
                 Repeater {
                     model: 5
-
                     delegate: Rectangle {
                         required property int index
-
                         x: (index + 1) * monitorGraph.width / 6
                         y: 0
                         width: 1
@@ -727,7 +647,6 @@ Item {
                         color: Theme.alpha(Theme.text, 0.035)
                         z: 0
                     }
-
                 }
 
                 Rectangle {
@@ -757,19 +676,20 @@ Item {
 
                         required property var modelData
                         required property int index
-                        property real logicalScale: monitorGraph.scaleFactor
-                        property real logicalWidth: modelData.width / (modelData.scale > 0 ? modelData.scale : 1)
-                        property real logicalHeight: modelData.height / (modelData.scale > 0 ? modelData.scale : 1)
 
-                        x: monitorGraph.width / 2 + Number(modelData.x || 0) * logicalScale
-                        y: monitorGraph.height / 2 + Number(modelData.y || 0) * logicalScale
-                        width: Math.max(52, logicalWidth * logicalScale)
-                        height: Math.max(38, logicalHeight * logicalScale)
+                        readonly property real tileScale: monitorGraph.scaleFactor
+                        readonly property real tileW: modelData.width / (modelData.scale > 0 ? modelData.scale : 1)
+                        readonly property real tileH: modelData.height / (modelData.scale > 0 ? modelData.scale : 1)
+
+                        x: monitorGraph.width / 2 + (Number(modelData.x || 0) - monitorGraph.centerX) * tileScale
+                        y: monitorGraph.height / 2 + (Number(modelData.y || 0) - monitorGraph.centerY) * tileScale
+                        width: Math.max(52, tileW * tileScale)
+                        height: Math.max(38, tileH * tileScale)
                         radius: 7
                         color: Theme.alpha(index === 0 ? Theme.accent : Theme.text, 0.13)
                         border.width: 2
                         border.color: page.isMain(modelData) ? Theme.accent : Theme.alpha(Theme.text, 0.42)
-                        z: 2
+                        z: dragMouse.pressed ? 5 : 2
 
                         Column {
                             anchors.centerIn: parent
@@ -799,32 +719,67 @@ Item {
                                 font.family: "Noto Sans"
                                 font.pixelSize: 9
                             }
-
                         }
 
                         MouseArea {
-                            id: tileDrag
+                            id: dragMouse
 
                             anchors.fill: parent
-                            drag.target: monitorTile
-                            drag.axis: Drag.XAndYAxis
-                            drag.minimumX: 0
-                            drag.maximumX: monitorGraph.width - monitorTile.width
-                            drag.minimumY: 0
-                            drag.maximumY: monitorGraph.height - monitorTile.height
+                            acceptedButtons: Qt.LeftButton
+                            preventStealing: true
                             cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                            onReleased: {
+
+                            property real pressGraphX: 0
+                            property real pressGraphY: 0
+                            property real startWorldX: 0
+                            property real startWorldY: 0
+                            property bool moved: false
+
+                            function applyGlue(mouseX, mouseY) {
                                 const factor = monitorGraph.scaleFactor;
-                                const newX = Math.round((monitorTile.x - monitorGraph.width / 2) / factor);
-                                const newY = Math.round((monitorTile.y - monitorGraph.height / 2) / factor);
-                                page.setPosition(monitorTile.modelData, newX, newY);
+                                const p = dragMouse.mapToItem(monitorGraph, mouseX, mouseY);
+                                const dxWorld = (p.x - pressGraphX) / factor;
+                                const dyWorld = (p.y - pressGraphY) / factor;
+                                const wantX = startWorldX + dxWorld;
+                                const wantY = startWorldY + dyWorld;
+
+                                const glued = page.gluePosition(
+                                    monitorTile.modelData,
+                                    wantX, wantY,
+                                    monitorTile.tileW, monitorTile.tileH
+                                );
+
+                                monitorTile.x = monitorGraph.width / 2 + (glued.x - monitorGraph.centerX) * factor;
+                                monitorTile.y = monitorGraph.height / 2 + (glued.y - monitorGraph.centerY) * factor;
+
+                                return glued;
+                            }
+
+                            onPressed: function(mouse) {
+                                const p = dragMouse.mapToItem(monitorGraph, mouse.x, mouse.y);
+                                pressGraphX = p.x;
+                                pressGraphY = p.y;
+                                startWorldX = Number(monitorTile.modelData.x || 0);
+                                startWorldY = Number(monitorTile.modelData.y || 0);
+                                moved = false;
+                            }
+
+                            onPositionChanged: function(mouse) {
+                                if (!pressed)
+                                    return ;
+                                moved = true;
+                                applyGlue(mouse.x, mouse.y);
+                            }
+
+                            onReleased: function(mouse) {
+                                if (!moved)
+                                    return ;
+                                const glued = applyGlue(mouse.x, mouse.y);
+                                page.setPosition(monitorTile.modelData, glued.x, glued.y);
                             }
                         }
-
                     }
-
                 }
-
             }
 
             Column {
@@ -840,9 +795,6 @@ Item {
                         required property var modelData
                         property bool off: modelData.disabled === true
                         property bool main: page.isMain(modelData)
-                        property real pendingScale: modelData.scale !== undefined ? modelData.scale : 1
-                        property real pendingX: modelData.x !== undefined ? modelData.x : 0
-                        property real pendingY: modelData.y !== undefined ? modelData.y : 0
 
                         width: parent.width
                         height: cardColumn.implicitHeight + 20
@@ -884,7 +836,6 @@ Item {
                                         font.family: "Noto Sans"
                                         font.pixelSize: 12
                                     }
-
                                 }
 
                                 Row {
@@ -913,14 +864,12 @@ Item {
 
                                         MouseArea {
                                             id: mainMouse
-
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             enabled: !card.main
                                             cursorShape: card.main ? Qt.ArrowCursor : Qt.PointingHandCursor
                                             onClicked: page.setMainMonitor(card.modelData)
                                         }
-
                                     }
 
                                     Rectangle {
@@ -944,17 +893,13 @@ Item {
 
                                         MouseArea {
                                             id: toggleMouse
-
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: page.setMonitorEnabled(card.modelData, card.off)
                                         }
-
                                     }
-
                                 }
-
                             }
 
                             Row {
@@ -963,8 +908,6 @@ Item {
                                 spacing: 8
 
                                 Text {
-                                    id: scaleLabel
-
                                     width: 36
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "SCALE"
@@ -978,11 +921,11 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     from: 0
                                     to: 1
-                                    value: Math.max(0, Math.min(1, (card.pendingScale - 0.7) / 0.6))
+                                    value: Math.max(0, Math.min(1, ((card.modelData.scale || 1) - 0.7) / 0.6))
                                     onMoved: {
-                                        card.pendingScale = 0.7 + value * 0.6;
+                                        const newScale = 0.7 + value * 0.6;
                                         page.pendingScaleMonitor = card.modelData;
-                                        page.pendingScaleValue = card.pendingScale;
+                                        page.pendingScaleValue = newScale;
                                         scaleApplyTimer.restart();
                                     }
                                 }
@@ -991,12 +934,11 @@ Item {
                                     width: 44
                                     anchors.verticalCenter: parent.verticalCenter
                                     horizontalAlignment: Text.AlignRight
-                                    text: card.pendingScale.toFixed(2) + "x"
+                                    text: (card.modelData.scale || 1).toFixed(2) + "x"
                                     color: Theme.text
                                     font.family: "Noto Sans"
                                     font.pixelSize: 11
                                 }
-
                             }
 
                             Row {
@@ -1023,7 +965,6 @@ Item {
 
                                         delegate: Rectangle {
                                             id: resButton
-
                                             required property string modelData
                                             property bool current: modelData === card.modelData.width + "x" + card.modelData.height
 
@@ -1045,7 +986,6 @@ Item {
 
                                             MouseArea {
                                                 id: resMouse
-
                                                 anchors.fill: parent
                                                 hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
@@ -1053,16 +993,11 @@ Item {
                                                     const mode = page.bestMode(card.modelData, resButton.modelData);
                                                     if (mode)
                                                         page.setResolution(card.modelData, mode);
-
                                                 }
                                             }
-
                                         }
-
                                     }
-
                                 }
-
                             }
 
                             Row {
@@ -1089,7 +1024,6 @@ Item {
 
                                         delegate: Rectangle {
                                             id: rateButton
-
                                             required property var modelData
                                             property bool current: Math.abs(modelData - card.modelData.refreshRate) < 0.05
 
@@ -1111,27 +1045,18 @@ Item {
 
                                             MouseArea {
                                                 id: rateMouse
-
                                                 anchors.fill: parent
                                                 hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: page.setRefreshRate(card.modelData, rateButton.modelData)
                                             }
-
                                         }
-
                                     }
-
                                 }
-
                             }
-
                         }
-
                     }
-
                 }
-
             }
 
             Rectangle {
@@ -1154,32 +1079,24 @@ Item {
 
                 MouseArea {
                     id: resetMouse
-
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: page.resetToConfig()
                 }
-
             }
-
         }
 
         ScrollBar.vertical: ScrollBar {
             id: scrollBar
-
             background: Rectangle {
                 color: "transparent"
                 radius: width / 2
             }
-
             contentItem: Rectangle {
                 color: "transparent"
                 radius: width / 2
             }
-
         }
-
     }
-
 }
