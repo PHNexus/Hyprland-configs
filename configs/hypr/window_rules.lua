@@ -178,8 +178,8 @@ function M.setup()
         ignore_alpha = 0.5
     })
     hl.layer_rule({
-        name = "swaync-control-center",
-        match = { namespace = "swaync-control-center" },
+        name = "swaync-notification-window",
+        match = { namespace = "swaync-notification-window" },
         animation = "slide right",
         blur = true,
         ignore_alpha = 0.5
