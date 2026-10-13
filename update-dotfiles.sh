@@ -86,7 +86,8 @@ for path in \
     "dock-bar" \
     "update-dotfiles.sh" \
     "install.sh" \
-    "install-ai-local-1660TI+.sh"; do
+    "install-ai-local-1660TI+.sh" \
+    "packages.txt"; do
     [[ -e "$path" ]] && managed_paths+=("$path")
 done
 

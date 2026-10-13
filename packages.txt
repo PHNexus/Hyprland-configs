@@ -137,6 +137,7 @@ nwg-look
 quickshell
 bibata-cursor-theme
 jdtls
+tailwindcss-language-server
 google-java-format
 
 #Flatpaks
