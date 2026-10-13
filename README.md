@@ -20,7 +20,7 @@ I use these configs daily.
 
 ## Screenshots
 
-|<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/aafec606-5680-47d0-a6cb-b89ce05d884f" /> | <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f25082a6-e249-4946-855a-8da588bad433" /> |
+|<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ef951ae0-d618-4c05-854c-ae5582004c84" /> | <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/39e1a40a-1749-4401-bd92-0dcb8199654c" />  |
 |---|---|
 | <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0c3f0ce9-8959-4e09-9067-3a4f16e2d51c" /> | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" /> |
 
