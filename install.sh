@@ -536,7 +536,7 @@ IPC_LOG="$LOG_DIR/ipc.log"
 ACTION="${1:-toggle}"
 
 usage() {
-    echo "Usage: settings [start|stop|restart|toggle|show|hide|log|audio|display|network|bluetooth|storage|power|configs]" >&2
+    echo "Usage: settings [start|stop|restart|toggle|show|hide|log|sound|display|network|bluetooth|storage|power|configs]" >&2
 }
 
 if ! command -v qs >/dev/null 2>&1; then
@@ -569,7 +569,7 @@ case "$ACTION" in
     log)
         tail -n 100 "$LOG_FILE"
         ;;
-    toggle|show|hide|audio|display|network|bluetooth|storage|power|configs)
+    toggle|show|hide|sound|display|network|bluetooth|storage|power|configs)
         if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
             cat "$IPC_LOG"
             exit 0
@@ -1383,7 +1383,7 @@ if [[ "$HAS_CLOUDFLARE_WARP" -eq 1 ]]; then
     fi
 else
     echo
-    echo "SkippiHASng Cloudflare WARP configuration: cloudflare-warp-bin is not listed in packages.txt."
+    echo "Skipping Cloudflare WARP configuration: cloudflare-warp-bin is not listed in packages.txt."
 fi
 
 # --------------------------------------------
