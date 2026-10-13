@@ -124,17 +124,16 @@ else
     DATE=$(date '+%Y-%m-%d')
     TIME=$(date '+%H:%M:%S')
 
-    # Calculate total changed lines robustly using numstat (additions + deletions)
-    # numstat outputs lines like: "1    0    file.txt" or "-    -    binary.png" for binaries
+    # Calculate total changed lines strictly inside user-edited files (excluding massive rsync metadata shifts if any)
+    # Using numstat to sum up actual line changes
     total_lines=$(git diff --cached --numstat | awk '{
         if ($1 != "-") add += $1;
         if ($2 != "-") del += $2;
     } END { print add + del }')
 
-    # Fallback to 0 if total_lines is empty (e.g. only binary files changed)
     total_lines=${total_lines:-0}
 
-    # Set commit message prefix based on total lines (<= 15 or > 15)
+    # If total lines changed across staged files is <= 15, name it "update". Otherwise "update configs".
     if (( total_lines <= 15 )); then
         COMMIT_MESSAGE="update - $DATE $TIME"
     else
