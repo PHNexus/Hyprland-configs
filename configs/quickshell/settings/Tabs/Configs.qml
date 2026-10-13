@@ -1,5 +1,4 @@
 import "../"
-// .config/quickshell/SettingsPages/ConfigsPage.qml
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -16,7 +15,7 @@ Item {
     property real sectionSpacing: 6
 
     function editConfig(path) {
-        var resolvedPath = path.replace(/^~/, Quickshell.env("HOME"));
+        var resolvedPath = path.replace(/^\~/, Quickshell.env("HOME"));
         Quickshell.execDetached(["sh", "-c", 'if [ -f "$1" ]; then ' + 'exec code --reuse-window "$1"; ' + 'else notify-send "Config not found" "$1"; fi', "sh", resolvedPath]);
     }
 
@@ -35,6 +34,9 @@ Item {
         contentHeight: content.height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ScrollBar {
+            visible: false
+        }
 
         Column {
             id: content
@@ -98,7 +100,6 @@ Item {
                     label: "LOCK SCREEN"
                     path: "~/.config/hypr/hyprlock.conf"
                 }
-
             }
 
             Text {
@@ -128,26 +129,8 @@ Item {
                     label: "STYLE"
                     path: "~/.config/wofi/style.css"
                 }
-
             }
-
         }
-
-        ScrollBar.vertical: ScrollBar {
-            id: scrollBar
-
-            background: Rectangle {
-                color: Theme.alpha(Theme.border, 0.3)
-                radius: width / 2
-            }
-
-            contentItem: Rectangle {
-                color: Theme.accent
-                radius: width / 2
-            }
-
-        }
-
     }
 
     component ConfigButton: Rectangle {
@@ -196,23 +179,23 @@ Item {
                 font.letterSpacing: 1
                 anchors.verticalCenter: parent.verticalCenter
             }
-
         }
 
         MouseArea {
             anchors.fill: parent
             hoverEnabled: true
+
             onEntered: {
                 parent.color = Theme.alpha(Theme.accent, 0.08);
                 parent.border.color = Theme.accent;
             }
+
             onExited: {
                 parent.color = "#00000000";
                 parent.border.color = Theme.border;
             }
+
             onClicked: page.editConfig(path)
         }
-
     }
-
 }
