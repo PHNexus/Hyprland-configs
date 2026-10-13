@@ -124,19 +124,15 @@ else
     DATE=$(date '+%Y-%m-%d')
     TIME=$(date '+%H:%M:%S')
 
-    # Calculate total changed lines (insertions + deletions)
-    stat_output=$(git diff --cached --shortstat)
-    total_lines=0
+    # Calculate total changed lines robustly using numstat (additions + deletions)
+    # numstat outputs lines like: "1    0    file.txt" or "-    -    binary.png" for binaries
+    total_lines=$(git diff --cached --numstat | awk '{
+        if ($1 != "-") add += $1;
+        if ($2 != "-") del += $2;
+    } END { print add + del }')
 
-    if [[ -n "$stat_output" ]]; then
-        insertions=$(echo "$stat_output" | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo 0)
-        deletions=$(echo "$stat_output" | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo 0)
-        
-        : "${insertions:=0}"
-        : "${deletions:=0}"
-        
-        total_lines=$((insertions + deletions))
-    fi
+    # Fallback to 0 if total_lines is empty (e.g. only binary files changed)
+    total_lines=${total_lines:-0}
 
     # Set commit message prefix based on total lines (<= 15 or > 15)
     if (( total_lines <= 15 )); then
