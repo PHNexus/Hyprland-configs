@@ -64,13 +64,14 @@ case "$1" in
         # Print all accumulated results cleanly with fixed width to prevent layout breaking
         if [[ ${#results[@]} -gt 0 ]]; then
             for i in "${!results[@]}"; do
-                # Trava o tamanho máximo/mínimo da string de saída em 9 caracteres preenchidos à direita
-                formatted_val=$(printf "%-9s" "${results[$i]}")
+                # Aumentado para 11 caracteres para evitar estouro de string e desalinhamento
+                formatted_val=$(printf "%-11s" "${results[$i]}")
 
                 if [[ $i -eq 0 ]]; then
                     printf "%s\n" "$formatted_val"
                 else
-                    printf " │         │ %s\n" "$formatted_val"
+                    # Alinhamento ajustado para bater com a estrutura da caixa do fetch
+                    printf "                         │ %s\n" "$formatted_val"
                 fi
             done
         fi
