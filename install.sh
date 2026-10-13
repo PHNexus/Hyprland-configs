@@ -683,6 +683,86 @@ else
 fi
 
 # --------------------------------------------
+# Install ArtCraft Launcher and import into AppManager
+# --------------------------------------------
+echo
+echo "Installing ArtCraft Launcher..."
+
+if ! command -v curl &>/dev/null || ! command -v jq &>/dev/null; then
+    echo "Warning: curl and jq are required. Skipping ArtCraft Launcher."
+else
+    case "$(uname -m)" in
+        x86_64|amd64)
+            ARTCRAFT_ARCH="x86_64"
+            ;;
+        aarch64|arm64)
+            ARTCRAFT_ARCH="aarch64"
+            ;;
+        *)
+            ARTCRAFT_ARCH=""
+            echo "Warning: Unsupported architecture. Skipping ArtCraft Launcher."
+            ;;
+    esac
+
+    if [[ -n "$ARTCRAFT_ARCH" ]]; then
+        ARTCRAFT_API="https://api.github.com/repos/storytold/craft-launcher/releases/latest"
+
+        ARTCRAFT_RELEASE="$(curl -fsSL --retry 2 "$ARTCRAFT_API" 2>/dev/null || true)"
+
+        ARTCRAFT_URL="$(jq -r --arg suffix "-linux-${ARTCRAFT_ARCH}.AppImage" '
+            [.assets[]? | select(.name | endswith($suffix))][0].browser_download_url // empty
+        ' <<<"$ARTCRAFT_RELEASE")"
+
+        ARTCRAFT_DIGEST="$(jq -r --arg suffix "-linux-${ARTCRAFT_ARCH}.AppImage" '
+            [.assets[]? | select(.name | endswith($suffix))][0].digest // empty
+        ' <<<"$ARTCRAFT_RELEASE")"
+
+        if [[ -z "$ARTCRAFT_URL" ]]; then
+            echo "Warning: Could not find the latest AppImage."
+        else
+            ARTCRAFT_DIR="$HOME/Applications"
+            ARTCRAFT_APP="$ARTCRAFT_DIR/ArtCraft-Launcher.AppImage"
+            ARTCRAFT_TMP="$(mktemp "$ARTCRAFT_DIR/.artcraft.XXXXXX")"
+
+            mkdir -p "$ARTCRAFT_DIR"
+
+            if curl -fL --retry 3 "$ARTCRAFT_URL" -o "$ARTCRAFT_TMP"; then
+                ARTCRAFT_VALID=1
+
+                if [[ "$ARTCRAFT_DIGEST" == sha256:* ]]; then
+                    ARTCRAFT_EXPECTED="${ARTCRAFT_DIGEST#sha256:}"
+                    ARTCRAFT_ACTUAL="$(sha256sum "$ARTCRAFT_TMP" | awk '{print $1}')"
+
+                    if [[ "$ARTCRAFT_EXPECTED" != "$ARTCRAFT_ACTUAL" ]]; then
+                        ARTCRAFT_VALID=0
+                        echo "Warning: SHA-256 mismatch."
+                    fi
+                fi
+
+                if [[ "$ARTCRAFT_VALID" -eq 1 && -s "$ARTCRAFT_TMP" ]]; then
+                    chmod 755 "$ARTCRAFT_TMP"
+
+                    if mv -f "$ARTCRAFT_TMP" "$ARTCRAFT_APP"; then
+                        echo "ArtCraft Launcher downloaded: $ARTCRAFT_APP"
+
+                        if command -v app-manager &>/dev/null; then
+                            app-manager install "$ARTCRAFT_APP" \
+                                || echo "Warning: AppManager import failed; AppImage is available manually."
+                        else
+                            echo "AppManager CLI not found; AppImage was saved without importing."
+                        fi
+                    fi
+                fi
+            else
+                echo "Warning: ArtCraft Launcher download failed."
+            fi
+
+            rm -f "$ARTCRAFT_TMP"
+        fi
+    fi
+fi
+
+# --------------------------------------------
 # Post-install Adjustments
 # --------------------------------------------
 echo
