@@ -7,6 +7,7 @@ function M.setup()
     -- APPS
     -- ============================================================
     hl.bind(mainMod .. " + T", hl.dsp.exec_cmd("kitty"))
+    hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("[float; center; size 1000 600] kitty"))
     hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("pgrep -x wofi >/dev/null && pkill -x wofi || wofi --show drun"))
     hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("thunar"))
     hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"))
