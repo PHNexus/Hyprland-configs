@@ -1325,16 +1325,23 @@ fi
 if [[ "$HAS_CPUPOWER" -eq 1 ]]; then
     echo
     echo "Configuring cpupower for Performance mode..."
-    if [[ -f /etc/default/cpupower-service.conf ]]; then
-        sudo sed -i '/GOVERNOR/d' /etc/default/cpupower-service.conf
-        echo 'GOVERNOR="performance"' | sudo tee -a /etc/default/cpupower-service.conf >/dev/null
+    CPUPOWER_CONF=""
+    for candidate in /etc/default/cpupower /etc/default/cpupower-service.conf; do
+        if [[ -f "$candidate" ]]; then
+            CPUPOWER_CONF="$candidate"
+            break
+        fi
+    done
+    if [[ -n "$CPUPOWER_CONF" ]]; then
+        sudo sed -i '/^GOVERNOR=/d' "$CPUPOWER_CONF"
+        echo 'GOVERNOR="performance"' | sudo tee -a "$CPUPOWER_CONF" >/dev/null
         if sudo systemctl enable --now cpupower.service; then
             echo "  - cpupower service enabled with 'performance' governor."
         else
             warn "Could not enable cpupower.service; the configuration file was updated."
         fi
     else
-        echo "  - cpupower-service.conf not found, skipping."
+        echo "  - cpupower config not found, skipping."
     fi
 else
     echo "  - cpupower is not listed in packages.txt; skipping configuration."
@@ -1376,7 +1383,7 @@ if [[ "$HAS_CLOUDFLARE_WARP" -eq 1 ]]; then
     fi
 else
     echo
-    echo "Skipping Cloudflare WARP configuration: cloudflare-warp-bin is not listed in packages.txt."
+    echo "SkippiHASng Cloudflare WARP configuration: cloudflare-warp-bin is not listed in packages.txt."
 fi
 
 # --------------------------------------------
