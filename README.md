@@ -20,9 +20,9 @@ I use these configs daily.
 
 ## Screenshots
 
-|<img width="1924" height="1080" alt="2026-09-23-044410_hyprshot" src="https://github.com/user-attachments/assets/de9d3760-24cc-405f-8d82-e61e079d79fa" /> | <img width="1930" height="1081" alt="2026-09-09-095748_hyprshot" src="https://github.com/user-attachments/assets/b5f2844d-ad29-4245-a8b3-3157e09bf1c7" /> |
+|<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/aafec606-5680-47d0-a6cb-b89ce05d884f" /> | <img width="1919" height="1080" alt="image" src="https://github.com/user-attachments/assets/08e972de-b8dd-4ed3-84a3-7f8468e0a18c" /> |
 |---|---|
-| <img width="1921" height="1081" alt="2026-09-09-094547_hyprshot" src="https://github.com/user-attachments/assets/92f08967-f092-45db-929f-5129a1345ee6" />  | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" /> |
+| <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/99cfd9e7-6a7e-4271-9a58-445325cbd7b0" /> | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" /> |
 
 <div align="center">
  <h2>Preview</h2>
