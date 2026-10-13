@@ -61,13 +61,16 @@ case "$1" in
             lsblk -dnr -o NAME,TYPE,ROTA,RM
         )
 
-        # Print all accumulated results cleanly with proper formatting
+        # Print all accumulated results cleanly with fixed width to prevent layout breaking
         if [[ ${#results[@]} -gt 0 ]]; then
             for i in "${!results[@]}"; do
+                # Trava o tamanho máximo/mínimo da string de saída em 9 caracteres preenchidos à direita
+                formatted_val=$(printf "%-9s" "${results[$i]}")
+
                 if [[ $i -eq 0 ]]; then
-                    printf "%s\n" "${results[$i]}"
+                    printf "%s\n" "$formatted_val"
                 else
-                    printf " │         │ %s\n" "${results[$i]}"
+                    printf " │         │ %s\n" "$formatted_val"
                 fi
             done
         fi
