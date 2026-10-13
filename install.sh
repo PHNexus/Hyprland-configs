@@ -28,37 +28,26 @@ echo
 # --------------------------------------------
 RED='\033[1;31m'
 YELLOW='\033[1;33m'
+CYAN='\033[1;36m'
+GREEN='\033[1;32m'
+MAGENTA='\033[1;35m'
+BOLD='\033[1m'
 NC='\033[0m'
 
-echo -e "${RED}"
-echo "╔════════════════════════════════════════════════════════════════════╗"
-echo "║                          ⚠  WARNING  ⚠                             ║"
-echo "╠════════════════════════════════════════════════════════════════════╣"
-echo -e "║ ${YELLOW}Designed for a FRESH Arch Linux installation — no prior setup.${RED}     ║"
-echo "║                                                                    ║"
-echo -e "║ ${YELLOW}•${NC} ${YELLOW}Backups${RED} current configs to ${YELLOW}~/.config/backups/${RED}, then              ║"
-echo "║   overwrites them with the dotfiles version.                       ║"
-echo "║                                                                    ║"
-echo -e "║ ${YELLOW}•${NC} ${YELLOW}Installs${RED} all packages from ${YELLOW}packages.txt${RED} (official + AUR).        ║"
-echo "║                                                                    ║"
-echo -e "║ ${YELLOW}•${NC} ${YELLOW}Removes${RED} htop, vim, and dolphin if installed, and switches        ║"
-echo -e "║   the default shell to ${YELLOW}fish${RED}.                                       ║"
-echo "║                                                                    ║"
-echo -e "║ ${YELLOW}•${NC} ${YELLOW}Fixes DRM${RED} (Widevine/VAAPI) for the Helium browser and            ║"
-echo "║   applies a policy to prevent Google account disconnections.       ║"
-echo "║                                                                    ║"
-echo -e "║ ${YELLOW}•${NC} ${YELLOW}Detects monitors${RED} automatically and generates Hyprland            ║"
-echo "║   config with workspaces bound to the primary display.             ║"
-echo "║                                                                    ║"
-echo -e "║ ${YELLOW}•${NC} ${YELLOW}Installs dock-bar${RED} (Quickshell) and configures GameMode,          ║"
-echo "║   cpupower, Cloudflare WARP + DNS, GTK themes, and EasyEffects.    ║"
-echo "║                                                                    ║"
-echo -e "║ ${YELLOW}•${NC} ${YELLOW}Adjusts NVIDIA${RED} environment variables based on detected           ║"
-echo "║   GPU — removes them on AMD/Intel systems.                         ║"
-echo "║                                                                    ║"
-echo -e "║ ${YELLOW}Review the script before running. Configs in ~/.config are${RED}         ║"
-echo -e "║ ${YELLOW}backed up but immediately replaced. Reboot required after.${RED}         ║"
-echo "╚════════════════════════════════════════════════════════════════════╝"
+echo -e "${CYAN}"
+echo "╔══════════════════════════════════════════════════════════╗"
+echo "║                     ⚙  SETUP  ⚙                          ║"
+echo "╠══════════════════════════════════════════════════════════╣"
+echo -e "║ ${YELLOW}•${NC} ${BOLD}Fresh Arch Linux${NC} only — no prior setup.                ${CYAN}║"
+echo -e "║ ${YELLOW}•${NC} Backs up ${MAGENTA}~/.config${NC} → ${MAGENTA}~/.config/backups/${NC}                ${CYAN}║"
+echo -e "║ ${YELLOW}•${NC} Installs ${GREEN}packages.txt${NC} (official + AUR).                ${CYAN}║"
+echo -e "║ ${YELLOW}•${NC} Removes ${RED}htop/vim/dolphin${NC}, sets shell to ${GREEN}fish${NC}.          ${CYAN}║"
+echo -e "║ ${YELLOW}•${NC} Fixes ${MAGENTA}DRM${NC} (Widevine/VAAPI) for Helium.                 ${CYAN}║"
+echo -e "║ ${YELLOW}•${NC} Auto-detects monitors → Hyprland workspaces.           ${CYAN}║"     
+echo -e "║ ${YELLOW}•${NC} Installs ${MAGENTA}dock-bar${NC} (Quickshell) + ${MAGENTA}hyprquickpaper${NC}.       ${CYAN}║"
+echo -e "║ ${YELLOW}•${NC} Adjusts ${MAGENTA}NVIDIA${NC} vars (removes on AMD/Intel).       ${NC}     ${CYAN}║"
+echo -e "║ ${RED}${BOLD}Review script before running. Reboot required after.${NC}     ${CYAN}║"
+echo "╚══════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 
 # --------------------------------------------
