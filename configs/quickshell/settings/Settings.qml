@@ -6,42 +6,78 @@ import Quickshell.Services.Pipewire
 FloatingWindow {
     id: root
 
-    title: "Settings"
-    color: "transparent"
-    visible: showing
-
-    implicitWidth: 940
-    implicitHeight: 640
-    minimumSize: Qt.size(720, 480)
-    maximumSize: Qt.size(1400, 900)
-
     property bool showing: false
     property bool cardVisible: false
     property int selectedIndex: 0
-
     property var sink: Pipewire.defaultAudioSink
-
-    property var navEntries: [
-        { "group": "DISPLAY & SOUND", "name": "Display",   "short": "2", "icon": "\uf108", "page": "Display" },
-        { "group": "DISPLAY & SOUND", "name": "Audio",     "short": "1", "icon": "\uf028", "page": "Audio" },
-        { "group": "CONNECTIVITY",    "name": "Network",   "short": "3", "icon": "\uf1eb", "page": "Network" },
-        { "group": "CONNECTIVITY",    "name": "Bluetooth", "short": "4", "icon": "󰂯",      "page": "Bluetooth" },
-        { "group": "SYSTEM",          "name": "Storage",   "short": "5", "icon": "󰋊",      "page": "Storage" },
-        { "group": "SYSTEM",          "name": "Power",     "short": "6", "icon": "󰐥",      "page": "Power" },
-        { "group": "ADVANCED",        "name": "Keybinds",  "short": "7", "icon": "󰌌",      "page": "Keybinds" },
-        { "group": "ADVANCED",        "name": "AutoStart", "short": "8", "icon": "󰧮",      "page": "Autostart" },
-        { "group": "ADVANCED",        "name": "Configs",   "short": "9", "icon": "󰧮",      "page": "Configs" },
-
-    ]
+    property var navEntries: [{
+        "group": "DISPLAY & SOUND",
+        "name": "Display",
+        "short": "1",
+        "icon": "\uf108",
+        "page": "Display"
+    }, {
+        "group": "DISPLAY & SOUND",
+        "name": "Audio",
+        "short": "2",
+        "icon": "\uf028",
+        "page": "Audio"
+    }, {
+        "group": "CONNECTIVITY",
+        "name": "Network",
+        "short": "3",
+        "icon": "\uf1eb",
+        "page": "Network"
+    }, {
+        "group": "CONNECTIVITY",
+        "name": "Bluetooth",
+        "short": "4",
+        "icon": "󰂯",
+        "page": "Bluetooth"
+    }, {
+        "group": "SYSTEM",
+        "name": "Storage",
+        "short": "5",
+        "icon": "󰋊",
+        "page": "Storage"
+    }, {
+        "group": "SYSTEM",
+        "name": "Power",
+        "short": "6",
+        "icon": "󰐥",
+        "page": "Power"
+    }, {
+        "group": "ADVANCED",
+        "name": "Keybinds",
+        "short": "7",
+        "icon": "󰌌",
+        "page": "Keybinds"
+    }, {
+        "group": "ADVANCED",
+        "name": "AutoStart",
+        "short": "8",
+        "icon": "󰧮",
+        "page": "Autostart"
+    }, {
+        "group": "ADVANCED",
+        "name": "Configs",
+        "short": "9",
+        "icon": "󰧮",
+        "page": "Configs"
+    }]
 
     function show() {
-        if (showing) return;
+        if (showing)
+            return ;
+
         cardVisible = true;
         showing = true;
     }
 
     function hide() {
-        if (!showing) return;
+        if (!showing)
+            return ;
+
         showing = false;
     }
 
@@ -50,15 +86,23 @@ FloatingWindow {
     }
 
     function isFirstOfGroup(idx) {
-        if (idx === 0) return true;
+        if (idx === 0)
+            return true;
+
         return navEntries[idx].group !== navEntries[idx - 1].group;
     }
 
+    title: "Settings"
+    color: "transparent"
+    visible: showing
+    implicitWidth: 940
+    implicitHeight: 640
+    minimumSize: Qt.size(720, 480)
+    maximumSize: Qt.size(1400, 900)
     onClosed: {
         root.showing = false;
         root.cardVisible = false;
     }
-
     onVisibleChanged: {
         if (visible) {
             card.opacity = 0;
@@ -69,30 +113,91 @@ FloatingWindow {
 
     ParallelAnimation {
         id: openAnimation
-        NumberAnimation { target: card; property: "opacity"; from: 0; to: 1; duration: 160; easing.type: Easing.OutCubic }
-        NumberAnimation { target: card; property: "scale";   from: 0.96; to: 1; duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
+
+        NumberAnimation {
+            target: card
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 160
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: card
+            property: "scale"
+            from: 0.96
+            to: 1
+            duration: 260
+            easing.type: Easing.OutBack
+            easing.overshoot: 1.1
+        }
+
     }
 
     IpcHandler {
+        function toggle() {
+            root.toggle();
+        }
+
+        function show() {
+            root.show();
+        }
+
+        function hide() {
+            root.hide();
+        }
+
+        function sound() {
+            root.selectedIndex = 0;
+            root.show();
+        }
+
+        function audio() {
+            root.selectedIndex = 1;
+            root.show();
+        }
+
+        function display() {
+            root.selectedIndex = 0;
+            root.show();
+        }
+
+        function network() {
+            root.selectedIndex = 2;
+            root.show();
+        }
+
+        function bluetooth() {
+            root.selectedIndex = 3;
+            root.show();
+        }
+
+        function storage() {
+            root.selectedIndex = 4;
+            root.show();
+        }
+
+        function power() {
+            root.selectedIndex = 5;
+            root.show();
+        }
+
+        function configs() {
+            root.selectedIndex = 8;
+            root.show();
+        }
+
         target: "settings"
-        function toggle()       { root.toggle(); }
-        function show()         { root.show(); }
-        function hide()         { root.hide(); }
-        function sound()        { root.selectedIndex = 0; root.show(); }
-        function audio()        { root.selectedIndex = 0; root.show(); }
-        function display()      { root.selectedIndex = 1; root.show(); }
-        function network()      { root.selectedIndex = 2; root.show(); }
-        function bluetooth()    { root.selectedIndex = 3; root.show(); }
-        function storage()      { root.selectedIndex = 4; root.show(); }
-        function power()        { root.selectedIndex = 5; root.show(); }
-        function configs()      { root.selectedIndex = 6; root.show(); }
     }
 
-    PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
+    PwObjectTracker {
+        objects: [Pipewire.defaultAudioSink]
+    }
 
-   
     Rectangle {
         id: card
+
         anchors.fill: parent
         color: Theme.glass
         radius: Theme.radius
@@ -119,6 +224,7 @@ FloatingWindow {
                 height: 1
                 color: Theme.tint("#ffffff", 0.08)
             }
+
         }
 
         Item {
@@ -127,6 +233,7 @@ FloatingWindow {
 
             Column {
                 id: sidebar
+
                 width: 180
                 anchors.left: parent.left
                 anchors.top: parent.top
@@ -144,7 +251,9 @@ FloatingWindow {
                         spacing: 12
 
                         Rectangle {
-                            width: 30; height: 30; radius: 9
+                            width: 30
+                            height: 30
+                            radius: 9
                             color: Theme.tint("#ffffff", 0.06)
                             border.width: 1
                             border.color: Theme.borderStrong
@@ -152,21 +261,29 @@ FloatingWindow {
 
                             Rectangle {
                                 anchors.centerIn: parent
-                                width: 12; height: 12; radius: 6
-                                color: Theme.tint("#ffffff", 0.10)
+                                width: 12
+                                height: 12
+                                radius: 6
+                                color: Theme.tint("#ffffff", 0.1)
                             }
 
                             Rectangle {
                                 anchors.centerIn: parent
-                                width: 6; height: 6; radius: 3
+                                width: 6
+                                height: 6
+                                radius: 3
                                 color: Theme.accent
 
                                 Rectangle {
                                     anchors.centerIn: parent
-                                    width: 14; height: 14; radius: 7
+                                    width: 14
+                                    height: 14
+                                    radius: 7
                                     color: Theme.tint("#ffffff", 0.15)
                                 }
+
                             }
+
                         }
 
                         Column {
@@ -189,11 +306,17 @@ FloatingWindow {
                                 font.pixelSize: 9
                                 font.letterSpacing: 1.2
                             }
+
                         }
+
                     }
+
                 }
 
-                Item { width: 1; height: 6 }
+                Item {
+                    width: 1
+                    height: 6
+                }
 
                 Repeater {
                     model: root.navEntries
@@ -222,14 +345,16 @@ FloatingWindow {
                                 font.weight: Font.Medium
                                 font.letterSpacing: 1.6
                             }
+
                         }
 
                         Item {
                             id: navItem
-                            width: sidebar.width
-                            height: 36
 
                             readonly property bool active: root.selectedIndex === index
+
+                            width: sidebar.width
+                            height: 36
 
                             Item {
                                 width: 8
@@ -240,21 +365,29 @@ FloatingWindow {
                                 visible: navItem.active
                                 opacity: navItem.active ? 1 : 0
 
-                                Behavior on opacity {
-                                    NumberAnimation { duration: Theme.animFast }
-                                }
-
                                 Rectangle {
                                     anchors.centerIn: parent
-                                    width: 8; height: 20; radius: 4
+                                    width: 8
+                                    height: 20
+                                    radius: 4
                                     color: Theme.tint("#ffffff", 0.15)
                                 }
 
                                 Rectangle {
                                     anchors.centerIn: parent
-                                    width: 3; height: 16; radius: 1.5
+                                    width: 3
+                                    height: 16
+                                    radius: 1.5
                                     color: Theme.accent
                                 }
+
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: Theme.animFast
+                                    }
+
+                                }
+
                             }
 
                             Rectangle {
@@ -266,18 +399,25 @@ FloatingWindow {
                                 anchors.bottom: parent.bottom
                                 anchors.bottomMargin: 2
                                 radius: Theme.radiusSm
-                                color: navItem.active
-                                    ? Theme.bgCard
-                                    : (itemMouse.containsMouse ? Theme.bgPanel : "transparent")
+                                color: navItem.active ? Theme.bgCard : (itemMouse.containsMouse ? Theme.bgPanel : "transparent")
                                 border.width: navItem.active ? 1 : 0
                                 border.color: Theme.border
 
                                 Behavior on color {
-                                    ColorAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic }
+                                    ColorAnimation {
+                                        duration: Theme.animFast
+                                        easing.type: Easing.OutCubic
+                                    }
+
                                 }
+
                                 Behavior on border.width {
-                                    NumberAnimation { duration: Theme.animFast }
+                                    NumberAnimation {
+                                        duration: Theme.animFast
+                                    }
+
                                 }
+
                             }
 
                             Row {
@@ -292,9 +432,14 @@ FloatingWindow {
                                     font.family: Theme.iconFont
                                     font.pixelSize: 13
                                     anchors.verticalCenter: parent.verticalCenter
+
                                     Behavior on color {
-                                        ColorAnimation { duration: Theme.animFast }
+                                        ColorAnimation {
+                                            duration: Theme.animFast
+                                        }
+
                                     }
+
                                 }
 
                                 Text {
@@ -305,17 +450,25 @@ FloatingWindow {
                                     font.weight: navItem.active ? Font.Medium : Font.Normal
                                     font.letterSpacing: -0.1
                                     anchors.verticalCenter: parent.verticalCenter
+
                                     Behavior on color {
-                                        ColorAnimation { duration: Theme.animFast }
+                                        ColorAnimation {
+                                            duration: Theme.animFast
+                                        }
+
                                     }
+
                                 }
+
                             }
 
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.rightMargin: 10
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 18; height: 18; radius: 5
+                                width: 18
+                                height: 18
+                                radius: 5
                                 color: navItem.active ? Theme.tint("#ffffff", 0.08) : "transparent"
                                 border.width: navItem.active ? 1 : 0
                                 border.color: Theme.border
@@ -331,26 +484,39 @@ FloatingWindow {
                                 }
 
                                 Behavior on color {
-                                    ColorAnimation { duration: Theme.animFast }
+                                    ColorAnimation {
+                                        duration: Theme.animFast
+                                    }
+
                                 }
+
                             }
 
                             MouseArea {
                                 id: itemMouse
+
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: root.selectedIndex = index
                             }
+
                         }
+
                     }
+
                 }
 
-                Item { width: 1; height: 4 }
+                Item {
+                    width: 1
+                    height: 4
+                }
+
             }
 
             Rectangle {
                 id: divider
+
                 x: sidebar.x + sidebar.width + 12
                 y: 6
                 width: 1
@@ -367,6 +533,7 @@ FloatingWindow {
 
                 Item {
                     id: contentHeader
+
                     width: parent.width
                     height: 56
 
@@ -389,7 +556,9 @@ FloatingWindow {
                             }
 
                             Rectangle {
-                                width: 6; height: 6; radius: 3
+                                width: 6
+                                height: 6
+                                radius: 3
                                 color: Theme.textGhost
                                 anchors.verticalCenter: parent.verticalCenter
                             }
@@ -402,7 +571,9 @@ FloatingWindow {
                                 font.letterSpacing: 1.3
                                 anchors.verticalCenter: parent.verticalCenter
                             }
+
                         }
+
                     }
 
                     Text {
@@ -422,6 +593,7 @@ FloatingWindow {
                         height: 1
                         color: Theme.border
                     }
+
                 }
 
                 Item {
@@ -434,23 +606,57 @@ FloatingWindow {
 
                     Loader {
                         id: pageLoader
+
                         anchors.fill: parent
                         source: "Tabs/" + root.navEntries[root.selectedIndex].page + ".qml"
                         onSourceChanged: fadeIn.restart()
 
                         SequentialAnimation {
                             id: fadeIn
-                            PropertyAction { target: pageLoader; property: "opacity"; value: 0 }
-                            ParallelAnimation {
-                                NumberAnimation { target: pageLoader; property: "opacity"; to: 1; duration: Theme.animMed; easing.type: Easing.OutCubic }
-                                NumberAnimation { target: pageLoader; property: "scale"; from: 0.99; to: 1; duration: Theme.animMed; easing.type: Easing.OutCubic }
+
+                            PropertyAction {
+                                target: pageLoader
+                                property: "opacity"
+                                value: 0
                             }
+
+                            ParallelAnimation {
+                                NumberAnimation {
+                                    target: pageLoader
+                                    property: "opacity"
+                                    to: 1
+                                    duration: Theme.animMed
+                                    easing.type: Easing.OutCubic
+                                }
+
+                                NumberAnimation {
+                                    target: pageLoader
+                                    property: "scale"
+                                    from: 0.99
+                                    to: 1
+                                    duration: Theme.animMed
+                                    easing.type: Easing.OutCubic
+                                }
+
+                            }
+
                         }
 
-                        Behavior on opacity { NumberAnimation { duration: Theme.animMed } }
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: Theme.animMed
+                            }
+
+                        }
+
                     }
+
                 }
+
             }
+
         }
+
     }
+
 }
