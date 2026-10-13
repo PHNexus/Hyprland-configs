@@ -19,7 +19,7 @@ function M.setup()
     hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("~/.local/bin/settings toggle"))
     hl.bind(mainMod .. " + SHIFT + R",
     hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
-    hl.bind(mainMod .. " + W", --If you have 2 monitors it will open a WOFI menu to select one of the 2 if you have one it goes straight
+    hl.bind(mainMod .. " + W", --.If you have 2 monitors it will open a WOFI menu to select one of the 2 if you have one it goes straight
         hl.dsp.exec_cmd("~/.local/bin/hyprquickpaper toggle"))
 
     -- ============================================================
