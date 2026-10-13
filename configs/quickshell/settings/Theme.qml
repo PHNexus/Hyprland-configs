@@ -35,7 +35,7 @@ QtObject {
     readonly property color accent:        "#ffffff"
     readonly property color accentSoft:    "#d4d4d4"
     readonly property color accentGlow:    "#ffffff"
-    readonly property color accent2:       "#7dd3fc"
+    readonly property color accent2:       "#e0e0e0"
 
     readonly property color ringOuter:     "#0fffffff"
     readonly property color ringInner:     "#05ffffff"
