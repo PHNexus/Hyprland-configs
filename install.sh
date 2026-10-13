@@ -1038,6 +1038,48 @@ else
 fi
 
 # --------------------------------------------
+# Configure SwayNC systemd user service
+# --------------------------------------------
+echo
+echo "Configuring SwayNC user service..."
+
+SYSTEMD_USER_DIR="$CONFIG_DIR/systemd/user"
+SWAYNC_SERVICE="$SYSTEMD_USER_DIR/swaync.service"
+
+mkdir -p "$SYSTEMD_USER_DIR"
+
+cat >"$SWAYNC_SERVICE" <<'EOF'
+[Unit]
+Description=SwayNotificationCenter
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/swaync
+ExecStopPost=/bin/sh -c 'sleep 2 && hyprctl reload'
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+
+echo "  - Created SwayNC service file"
+
+if [[ -f "$CONFIG_DIR/hypr/autostart.lua" ]]; then
+    sed -i '/hl\.exec_cmd("swaync")/d' "$CONFIG_DIR/hypr/autostart.lua"
+    echo "  - Removed swaync from autostart.lua (now managed by systemd)"
+fi
+
+if command -v systemctl &>/dev/null; then
+    if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable swaync.service 2>/dev/null; then
+        echo "  - SwayNC user service enabled."
+    else
+        echo "  - Warning: could not enable the SwayNC user service in this session."
+    fi
+fi
+
+# --------------------------------------------
 # Configure Desktop Entries for Terminal Apps (btop & nvim)
 # --------------------------------------------
 echo
