@@ -34,9 +34,6 @@ Item {
         contentHeight: content.height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {
-            visible: false
-        }
 
         Column {
             id: content
@@ -77,29 +74,30 @@ Item {
                 spacing: page.sectionSpacing
 
                 ConfigButton {
-                    label: "PROGRAMS - AUTOSTART - INPUT"
-                    path: "~/.config/hypr/autostart.lua"
-                }
-
-                ConfigButton {
-                    label: "MONITORS - WORKSPACES"
-                    path: "~/.config/hypr/monitors.lua"
-                }
-
-                ConfigButton {
-                    label: "KEYBINDS"
-                    path: "~/.config/hypr/keybinds.lua"
-                }
-
-                ConfigButton {
                     label: "RULES"
                     path: "~/.config/hypr/window_rules.lua"
                 }
-
+                ConfigButton {
+                    label: "INPUT"
+                    path: "~/.config/hypr/input.lua"
+                }
+                ConfigButton {
+                    label: "GENERAL"
+                    path: "~/.config/hypr/general.lua"
+                }
+                ConfigButton {
+                    label: "ENVIRONMENT"
+                    path: "~/.config/hypr/environment.lua"
+                }
+                ConfigButton {
+                    label: "ANIMATIONS"
+                    path: "~/.config/hypr/animations.lua"
+                }
                 ConfigButton {
                     label: "LOCK SCREEN"
                     path: "~/.config/hypr/hyprlock.conf"
                 }
+
             }
 
             Text {
@@ -129,8 +127,15 @@ Item {
                     label: "STYLE"
                     path: "~/.config/wofi/style.css"
                 }
+
             }
+
         }
+
+        ScrollBar.vertical: ScrollBar {
+            visible: false
+        }
+
     }
 
     component ConfigButton: Rectangle {
@@ -179,23 +184,23 @@ Item {
                 font.letterSpacing: 1
                 anchors.verticalCenter: parent.verticalCenter
             }
+
         }
 
         MouseArea {
             anchors.fill: parent
             hoverEnabled: true
-
             onEntered: {
                 parent.color = Theme.alpha(Theme.accent, 0.08);
                 parent.border.color = Theme.accent;
             }
-
             onExited: {
                 parent.color = "#00000000";
                 parent.border.color = Theme.border;
             }
-
             onClicked: page.editConfig(path)
         }
+
     }
+
 }

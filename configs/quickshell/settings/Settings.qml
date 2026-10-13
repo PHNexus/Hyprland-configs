@@ -25,10 +25,13 @@ FloatingWindow {
         { "group": "SOUND & DISPLAY", "name": "Audio",     "short": "1", "icon": "\uf028", "page": "Audio" },
         { "group": "SOUND & DISPLAY", "name": "Display",   "short": "2", "icon": "\uf108", "page": "Display" },
         { "group": "CONNECTIVITY",    "name": "Network",   "short": "3", "icon": "\uf1eb", "page": "Network" },
-        { "group": "CONNECTIVITY",    "name": "Bluetooth", "short": "4", "icon": "󰂯",     "page": "Bluetooth" },
-        { "group": "SYSTEM",          "name": "Storage",   "short": "5", "icon": "󰋊",     "page": "Storage" },
-        { "group": "SYSTEM",          "name": "Power",     "short": "6", "icon": "󰐥",     "page": "Power" },
-        { "group": "ADVANCED",        "name": "Configs",   "short": "7", "icon": "󰧮",     "page": "Configs" }
+        { "group": "CONNECTIVITY",    "name": "Bluetooth", "short": "4", "icon": "󰂯",      "page": "Bluetooth" },
+        { "group": "SYSTEM",          "name": "Storage",   "short": "5", "icon": "󰋊",      "page": "Storage" },
+        { "group": "SYSTEM",          "name": "Power",     "short": "6", "icon": "󰐥",      "page": "Power" },
+        { "group": "ADVANCED",        "name": "Keybinds",  "short": "7", "icon": "󰌌",      "page": "Keybinds" },
+        { "group": "ADVANCED",        "name": "AutoStart", "short": "8", "icon": "󰧮",      "page": "Autostart" },
+        { "group": "ADVANCED",        "name": "Configs",   "short": "9", "icon": "󰧮",      "page": "Configs" },
+
     ]
 
     function show() {
