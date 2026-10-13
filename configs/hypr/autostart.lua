@@ -6,7 +6,7 @@ function M.setup()
     -- HYPRLAND START
     -- ============================================================
     hl.on("hyprland.start", function()
-        os.execute("pkill -x waybar; pkill -x hypridle; pkill -x swaync; pkill -x awww-daemon; pkill -x wl-clip-persist")
+        os.execute("pkill -x waybar; pkill -x hypridle; pkill -x awww-daemon; pkill -x wl-clip-persist")
         hl.dispatch(hl.dsp.focus({ workspace = 1 }))
         hl.exec_cmd("hyprctl setcursor Bibata-Modern-Ice 24")
         hl.exec_cmd("hypridle")
