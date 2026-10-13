@@ -5,19 +5,15 @@ import Quickshell.Io
 Item {
     id: page
 
-    // ── State ────────────────────────────────────────────────────
     property bool wifiEnabled: true
     property var networks: []
     property string pendingSsid: ""
-    // Ethernet status (device, connection state, active connection name)
     property var ethernet: ({
         "device": "",
         "state": "disconnected",
         "connection": ""
     })
-    // Fonts
     property string monoFont: "Noto Sans"
-    // Speed stats (bytes / second)
     property real downSpeed: 0
     property real upSpeed: 0
     property real lastRx: -1
@@ -27,7 +23,6 @@ Item {
     property real marginRight: 55
     property real marginTop: 0
     property real marginBottom: 0
-    // Nerd Font glyphs
     readonly property string icDown: "\uf019"
     readonly property string icUp: "\uf093"
     readonly property string icWifi: "\uf1eb"
@@ -73,7 +68,6 @@ Item {
         pEthernet.running = true;
     }
 
-    // ── Network speed (all real interfaces, wifi + ethernet) ───────
     Process {
         id: pNet
 
@@ -129,7 +123,6 @@ Item {
         }
     }
 
-    // ── Ethernet status (device / state / connection name) ─────────
     Process {
         id: pEthernet
 
@@ -190,7 +183,11 @@ Item {
         running: true
 
         stdout: StdioCollector {
-            onStreamFinished: page.wifiEnabled = text.trim() === "enabled"
+            onStreamFinished: {
+                page.wifiEnabled = text.trim() === "enabled";
+                if (page.wifiEnabled && !pList.running)
+                    pList.running = true;
+            }
         }
 
     }
@@ -201,10 +198,6 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: {
                 pRadioGet.running = true;
-                if (page.wifiEnabled)
-                    pList.running = true;
-                else
-                    page.networks = [];
             }
         }
 
@@ -416,7 +409,6 @@ Item {
 
         }
 
-        // ── Ethernet status card (always shown) ─────────────────
         Rectangle {
             id: ethCard
 
@@ -475,7 +467,6 @@ Item {
 
         }
 
-        // ── Wi-Fi network list ───────────────────────────────────
         Item {
             id: listContainer
 

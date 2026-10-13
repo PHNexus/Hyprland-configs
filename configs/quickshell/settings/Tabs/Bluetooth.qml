@@ -1,5 +1,6 @@
 import "../"
 import QtQuick
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Bluetooth
 

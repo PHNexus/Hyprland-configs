@@ -78,7 +78,9 @@ Item {
     }
 
     function monitorMode(mon) {
-        return mon.width + "x" + mon.height + "@" + mon.refreshRate.toFixed(2);
+        const rate = Number(mon.refreshRate);
+        const safeRate = isNaN(rate) ? 0 : rate;
+        return mon.width + "x" + mon.height + "@" + safeRate.toFixed(2);
     }
 
     function luaString(value) {
