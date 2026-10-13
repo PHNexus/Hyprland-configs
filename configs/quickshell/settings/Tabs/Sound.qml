@@ -140,7 +140,7 @@ Item {
                 }
 
                 Slider {
-                    width: outputRow.width - 28 - 76 - outputRow.spacing * 2
+                    width: outputRow.width - 28 - 100 - outputRow.spacing * 2
                     height: 72
                     anchors.verticalCenter: parent.verticalCenter
                     label: ""
@@ -264,7 +264,7 @@ Item {
                 }
 
                 Slider {
-                    width: inputRow.width - 28 - 76 - inputRow.spacing * 2
+                    width: inputRow.width - 28 + - 100 - inputRow.spacing * 2
                     height: 72
                     anchors.verticalCenter: parent.verticalCenter
                     label: ""
@@ -451,7 +451,7 @@ Item {
                             }
 
                             Slider {
-                                width: appRow.width - 28 - 82 - appRow.spacing * 2
+                                width: appRow.width - 28 - 100 - appRow.spacing * 2
                                 height: 72
                                 anchors.verticalCenter: parent.verticalCenter
                                 label: ""
