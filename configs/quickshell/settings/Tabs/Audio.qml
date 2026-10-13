@@ -147,10 +147,10 @@ Item {
                     icon: ""
                     value: page.muted ? 0 : page.volume
 
-                    onMoved: {
+                    onMoved: v => {
                         if (page.sink?.audio) {
                             page.sink.audio.muted = false
-                            page.sink.audio.volume = value
+                            page.sink.audio.volume = v
                         }
                     }
                 }
@@ -269,11 +269,24 @@ Item {
                     icon: ""
                     value: page.inputMuted ? 0 : page.inputVolume
 
+                    // Apply microphone volume on every slider movement.
+                    onMoved: v => {
+                        const audio = page.source?.audio
+                        if (!audio)
+                            return
+
+                        audio.muted = false
+                        audio.volume = v
+                    }
+
+                    // Confirm the final microphone volume when dragging ends.
                     onCommitted: v => {
-                        if (page.source?.audio) {
-                            page.source.audio.muted = false
-                            page.source.audio.volume = v
-                        }
+                        const audio = page.source?.audio
+                        if (!audio)
+                            return
+
+                        audio.muted = false
+                        audio.volume = v
                     }
                 }
             }
