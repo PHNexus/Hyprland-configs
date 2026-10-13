@@ -22,8 +22,8 @@ FloatingWindow {
     property var sink: Pipewire.defaultAudioSink
 
     property var navEntries: [
-        { "group": "SOUND & DISPLAY", "name": "Audio",     "short": "1", "icon": "\uf028", "page": "Audio" },
-        { "group": "SOUND & DISPLAY", "name": "Display",   "short": "2", "icon": "\uf108", "page": "Display" },
+        { "group": "DISPLAY & SOUND", "name": "Display",   "short": "2", "icon": "\uf108", "page": "Display" },
+        { "group": "DISPLAY & SOUND", "name": "Audio",     "short": "1", "icon": "\uf028", "page": "Audio" },
         { "group": "CONNECTIVITY",    "name": "Network",   "short": "3", "icon": "\uf1eb", "page": "Network" },
         { "group": "CONNECTIVITY",    "name": "Bluetooth", "short": "4", "icon": "󰂯",      "page": "Bluetooth" },
         { "group": "SYSTEM",          "name": "Storage",   "short": "5", "icon": "󰋊",      "page": "Storage" },

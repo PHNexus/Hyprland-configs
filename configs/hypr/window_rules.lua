@@ -202,7 +202,7 @@ function M.setup()
         match = { title = "^(Settings)$" },
         float = true,
         center = true,
-        size = "940 640",
+        size = "1100 650",
         rounding = 16,
     })
 end
