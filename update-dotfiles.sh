@@ -78,6 +78,14 @@ else
     warn "File not found: $LOCAL_AI_INSTALLER"
 fi
 
+PACKAGES="$REPO_DIR/packages.txt"
+
+if [[ -f "$LOCAL_AI_INSTALLER" ]]; then
+    ok "File: packages.txt"
+else
+    warn "File not found: $PACKAGES"
+fi
+
 # Stage only paths managed by this script.
 managed_paths=()
 for path in \
