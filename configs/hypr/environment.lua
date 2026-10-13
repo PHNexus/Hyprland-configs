@@ -32,6 +32,7 @@ function M.setup()
     hl.env("SDL_VIDEODRIVER", "wayland")
     hl.env("CLUTTER_BACKEND", "wayland")
     hl.env("GTK_USE_PORTAL", "1")
+    hl.env("GDK_WAYLAND_DISABLE", "ext_background_effect_manager_v1")
 
     -- ============================================================
     -- FIREFOX

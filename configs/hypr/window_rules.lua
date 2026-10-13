@@ -174,11 +174,15 @@ function M.setup()
         name = "waybar-fade",
         match = { namespace = "waybar" },
         animation = "fade",
+        blur = true,
+        ignore_alpha = 0.5
     })
     hl.layer_rule({
         name = "swaync-control-center",
         match = { namespace = "swaync-control-center" },
         animation = "slide right",
+        blur = true,
+        ignore_alpha = 0.5
     })
     hl.layer_rule({
         name = "wofi-slide",
