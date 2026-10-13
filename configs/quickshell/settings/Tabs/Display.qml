@@ -319,11 +319,13 @@ Item {
         pList.running = true;
     }
 
-    function validScale(mon, requested) {
+    function scaleOptions(mon) {
+        if (!mon || !mon.width || !mon.height)
+            return [];
+
+        const options = [];
         const width = mon.width;
         const height = mon.height;
-        let best = requested;
-        let bestDistance = Infinity;
         for (let i = 84; i <= 1560; i++) {
             const scale = i / 120;
             if (scale < 0.7 || scale > 1.3)
@@ -331,15 +333,32 @@ Item {
 
             const logicalWidth = width / scale;
             const logicalHeight = height / scale;
-            if (Math.abs(logicalWidth - Math.round(logicalWidth)) < 0.0001 && Math.abs(logicalHeight - Math.round(logicalHeight)) < 0.0001) {
-                const distance = Math.abs(scale - requested);
-                if (distance < bestDistance) {
-                    best = scale;
-                    bestDistance = distance;
-                }
+            if (Math.abs(logicalWidth - Math.round(logicalWidth)) < 0.01 && Math.abs(logicalHeight - Math.round(logicalHeight)) < 0.01) {
+                options.push(scale);
+            }
+        }
+        return options;
+    }
+
+    function validScale(mon, requested) {
+        const options = page.scaleOptions(mon);
+        if (options.length === 0)
+            return 1.0;
+
+        let best = options[0];
+        let bestDistance = Math.abs(options[0] - requested);
+        for (let i = 1; i < options.length; i++) {
+            const d = Math.abs(options[i] - requested);
+            if (d < bestDistance) {
+                best = options[i];
+                bestDistance = d;
             }
         }
         return best;
+    }
+
+    function hasScaleOptions(mon) {
+        return page.scaleOptions(mon).length > 1;
     }
 
     function setScale(mon, scale, isRetry = false) {
@@ -797,6 +816,7 @@ Item {
                         required property var modelData
                         property bool off: modelData.disabled === true
                         property bool main: page.isMain(modelData)
+                        readonly property bool scaleAvailable: page.hasScaleOptions(modelData)
 
                         width: parent.width
                         height: cardColumn.implicitHeight + 20
@@ -919,6 +939,7 @@ Item {
                                 }
 
                                 Controls.Slider {
+                                    visible: card.scaleAvailable
                                     width: parent.width - 36 - 44 - 16
                                     anchors.verticalCenter: parent.verticalCenter
                                     from: 0
@@ -930,6 +951,18 @@ Item {
                                         page.pendingScaleValue = newScale;
                                         scaleApplyTimer.restart();
                                     }
+                                }
+
+                                Text {
+                                    visible: !card.scaleAvailable
+                                    width: parent.width - 36 - 44 - 16
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "Only 1.00x available on this resolution"
+                                    color: Theme.textFaint
+                                    font.family: "Noto Sans"
+                                    font.pixelSize: 10
+                                    font.italic: true
+                                    elide: Text.ElideRight
                                 }
 
                                 Text {
