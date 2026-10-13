@@ -26,7 +26,7 @@ QtObject {
     // SURFACES 
     // Card 
 
-    readonly property color glass:         "#c0141418"
+    readonly property color glass:         "#99141418"
     readonly property color bg:            "#c0141418"
     readonly property color bgPanel:       "#14ffffff"
     readonly property color bgCard:        "#1affffff"
