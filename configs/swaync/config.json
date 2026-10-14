@@ -137,21 +137,13 @@
         "label": "󰒓",
         "position": "left",
         "actions": [
-          {
-            "label": "   Sound",
-            "command": "sh -c 'swaync-client --close-panel; settings sound'"
-          },
-          {
+           {
             "label": "󰍹   Display",
             "command": "sh -c 'swaync-client --close-panel; settings display'"
           },
           {
-            "label": "󰖩   Network",
-            "command": "sh -c 'swaync-client --close-panel; settings network'"
-          },
-          {
-            "label": "󰂯   Bluetooth",
-            "command": "sh -c 'swaync-client --close-panel; settings bluetooth'"
+            "label": "   Sound",
+            "command": "sh -c 'swaync-client --close-panel; settings sound'"
           },
           {
             "label": "󰋊   Storage",
