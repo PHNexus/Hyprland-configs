@@ -1223,25 +1223,6 @@ if [[ "$found" -eq 0 ]]; then
 fi
 
 # --------------------------------------------
-# Install Flatpak Apps (Bazaar)
-# --------------------------------------------
-echo
-echo "Configuring Flathub and installing Bazaar..."
-if command -v flatpak &>/dev/null; then
-    if flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
-        if flatpak install --user -y flathub io.github.kolunmi.Bazaar; then
-            echo "  - Bazaar installed or already present."
-        else
-            warn "Bazaar installation failed; continuing with the remaining setup."
-        fi
-    else
-        warn "Could not configure the Flathub user remote; skipping Bazaar."
-    fi
-else
-    echo "  - Flatpak is not installed, skipping Bazaar installation."
-fi
-
-# --------------------------------------------
 # Install Flatpak Apps from packages.txt
 # --------------------------------------------
 echo

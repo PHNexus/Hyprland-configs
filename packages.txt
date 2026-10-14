@@ -130,6 +130,7 @@ github-desktop-bin
 imagemagick 
 helium-browser-bin
 visual-studio-code-bin
+bazaar
 spotify
 nvibrant-bin
 wlogout
