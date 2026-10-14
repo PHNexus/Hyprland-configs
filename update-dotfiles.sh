@@ -11,7 +11,7 @@ MAX_NEW_DOCKBAR_ASSET_SIZE_MB=5
 CONFIG_FOLDERS=(
     "btop" "nvim" "cava" "fastfetch" "fish" "hypr" "kitty"
     "quickshell" "swaync" "waybar" "wlogout" "wofi" 
-    "xdg-desktop-portal" "dock-bar"
+    "xdg-desktop-portal" "dock-bar" "Thunar"
 )
 
 msg()  { printf '\033[1;34m[INFO]\033[0m %s\n' "$1"; }
