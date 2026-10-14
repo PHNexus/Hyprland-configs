@@ -16,20 +16,71 @@ Item {
 
     function editConfig(path) {
         var resolvedPath = path.replace(/^~/, Quickshell.env("HOME"));
-        Quickshell.execDetached(["kitty", "--title", "nvim-config", "nvim", resolvedPath]);
+        var runtimeDir = Quickshell.env("XDG_RUNTIME_DIR") || "/tmp";
+        var socket = runtimeDir + "/settings-nvim-single.sock";
+        var lockFile = runtimeDir + "/settings-nvim-single.lock";
+        var logFile = runtimeDir + "/settings-nvim-single.log";
+        var title = "settings-nvim-single";
         Quickshell.execDetached(["sh", "-c", `
-        for i in $(seq 1 30); do
-            addr=$(hyprctl -j clients | jq -r '.[] | select(.title == "nvim-config") | .address' | head -n 1)
-            if [ -n "$addr" ]; then
-                hyprctl dispatch focuswindow "address:$addr"
-                hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "set" })'
-                settings hide
-                exit 0
+            file="$1"
+            title="$2"
+            socket="$3"
+            lockFile="$4"
+            logFile="$5"
+
+            exec >>"$logFile" 2>&1
+            echo "=== $(date): $file ==="
+
+            exec 9>"$lockFile" || exit 1
+            flock -x 9 || exit 1
+
+            server_found() {
+                nvim --server "$socket" --remote-expr '1' >/dev/null 2>&1
+            }
+
+            if server_found; then
+                nvim --server "$socket" --remote "$file"
+                result=$?
+                echo "Remote request exit code: $result"
+            else
+                rm -f "$socket"
+
+                kitty --title "$title" nvim --listen "$socket" "$file" 9>&- &
+
+                ready=0
+                for i in $(seq 1 100); do
+                    if server_found; then
+                        ready=1
+                        echo "Neovim server started."
+                        break
+                    fi
+                    sleep 0.1
+                done
+
+                if [ "$ready" -ne 1 ]; then
+                    echo "ERROR: Neovim server did not start."
+                    flock -u 9
+                    exec 9>&-
+                    settings hide
+                    exit 1
+                fi
             fi
-            sleep 0.1
-        done
-        settings hide
-        `]);
+
+            flock -u 9
+            exec 9>&-
+
+            for i in $(seq 1 50); do
+                found=$(hyprctl -j clients 2>/dev/null | jq -r --arg title "$title" 'any(.[]; .class == "kitty" and .title == $title)')
+
+                if [ "$found" = "true" ]; then
+                    hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "set", window = "title:'"$title"'" })'
+                    break
+                fi
+                sleep 0.1
+            done
+
+            settings hide
+            `, "settings-nvim-single", resolvedPath, title, socket, lockFile, logFile]);
     }
 
     Flickable {
