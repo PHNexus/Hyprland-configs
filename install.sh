@@ -1057,6 +1057,7 @@ After=graphical-session.target
 [Service]
 ExecStart=/usr/bin/swaync
 ExecStopPost=/bin/sh -c 'sleep 2 && hyprctl reload'
+Environment=GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1
 Restart=on-failure
 RestartSec=2
 
