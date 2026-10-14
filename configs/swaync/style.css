@@ -6,11 +6,12 @@
 }
 
 .notification {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(18, 18, 24, 0.55);
   border-radius: 12px;
   padding: 12px;
   color: #fafafa;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
 }
 
 .notification * {
@@ -28,7 +29,7 @@
 }
 
 .notification-content .time {
-  color: #7a7a7a;
+  color: #9a9a9a;
 }
 
 /* ============================================================================== */
