@@ -348,12 +348,33 @@ fi
 
 if command -v awww &>/dev/null && [[ -f "$DEFAULT_WALLPAPER" ]]; then
     if [[ -n "$MONITORS" ]]; then
-        awww init || true
-        for MONITOR in $MONITORS; do
-            awww img -o "$MONITOR" "$DEFAULT_WALLPAPER" -t random --transition-duration 1
-            echo "$DEFAULT_WALLPAPER" >"$CACHE_DIR/$MONITOR"
-        done
-        echo "  - Initial default wallpaper applied and saved to cache for all monitors!"
+
+        # Start the daemon only if it is not responding.
+        if ! awww query >/dev/null 2>&1; then
+            if command -v awww-daemon &>/dev/null; then
+                awww-daemon >/dev/null 2>&1 &
+
+                for _ in {1..50}; do
+                    if awww query >/dev/null 2>&1; then
+                        break
+                    fi
+                    sleep 0.1
+                done
+            fi
+        fi
+
+        if awww query >/dev/null 2>&1; then
+            for MONITOR in $MONITORS; do
+                if awww img -o "$MONITOR" "$DEFAULT_WALLPAPER" \
+                    -t random --transition-duration 1; then
+                    echo "$DEFAULT_WALLPAPER" > "$CACHE_DIR/$MONITOR"
+                else
+                    warn "Failed to apply wallpaper to monitor: $MONITOR"
+                fi
+            done
+        else
+            warn "Awww daemon did not start; wallpaper application skipped."
+        fi
     else
         echo "  - Hyprland is not running. Skipping initial wallpaper application."
     fi
@@ -925,17 +946,67 @@ else
 fi
 
 # --------------------------------------------
-# Configure vm.max_map_count for games 
+# Configure vm.max_map_count for games
 # --------------------------------------------
 echo
 echo "Configuring vm.max_map_count for heavy games..."
-if [[ ! -f /etc/sysctl.d/99-max_map_count.conf ]]; then
-    echo "vm.max_map_count=1048576" | sudo tee /etc/sysctl.d/99-max_map_count.conf >/dev/null
-    sudo sysctl --system &>/dev/null
-    echo "  - vm.max_map_count set to 1048576 permanently."
+
+SYSCTL_CONF="/etc/sysctl.d/99-max_map_count.conf"
+SYSCTL_KEY="vm.max_map_count"
+SYSCTL_VALUE="1048576"
+SYSCTL_TMP="$(mktemp)"
+
+# Preserve other settings and remove previous active assignments
+# to vm.max_map_count from the managed file.
+if [[ -f "$SYSCTL_CONF" ]]; then
+    if ! awk \
+        '!/^[[:space:]]*vm[.]max_map_count[[:space:]]*=/' \
+        "$SYSCTL_CONF" > "$SYSCTL_TMP"; then
+        rm -f "$SYSCTL_TMP"
+        warn "Could not read $SYSCTL_CONF; skipping vm.max_map_count setup."
+        SYSCTL_TMP=""
+    fi
 else
-    echo "  - vm.max_map_count configuration already exists."
+    : > "$SYSCTL_TMP"
 fi
+
+if [[ -n "$SYSCTL_TMP" ]]; then
+    printf '%s = %s\n' "$SYSCTL_KEY" "$SYSCTL_VALUE" \
+        >> "$SYSCTL_TMP"
+
+    if sudo install -D -o root -g root -m 0644 \
+        "$SYSCTL_TMP" "$SYSCTL_CONF"; then
+
+        rm -f "$SYSCTL_TMP"
+        SYSCTL_TMP=""
+
+        # Apply the system sysctl configuration.
+        if sudo sysctl --system; then
+            CURRENT_VALUE="$(sysctl -n "$SYSCTL_KEY" 2>/dev/null || true)"
+
+            if [[ "$CURRENT_VALUE" == "$SYSCTL_VALUE" ]]; then
+                echo "  - $SYSCTL_KEY is set to $SYSCTL_VALUE (persistent and active)."
+            else
+                warn "$SYSCTL_CONF was updated, but the effective value is '$CURRENT_VALUE' instead of '$SYSCTL_VALUE'. Another sysctl configuration may be overriding it."
+            fi
+        else
+            warn "sysctl --system failed; attempting to apply $SYSCTL_KEY directly."
+
+            if sudo sysctl -w "$SYSCTL_KEY=$SYSCTL_VALUE"; then
+                echo "  - $SYSCTL_KEY applied to the current session."
+                echo "  - The persistent configuration is saved in $SYSCTL_CONF."
+            else
+                warn "Could not apply $SYSCTL_KEY. Check the system logs."
+            fi
+        fi
+    else
+        rm -f "$SYSCTL_TMP"
+        SYSCTL_TMP=""
+        warn "Could not write $SYSCTL_CONF."
+    fi
+fi
+
+[[ -z "$SYSCTL_TMP" ]] || rm -f "$SYSCTL_TMP"
 
 # --------------------------------------------
 # Configure Waybar output (auto-detect to prevent hidden bar)
@@ -1056,7 +1127,6 @@ After=graphical-session.target
 
 [Service]
 ExecStart=/usr/bin/swaync
-ExecStopPost=/bin/sh -c 'sleep 2 && hyprctl reload'
 Environment=GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1
 Restart=on-failure
 RestartSec=2
@@ -1073,7 +1143,7 @@ if [[ -f "$CONFIG_DIR/hypr/autostart.lua" ]]; then
 fi
 
 if command -v systemctl &>/dev/null; then
-    if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable swaync.service 2>/dev/null; then
+    if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable --now swaync.service 2>/dev/null; then
         echo "  - SwayNC user service enabled."
     else
         echo "  - Warning: could not enable the SwayNC user service in this session."
