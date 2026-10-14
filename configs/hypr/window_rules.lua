@@ -185,6 +185,12 @@ function M.setup()
         ignore_alpha = 0.5
     })
     hl.layer_rule({
+        name = "swaync-control-center",
+        match = { namespace = "^swaync-control-center$" },
+        blur = true,
+        ignore_alpha = 0.5
+    })
+    hl.layer_rule({
         name = "wofi-slide",
         match = { namespace = "wofi" },
         animation = "popin 60%",
