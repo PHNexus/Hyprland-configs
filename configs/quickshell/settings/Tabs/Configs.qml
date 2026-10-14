@@ -15,8 +15,21 @@ Item {
     property real sectionSpacing: 6
 
     function editConfig(path) {
-        var resolvedPath = path.replace(/^\~/, Quickshell.env("HOME"));
-        Quickshell.execDetached(["sh", "-c", 'if [ -f "$1" ]; then ' + 'exec code --reuse-window "$1"; ' + 'else notify-send "Config not found" "$1"; fi', "sh", resolvedPath]);
+        var resolvedPath = path.replace(/^~/, Quickshell.env("HOME"));
+        Quickshell.execDetached(["kitty", "--title", "nvim-config", "nvim", resolvedPath]);
+        Quickshell.execDetached(["sh", "-c", `
+        for i in $(seq 1 30); do
+            addr=$(hyprctl -j clients | jq -r '.[] | select(.title == "nvim-config") | .address' | head -n 1)
+            if [ -n "$addr" ]; then
+                hyprctl dispatch focuswindow "address:$addr"
+                hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "set" })'
+                settings hide
+                exit 0
+            fi
+            sleep 0.1
+        done
+        settings hide
+        `]);
     }
 
     Flickable {
@@ -77,22 +90,27 @@ Item {
                     label: "RULES"
                     path: "~/.config/hypr/window_rules.lua"
                 }
+
                 ConfigButton {
                     label: "INPUT"
                     path: "~/.config/hypr/input.lua"
                 }
+
                 ConfigButton {
                     label: "GENERAL"
                     path: "~/.config/hypr/general.lua"
                 }
+
                 ConfigButton {
                     label: "ENVIRONMENT"
                     path: "~/.config/hypr/environment.lua"
                 }
+
                 ConfigButton {
                     label: "ANIMATIONS"
                     path: "~/.config/hypr/animations.lua"
                 }
+
                 ConfigButton {
                     label: "LOCK SCREEN"
                     path: "~/.config/hypr/hyprlock.conf"
