@@ -187,6 +187,7 @@ function M.setup()
     hl.layer_rule({
         name = "swaync-control-center",
         match = { namespace = "^swaync-control-center$" },
+        animation = "slide right",
         blur = true,
         ignore_alpha = 0.5
     })

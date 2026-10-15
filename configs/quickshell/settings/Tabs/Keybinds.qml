@@ -24,14 +24,12 @@ Item {
         if (ch === '"' || ch === "'") {
             var quote = ch;
             i++;
-            while (i < s.length)
-                if (s.charAt(i) === "\\")
-                    i += 2;
-                else if (s.charAt(i) === quote)
-                    return i + 1;
-                else
-                    i++;
-
+            while (i < s.length)if (s.charAt(i) === "\\")
+                i += 2;
+            else if (s.charAt(i) === quote)
+                return i + 1;
+            else
+                i++;
             return s.length;
         }
         if (ch === "[") {
@@ -119,8 +117,10 @@ Item {
                 i = next;
                 continue;
             }
-            if (s.substr(i, 8) === "hl.bind(") {
-                var open = i + 7, depth = 1, j = open + 1;
+            // Allow valid Lua whitespace between the function name and `(`.
+            var bindMatch = s.slice(i).match(/^hl\.bind\s*\(/);
+            if (bindMatch) {
+                var open = i + bindMatch[0].length - 1, depth = 1, j = open + 1;
                 while (j < s.length && depth > 0) {
                     if (s.substr(j, 2) === "--") {
                         j = skipComment(s, j);
@@ -341,7 +341,7 @@ Item {
                 "title": getTitle(key, command, actionRaw),
                 "command": command,
                 "category": getCategory(key, command, actionRaw),
-                "keyEditable": keyRaw.indexOf("mainMod") >= 0 || /^["']/.test(keyRaw),
+                "keyEditable": /^mainMod\s*\.\.\s*["'][^"']*["']$/.test(keyRaw) || /^["'][\s\S]*["']$/.test(keyRaw),
                 "commandEditable": commandInfo.editable,
                 "keyStart": keyArg.start,
                 "keyEnd": keyArg.end,
@@ -447,7 +447,8 @@ Item {
             page.loadBindings(page.sourceText);
         }
         onSaveFailed: (error) => {
-            return page.statusMessage = "Could not save keybinds.lua";
+            page.statusMessage = "Could not save keybinds.lua; reloading saved file...";
+            keybindFile.reload();
         }
     }
 
