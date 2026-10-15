@@ -8,7 +8,6 @@ x-scheme-handler/chrome=helium.desktop
 x-scheme-handler/whatsapp=helium.desktop
 x-scheme-handler/sapp=helium.desktop
 text/xml=helium.desktop
-
 image/jpeg=imv.desktop
 image/jpg=imv.desktop
 image/pjpeg=imv.desktop
@@ -74,7 +73,6 @@ image/x-sony-srf=imv.desktop
 image/x-sr2=imv.desktop
 image/x-srf=imv.desktop
 image/x-x3f=imv.desktop
-
 audio/x-vorbis+ogg=mpv.desktop
 audio/aac=mpv.desktop
 audio/flac=mpv.desktop
@@ -101,7 +99,6 @@ audio/x-stm=mpv.desktop
 audio/x-wav=mpv.desktop
 audio/x-wavpack=mpv.desktop
 audio/x-xm=mpv.desktop
-
 video/mp4=mpv.desktop
 video/x-matroska=mpv.desktop
 video/avi=mpv.desktop
@@ -139,7 +136,6 @@ video/x-ms-wm=mpv.desktop
 video/x-ms-wmx=mpv.desktop
 video/x-nsv=mpv.desktop
 video/x-theora+ogg=mpv.desktop
-
 application/xhtml+xml=helium.desktop
 application/x-extension-htm=helium.desktop
 application/x-extension-html=helium.desktop
@@ -158,7 +154,6 @@ x-scheme-handler/webcal=helium.desktop
 text/calendar=helium.desktop
 application/x-extension-ics=helium.desktop
 x-scheme-handler/webcals=helium.desktop
-
 application/x-tar=thunar-archive-plugin.desktop
 application/vnd.debian.binary-package=bazaar.desktop
 application/pdf=ai.storyteller.pdfcraft.desktop
@@ -195,7 +190,6 @@ x-scheme-handler/web+app=bazaar.desktop
 application/vnd.flatpak.ref=bazaar.desktop
 application/vnd.flatpak.repo=bazaar.desktop
 application/x-wine-extension-ini=com.microsoft.VSCode.desktop
-
 application/json=com.microsoft.VSCode.desktop
 text/x-yaml=com.microsoft.VSCode.desktop
 text/x-toml=com.microsoft.VSCode.desktop
