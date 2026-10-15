@@ -94,7 +94,7 @@ return {
 
   { "folke/trouble.nvim", cmd = "Trouble", opts = {} },
 
-  { "elkowar/yuck.vim",   ft = "yuck",     dependencies = { { "gpanders/nvim-parinfer", enabled = false } } },
+  { "elkowar/yuck.vim", ft = "yuck", dependencies = { { "gpanders/nvim-parinfer", enabled = false } } },
 
   {
     "nvim-telescope/telescope.nvim",
@@ -206,7 +206,7 @@ return {
     end,
   },
 
-  { "jbyuki/venn.nvim",              cmd = "VBox" },
+  { "jbyuki/venn.nvim", cmd = "VBox" },
 
   {
     "OXY2DEV/markview.nvim",
@@ -269,21 +269,48 @@ return {
     lazy = false,
     cmd = { "NvimTreeToggle", "NvimTreeFocus", "NvimTreeOpen", "NvimTreeClose" },
     keys = {
-      { "<C-n>", "<cmd>NvimTreeToggle<CR>", desc = "Toggle NvimTree" },
       {
         "<C-b>",
         function()
-          vim.g.nvimtree_collapsed = not (vim.g.nvimtree_collapsed or false)
-          local cur = vim.api.nvim_get_current_win()
-          vim.cmd "NvimTreeClose"
-          vim.cmd "NvimTreeOpen"
-          vim.defer_fn(function()
-            if vim.api.nvim_win_is_valid(cur) then
-              vim.api.nvim_set_current_win(cur)
+          local api = require("nvim-tree.api")
+
+          if api.tree.is_visible() and vim.bo.filetype == "NvimTree" then
+            local file_win = vim.g.nvimtree_last_file_win
+
+            api.tree.close()
+
+            vim.schedule(function()
+              if type(file_win) == "number"
+                  and vim.api.nvim_win_is_valid(file_win)
+                  and vim.bo[vim.api.nvim_win_get_buf(file_win)].filetype ~= "NvimTree" then
+                vim.api.nvim_set_current_win(file_win)
+              else
+                for _, win in ipairs(vim.api.nvim_list_wins()) do
+                  if vim.bo[vim.api.nvim_win_get_buf(win)].filetype ~= "NvimTree" then
+                    vim.api.nvim_set_current_win(win)
+                    break
+                  end
+                end
+              end
+            end)
+          else
+            vim.g.nvimtree_last_file_win = vim.api.nvim_get_current_win()
+            vim.g.nvimtree_collapsed = false
+
+            if api.tree.is_visible() then
+              vim.cmd "NvimTreeClose"
             end
-          end, 20)
+
+            vim.cmd "NvimTreeOpen"
+
+            vim.schedule(function()
+              if api.tree.is_visible() then
+                api.tree.focus()
+              end
+            end)
+          end
         end,
-        desc = "Collapse/Expand NvimTree",
+        desc = "Toggle NvimTree",
       },
     },
     opts = {
@@ -328,9 +355,11 @@ return {
                 if vim.api.nvim_buf_is_valid(file_buf) then
                   local wins = vim.fn.win_findbuf(file_buf)
                   if #wins > 0 then
+                    vim.g.nvimtree_last_file_win = wins[1]
                     vim.api.nvim_set_current_win(wins[1])
                   else
                     vim.api.nvim_set_current_buf(file_buf)
+                    vim.g.nvimtree_last_file_win = vim.api.nvim_get_current_win()
                   end
                 end
               end, 20)
