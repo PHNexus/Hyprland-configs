@@ -1,10 +1,11 @@
+-- nvim/lua/mappings.lua
+
 require "nvchad.mappings"
 
 local map = vim.keymap.set
 
 map("n", ";", ":", { desc = "CMD enter command mode" })
 map("i", "jk", "<ESC>", { desc = "escape insert mode" })
-
 map({ "i", "n", "v" }, "<C-s>", "<cmd> w <cr>")
 
 map({ "n", "t" }, "<A-i>", function()
@@ -72,3 +73,24 @@ end)
 map({ "n", "v" }, "<ScrollWheelDown>", function()
   require("neoscroll").scroll(10, { move_cursor = false, duration = 60 })
 end)
+
+map("n", "<C-b>", function()
+  local api = require("nvim-tree.api")
+  
+  if api.tree.is_visible() then
+    api.tree.close()
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      if vim.bo[vim.api.nvim_win_get_buf(win)].filetype ~= "NvimTree" then
+        vim.api.nvim_set_current_win(win)
+        break
+      end
+    end
+  else
+    vim.cmd("NvimTreeOpen")
+    vim.schedule(function()
+      if api.tree.is_visible() then
+        api.tree.focus()
+      end
+    end)
+  end
+end, { desc = "Toggle NvimTree" })

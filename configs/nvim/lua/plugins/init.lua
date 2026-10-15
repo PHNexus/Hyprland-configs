@@ -1,6 +1,7 @@
+-- nvim/lua/plugins/init.lua
+
 --@type NvPluginSpec[]
 return {
-
   {
     "rachartier/tiny-glimmer.nvim",
     keys = { "u", "<c-r>" },
@@ -21,7 +22,6 @@ return {
       },
     },
   },
-
   {
     "nvzone/typr",
     cmd = { "Typr", "TyprStats" },
@@ -30,7 +30,6 @@ return {
       stats_filepath = vim.fn.stdpath "data" .. "/config",
     },
   },
-
   { "nvzone/menu" },
   { "nvzone/showkeys", cmd = "ShowkeysToggle", opts = { position = "bottom-center" } },
   {
@@ -45,7 +44,6 @@ return {
     },
     cmd = "TimerlyToggle",
   },
-
   {
     "neovim/nvim-lspconfig",
     lazy = false,
@@ -53,7 +51,6 @@ return {
       require "configs.lspconfig"
     end,
   },
-
   {
     "stevearc/conform.nvim",
     event = "BufWritePre",
@@ -61,7 +58,6 @@ return {
       return require "configs.conform"
     end,
   },
-
   {
     "nvim-treesitter/nvim-treesitter",
     opts = function(_, opts)
@@ -79,23 +75,18 @@ return {
       })
     end,
   },
-
   {
     "windwp/nvim-ts-autotag",
     event = "InsertCharPre",
     opts = {},
   },
-
   {
     "karb94/neoscroll.nvim",
     keys = { "<C-d>", "<C-u>" },
     opts = {},
   },
-
   { "folke/trouble.nvim", cmd = "Trouble", opts = {} },
-
   { "elkowar/yuck.vim", ft = "yuck", dependencies = { { "gpanders/nvim-parinfer", enabled = false } } },
-
   {
     "nvim-telescope/telescope.nvim",
     dependencies = {
@@ -205,9 +196,7 @@ return {
       pcall(telescope.load_extension, "nerdy")
     end,
   },
-
   { "jbyuki/venn.nvim", cmd = "VBox" },
-
   {
     "OXY2DEV/markview.nvim",
     ft = { "markdown", "codecompanion" },
@@ -220,22 +209,18 @@ return {
       },
     },
   },
-
   {
     "nvzone/floaterm",
     cmd = { "FloatermToggle" },
     opts = { border = true, size = { h = 80, w = 90 } },
   },
-
   { import = "nvchad.blink.lazyspec" },
-
   {
     "supermaven-inc/supermaven-nvim",
     cmd = "SupermavenUseFree",
     opts = {},
     dependencies = { "huijiro/blink-cmp-supermaven" },
   },
-
   {
     "MagicDuck/grug-far.nvim",
     cmd = { "GrugFar" },
@@ -258,69 +243,17 @@ return {
       },
     },
   },
-
   {
     "esmuellert/codediff.nvim",
     cmd = "CodeDiff",
   },
-
   {
     "nvim-tree/nvim-tree.lua",
     lazy = false,
     cmd = { "NvimTreeToggle", "NvimTreeFocus", "NvimTreeOpen", "NvimTreeClose" },
-    keys = {
-      {
-        "<C-b>",
-        function()
-          local api = require("nvim-tree.api")
-
-          if api.tree.is_visible() and vim.bo.filetype == "NvimTree" then
-            local file_win = vim.g.nvimtree_last_file_win
-
-            api.tree.close()
-
-            vim.schedule(function()
-              if type(file_win) == "number"
-                  and vim.api.nvim_win_is_valid(file_win)
-                  and vim.bo[vim.api.nvim_win_get_buf(file_win)].filetype ~= "NvimTree" then
-                vim.api.nvim_set_current_win(file_win)
-              else
-                for _, win in ipairs(vim.api.nvim_list_wins()) do
-                  if vim.bo[vim.api.nvim_win_get_buf(win)].filetype ~= "NvimTree" then
-                    vim.api.nvim_set_current_win(win)
-                    break
-                  end
-                end
-              end
-            end)
-          else
-            vim.g.nvimtree_last_file_win = vim.api.nvim_get_current_win()
-            vim.g.nvimtree_collapsed = false
-
-            if api.tree.is_visible() then
-              vim.cmd "NvimTreeClose"
-            end
-
-            vim.cmd "NvimTreeOpen"
-
-            vim.schedule(function()
-              if api.tree.is_visible() then
-                api.tree.focus()
-              end
-            end)
-          end
-        end,
-        desc = "Toggle NvimTree",
-      },
-    },
     opts = {
       view = {
-        width = function()
-          if vim.g.nvimtree_collapsed then
-            return 1
-          end
-          return 35
-        end,
+        width = 35,
         side = "left",
       },
       filters = {
@@ -341,33 +274,6 @@ return {
     },
     config = function(_, opts)
       require("nvim-tree").setup(opts)
-
-      vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-        callback = function()
-          if vim.bo.filetype ~= "NvimTree" and vim.fn.expand("%:t") ~= "" then
-            local file_buf = vim.api.nvim_get_current_buf()
-            vim.cmd "NvimTreeOpen"
-            vim.defer_fn(function()
-              vim.g.nvimtree_collapsed = true
-              vim.cmd "NvimTreeClose"
-              vim.cmd "NvimTreeOpen"
-              vim.defer_fn(function()
-                if vim.api.nvim_buf_is_valid(file_buf) then
-                  local wins = vim.fn.win_findbuf(file_buf)
-                  if #wins > 0 then
-                    vim.g.nvimtree_last_file_win = wins[1]
-                    vim.api.nvim_set_current_win(wins[1])
-                  else
-                    vim.api.nvim_set_current_buf(file_buf)
-                    vim.g.nvimtree_last_file_win = vim.api.nvim_get_current_win()
-                  end
-                end
-              end, 20)
-            end, 50)
-          end
-        end,
-      })
-
       vim.api.nvim_create_autocmd("QuitPre", {
         callback = function()
           if vim.fn.exists ":NvimTreeClose" == 2 then
