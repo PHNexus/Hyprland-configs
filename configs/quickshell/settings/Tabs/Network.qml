@@ -43,7 +43,8 @@ Item {
     }
 
     function setWifiEnabled(on) {
-        pRadioSet.command = ["nmcli", "radio", "wifi", on ? "on" : "off"];
+        page.wifiEnabled = on;
+        pRadioSet.command = ["nmcli", "networking", on ? "on" : "off"];
         pRadioSet.running = true;
     }
 
@@ -58,7 +59,7 @@ Item {
     }
 
     function disconnect(ssid) {
-        pConnect.command = ["nmcli", "connection", "down", "id", ssid];
+        pConnect.command = ["nmcli", "device", "disconnect", ssid];
         pConnect.running = true;
     }
 
@@ -66,6 +67,28 @@ Item {
         pRadioGet.running = true;
         pList.running = true;
         pEthernet.running = true;
+    }
+
+    Timer {
+        interval: 1500
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: {
+            pRadioGet.running = true;
+        }
+    }
+
+    Timer {
+        interval: 1500
+        running: page.wifiEnabled
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: {
+            if (page.wifiEnabled && !pList.running) {
+                pList.running = true;
+            }
+        }
     }
 
     Process {
@@ -179,7 +202,7 @@ Item {
     Process {
         id: pRadioGet
 
-        command: ["nmcli", "radio", "wifi"]
+        command: ["nmcli", "networking"]
         running: true
 
         stdout: StdioCollector {
