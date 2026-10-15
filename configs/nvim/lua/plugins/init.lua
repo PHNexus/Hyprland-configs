@@ -88,87 +88,8 @@ return {
 
   { "elkowar/yuck.vim", ft = "yuck", dependencies = { { "gpanders/nvim-parinfer", enabled = false } } },
 
-    {
+  {
     "nvim-telescope/telescope.nvim",
-    opts = function()
-      local sorters = require "telescope.sorters"
-      return {
-        defaults = {
-          file_sorter = sorters.get_fuzzy_file,
-          generic_sorter = sorters.get_fzy_sorter,
-          sorting_strategy = "ascending",
-          vimgrep_arguments = {
-            "rg",
-            "--color=never",
-            "--no-heading",
-            "--with-filename",
-            "--line-number",
-            "--column",
-            "--smart-case",
-          },
-          file_ignore_patterns = {
-            "node_modules",
-            "%.git/",
-            "dist/",
-            "build/",
-            "SSD/SteamLibrary",
-            "%.cache/",
-            "%.local/share/Trash/",
-            "Downloads/",
-            "%.npm/",
-            "%.cargo/",
-            "%.local/share/nvim/lazy/",
-            "%.local/state/",
-            "%.local/share/",
-          },
-        },
-        pickers = {
-          find_files = {
-            hidden = true,
-            no_ignore = true,
-            no_ignore_parent = true,
-            find_command = {
-              "fd",
-              "--type",
-              "f",
-              "--strip-cwd-prefix",
-              "--hidden",
-              "--no-ignore",
-              "--exclude",
-              "node_modules",
-              "--exclude",
-              ".git",
-              "--exclude",
-              "dist",
-              "--exclude",
-              "build",
-              "--exclude",
-              "SSD",
-              "--exclude",
-              ".cache",
-              "--exclude",
-              ".npm",
-              "--exclude",
-              ".cargo",
-              "--exclude",
-              ".local",
-              "--exclude",
-              "Downloads",
-            },
-          },
-          live_grep = {
-            additional_args = function()
-              return { "--hidden", "--no-ignore" }
-            end,
-          },
-        },
-        extensions = {
-          media = {
-            backend = "ueberzug",
-          },
-        },
-      }
-    end,
     dependencies = {
       "2kabhishek/nerdy.nvim",
       "dharmx/telescope-media.nvim",
@@ -176,15 +97,107 @@ return {
         "nvim-telescope/telescope-live-grep-args.nvim",
         version = "^1.0.0",
       },
+      {
+        "nvim-telescope/telescope-fzf-native.nvim",
+        build = "make",
+        cond = function()
+          return vim.fn.executable "make" == 1
+        end,
+      },
+    },
+    opts = {
+      defaults = {
+        sorting_strategy = "ascending",
+        vimgrep_arguments = {
+          "rg",
+          "--color=never",
+          "--no-heading",
+          "--with-filename",
+          "--line-number",
+          "--column",
+          "--smart-case",
+        },
+        file_ignore_patterns = {
+          "node_modules",
+          "%.git/",
+          "dist/",
+          "build/",
+          "SSD/SteamLibrary",
+          "%.cache/",
+          "%.local/share/Trash/",
+          "Downloads/",
+          "%.npm/",
+          "%.cargo/",
+          "%.local/share/nvim/lazy/",
+          "%.local/state/",
+          "%.local/share/",
+        },
+        preview = {
+          check_mime_type = false,
+        },
+      },
+      pickers = {
+        find_files = {
+          hidden = true,
+          no_ignore = true,
+          no_ignore_parent = true,
+          find_command = {
+            "fd",
+            "--type",
+            "f",
+            "--strip-cwd-prefix",
+            "--hidden",
+            "--no-ignore",
+            "--exclude",
+            "node_modules",
+            "--exclude",
+            ".git",
+            "--exclude",
+            "dist",
+            "--exclude",
+            "build",
+            "--exclude",
+            "SSD",
+            "--exclude",
+            ".cache",
+            "--exclude",
+            ".npm",
+            "--exclude",
+            ".cargo",
+            "--exclude",
+            ".local",
+            "--exclude",
+            "Downloads",
+          },
+        },
+        live_grep = {
+          additional_args = function()
+            return { "--hidden", "--no-ignore" }
+          end,
+        },
+      },
+      extensions = {
+        fzf = {
+          fuzzy = true,
+          override_generic_sorter = true,
+          override_file_sorter = true,
+          case_mode = "smart_case",
+        },
+        media = {
+          backend = "ueberzug",
+        },
+      },
     },
     config = function(_, opts)
       local telescope = require "telescope"
       telescope.setup(opts)
+      pcall(telescope.load_extension, "fzf")
       pcall(telescope.load_extension, "media")
       pcall(telescope.load_extension, "live_grep_args")
       pcall(telescope.load_extension, "nerdy")
     end,
   },
+
   { "jbyuki/venn.nvim", cmd = "VBox" },
 
   {
