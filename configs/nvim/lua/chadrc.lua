@@ -5,25 +5,14 @@ M.base46 = {
   theme = "sonokai",
   transparency = true,
   hl_override = {
-    -- Suas configurações anteriores
     Comment = { italic = true },
     ["@comment"] = { italic = true },
     ["@comment.documentation"] = { italic = true },
     ["@keyword"] = { italic = true },
     ["@keyword.function"] = { italic = true },
     ["@variable.parameter"] = { italic = true },
-
-    -- FORÇAR O FUNDO CINZA SOLIDO DA ABA ATIVA (TbBufOn)
-    TbBufOn = {
-      bg = "#313244", -- Altere esse tom de cinza se quiser (#282828, #3e3e3e, etc.)
-      fg = "#cdd6f4", -- Cor do texto da aba
-      bold = true,
-    },
-    -- Botão de fechar da aba ativa acompanhar o mesmo fundo
-    TbBufOnClose = {
-      bg = "#313244",
-      fg = "#f38ba8",
-    },
+    TbBufOn = { bg = "#313244", fg = "#cdd6f4", bold = true, },
+    TbBufOnClose = { bg = "#313244", fg = "#f38ba8", },
   },
 }
 
