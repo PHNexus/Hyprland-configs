@@ -22,7 +22,7 @@
     "colorBottom": "#000000"
   },
   "opacity": {
-    "normal": 0.3
+    "normal": 0.0
   },
   "theme": {
     "colorsFile": "~/.config/dock-bar/colors.json"

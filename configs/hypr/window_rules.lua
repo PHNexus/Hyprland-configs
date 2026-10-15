@@ -212,6 +212,12 @@ function M.setup()
         size = "1100 650",
         rounding = 16,
     })
+    hl.layer_rule({
+        name = "dock-bar",
+        match = { namespace = "dock-bar" },
+        blur = true,
+        ignore_alpha = 0.2,
+    })
 end
 
 return M
