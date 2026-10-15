@@ -13,6 +13,7 @@ PanelWindow {
 
     // --- WAYLAND CONFIGURATION ---
     WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.namespace: "dock-bar"
 
     // The dock claims its strip of the screen so windows tile above it instead
     // of running underneath.
