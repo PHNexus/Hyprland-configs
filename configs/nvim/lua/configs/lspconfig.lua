@@ -23,7 +23,34 @@ vim.lsp.config("kotlin_language_server", {
   },
 })
 
-local java_home = vim.env.JAVA_HOME or "/usr/lib/jvm/default"
+local java_home = "/usr/lib/jvm/default"
+
+-- Helper function to detect the installed Java major version dynamically
+local function get_java_version(path)
+  local handle = io.popen(path .. "/bin/java -version 2>&1")
+  if not handle then return "JavaSE-21" end -- Safe fallback
+  local result = handle:read("*a")
+  handle:close()
+
+  -- Extracts major version from outputs like 'version "21..."' or 'version "1.8..."'
+  local major = result:match('version "([%d]+)')
+  if not major then
+    major = result:match('version "1%.([%d]+)')
+  end
+
+  if major then
+    local num = tonumber(major)
+    if num == 1 then
+      return "JavaSE-1.8"
+    else
+      return "JavaSE-" .. major
+    end
+  end
+
+  return "JavaSE-21" -- Fallback if parsing fails
+end
+
+local java_se_name = get_java_version(java_home)
 
 vim.lsp.config("jdtls", {
   cmd = { "jdtls" },
@@ -35,7 +62,7 @@ vim.lsp.config("jdtls", {
         updateBuildConfiguration = "automatic",
         runtimes = {
           {
-            name = "JavaSE",
+            name = java_se_name, -- Dynamically sets "JavaSE-21", "JavaSE-27", etc.
             path = java_home,
             default = true,
           },
@@ -46,7 +73,7 @@ vim.lsp.config("jdtls", {
 })
 
 local vue_language_server_path = vim.fn.stdpath "data"
-  .. "/mason/packages/vue-language-server/node_modules/@vue/language-server"
+    .. "/mason/packages/vue-language-server/node_modules/@vue/language-server"
 
 local tsserver_filetypes = { "typescript", "javascript", "javascriptreact", "typescriptreact", "vue" }
 
