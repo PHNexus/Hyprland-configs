@@ -70,6 +70,14 @@ return {
       opts.highlight = { enable = true }
       return opts
     end,
+    config = function(_, opts)
+      require("nvim-treesitter").setup(opts)
+      vim.api.nvim_create_autocmd("FileType", {
+        callback = function()
+          pcall(vim.treesitter.start)
+        end,
+      })
+    end,
   },
 
   {
@@ -86,7 +94,7 @@ return {
 
   { "folke/trouble.nvim", cmd = "Trouble", opts = {} },
 
-  { "elkowar/yuck.vim", ft = "yuck", dependencies = { { "gpanders/nvim-parinfer", enabled = false } } },
+  { "elkowar/yuck.vim",   ft = "yuck",     dependencies = { { "gpanders/nvim-parinfer", enabled = false } } },
 
   {
     "nvim-telescope/telescope.nvim",
@@ -198,7 +206,7 @@ return {
     end,
   },
 
-  { "jbyuki/venn.nvim", cmd = "VBox" },
+  { "jbyuki/venn.nvim",              cmd = "VBox" },
 
   {
     "OXY2DEV/markview.nvim",
