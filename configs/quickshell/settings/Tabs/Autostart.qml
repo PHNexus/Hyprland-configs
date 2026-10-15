@@ -43,7 +43,7 @@ Item {
         var found = []
         var lines = text.split("\n")
         var offset = 0
-        var re = /^\s*(--\s*)?hl\.exec_cmd\(\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')\s*\)\s*$/
+        var re = /^\s*(--\s*)?hl\.exec_cmd\s*\(\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')\s*\)\s*$/
         for (var i = 0; i < lines.length; i++) {
             var raw = lines[i]
             var m = raw.match(re)
@@ -99,12 +99,31 @@ Item {
     function addEntry(command) {
         var clean = command.trim()
         if (!clean) return
-        var next = sourceText
-        if (next.length > 0 && !next.endsWith("\n")) next += "\n"
-        if (!next.endsWith("\n\n")) next += "\n"
-        next += "-- Added from Quickshell Settings · Autostart\n"
-        next += "hl.exec_cmd(" + luaEncode(clean) + ")\n"
-        saveText(next, "Adding startup command...")
+
+        // Keep new commands inside the existing hyprland.start callback.
+        // Appending after `return M` would place them outside setup.
+        // Accept Lua's single/double quotes and harmless spacing variations.
+        var startMatch = /hl\.on\s*\(\s*(["'])hyprland\.start\1\s*,\s*function\s*\(/.exec(sourceText)
+        var shutdownMatch = /hl\.on\s*\(\s*(["'])hyprland\.shutdown\1\s*,\s*function\s*\(/.exec(sourceText)
+        var startIndex = startMatch ? startMatch.index : -1
+        var shutdownIndex = shutdownMatch ? shutdownMatch.index : -1
+        if (startIndex < 0 || shutdownIndex < 0 || shutdownIndex <= startIndex) {
+            statusMessage = "Could not find the hyprland.start callback; file unchanged"
+            return
+        }
+
+        var closeIndex = sourceText.lastIndexOf("    end)", shutdownIndex)
+        if (closeIndex < startIndex) {
+            statusMessage = "Could not find the end of hyprland.start; file unchanged"
+            return
+        }
+
+        var prefix = sourceText.slice(0, closeIndex)
+        var suffix = sourceText.slice(closeIndex)
+        if (prefix.length > 0 && !prefix.endsWith("\n")) prefix += "\n"
+        prefix += "        -- Added from Quickshell Settings · Autostart\n"
+        prefix += "        hl.exec_cmd(" + luaEncode(clean) + ")\n"
+        saveText(prefix + suffix, "Adding startup command...")
     }
 
     function updateEntry(entry, command) {
@@ -153,7 +172,10 @@ Item {
             page.reloadFromText(autostartFile.text())
             page.statusMessage = "Changes saved to autostart.lua"
         }
-        onSaveFailed: error => page.statusMessage = "Could not save autostart.lua"
+        onSaveFailed: error => {
+            page.statusMessage = "Could not save autostart.lua; reloading saved file..."
+            autostartFile.reload()
+        }
     }
 
     ColumnLayout {
