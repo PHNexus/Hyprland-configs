@@ -114,11 +114,7 @@
   padding: 6px 36px;
 }
 
-.widget-menubar
-  > box
-  > .menu-button-bar
-  > .widget-menubar-container
-  > button:hover,
+.widget-menubar > box > .menu-button-bar > .widget-menubar-container > button:hover,
 .widget-menubar > revealer button:hover {
   background: #16161a;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -126,12 +122,7 @@
   color: #fafafa;
 }
 
-.widget-menubar
-  > box
-  > .menu-button-bar
-  > .widget-menubar-container
-  > button
-  label,
+.widget-menubar > box > .menu-button-bar > .widget-menubar-container > button label,
 .widget-menubar > revealer button label {
   color: #fafafa;
 }
@@ -158,16 +149,16 @@
 
 .widget-volume scale trough,
 .widget-backlight scale trough {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.12);
   min-height: 6px;
   border-radius: 999px;
-  padding: 2px;
+  padding: 0;
 }
 
-.widget-volume scale highlight,
-.widget-backlight scale highlight,
-.widget-volume scale progress,
-.widget-backlight scale progress {
+.widget-volume scale trough highlight,
+.widget-backlight scale trough highlight,
+.widget-volume scale trough progress,
+.widget-backlight scale trough progress {
   background: #fafafa;
   border-radius: 999px;
 }
