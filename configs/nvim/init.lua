@@ -11,6 +11,7 @@ if not vim.uv.fs_stat(lazy_path) then
 end
 
 vim.opt.rtp:prepend(lazy_path)
+vim.opt.termguicolors = true
 
 local lazy_config = require "configs.lazy"
 
