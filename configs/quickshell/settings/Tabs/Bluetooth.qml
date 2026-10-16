@@ -110,7 +110,9 @@ Item {
         if (!dev)
             return
 
-        BluetoothState.markRemoved(dev)
+        if (typeof BluetoothState !== "undefined" && BluetoothState.markRemoved) {
+            BluetoothState.markRemoved(dev)
+        }
 
         if (
             dev.state === BluetoothDeviceState.Connected ||
@@ -120,7 +122,9 @@ Item {
             dev.disconnect()
         }
 
-        dev.forget()
+        if (typeof dev.forget === "function") {
+            dev.forget()
+        }
     }
 
     function actionLabel(dev) {
@@ -517,94 +521,92 @@ Item {
 
                             x: 14
                             y: 0
-                            width: 120
+                            width: 140
                             height: card.height
 
-                            Text {
-                                id: actionText
-
-                                x: 0
-                                y: (parent.height - height) / 2
-
-                                width: Math.min(
-                                    implicitWidth,
-                                    parent.width - removeButton.width - 12
-                                )
-
-                                text: page.actionLabel(card.modelData)
-                                color: card.isConnected
-                                       ? Theme.danger
-                                       : Theme.accent
-
-                                font.family: "Noto Sans"
-                                font.pixelSize: 10
-                                verticalAlignment: Text.AlignVCenter
-                                elide: Text.ElideRight
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-
-                                    onClicked: {
-                                        page.deviceAction(
-                                            card.modelData,
-                                            card
-                                        )
-                                    }
-                                }
-                            }
-
-                            Item {
-                                id: removeButton
-
-                                x: actionText.width + 12
-                                y: (parent.height - height) / 2
-
-                                width: 28
-                                height: 28
+                            Row {
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 12
 
                                 Text {
-                                    anchors.centerIn: parent
-                                    text: "\uf293"
-                                    color: Theme.textDim
-                                    font.family: Theme.iconFont
-                                    font.pixelSize: 16
-                                }
+                                    id: actionText
 
-                                MouseArea {
-                                    id: unpairMouseArea
+                                    width: Math.min(implicitWidth, 80)
+                                    height: parent.height
 
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
+                                    text: page.actionLabel(card.modelData)
+                                    color: card.isConnected
+                                           ? Theme.danger
+                                           : Theme.accent
 
-                                    onClicked: {
-                                        page.removeDevice(card.modelData)
+                                    font.family: "Noto Sans"
+                                    font.pixelSize: 10
+                                    verticalAlignment: Text.AlignVCenter
+                                    elide: Text.ElideRight
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+
+                                        onClicked: {
+                                            page.deviceAction(
+                                                card.modelData,
+                                                card
+                                            )
+                                        }
                                     }
                                 }
 
-                                Rectangle {
-                                    visible: unpairMouseArea.containsMouse
+                                Item {
+                                    id: removeButton
 
-                                    z: 100
-                                    x: -8
-                                    y: removeButton.height + 6
-
-                                    width: tooltipText.width + 16
-                                    height: 24
-
-                                    radius: 4
-                                    color: "transparent"
+                                    width: 28
+                                    height: 28
+                                    anchors.verticalCenter: parent.verticalCenter
 
                                     Text {
-                                        id: tooltipText
-
                                         anchors.centerIn: parent
-                                        text: "Unpair"
-                                        color: "white"
+                                        text: "\uf293"
+                                        color: Theme.textDim
+                                        font.family: Theme.iconFont
+                                        font.pixelSize: 16
+                                    }
 
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 10
+                                    MouseArea {
+                                        id: unpairMouseArea
+
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        hoverEnabled: true
+
+                                        onClicked: {
+                                            page.removeDevice(card.modelData)
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        visible: unpairMouseArea.containsMouse
+
+                                        z: 100
+                                        x: -8
+                                        y: removeButton.height + 6
+
+                                        width: tooltipText.width + 16
+                                        height: 24
+
+                                        radius: 4
+                                        color: "transparent"
+
+                                        Text {
+                                            id: tooltipText
+
+                                            anchors.centerIn: parent
+                                            text: "Unpair"
+                                            color: "white"
+
+                                            font.family: "Noto Sans"
+                                            font.pixelSize: 10
+                                        }
                                     }
                                 }
                             }
