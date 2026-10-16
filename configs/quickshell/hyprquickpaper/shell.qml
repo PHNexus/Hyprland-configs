@@ -1,616 +1,662 @@
-import "../"
+/*
+ * HyprQuickPaper — Scrolling and Hover Regression Notes
+ *
+ * Background, diagnostic excerpts, and the fixes documented here:
+ *   docs/debugging/README.md
+ *
+ * Diagnostic log excerpts captured while investigating the issues:
+ *   docs/debugging/logs/scroll-origin-before-fix.log
+ *   docs/debugging/logs/hover-input-before-fix.log
+ *   docs/debugging/logs/wheel-hover-before-fix.log
+ *
+ * Fix summary:
+ *   1. Use ListView.originX as the minimum horizontal scroll position,
+ *      and calculate the maximum relative to that origin.
+ *   2. Do not ignore real pointer movement solely because HoverHandler.active
+ *      is false; restore mouse mode and re-check the hovered delegate.
+ *   3. Keep wheel scrolling in mouse mode instead of disabling hover input.
+ *   4. During wheel animation, ignore MouseArea.onEntered transitions caused
+ *      by delegates moving beneath a stationary pointer. Cancel pending hover
+ *      timers at wheel start; let actual pointer movement re-evaluate hover.
+ *
+ * Animation settings intentionally preserved in this configuration:
+ *   - Keyboard scrolling: 1000 ms
+ *   - Wheel scrolling: 750 ms
+ *   - Wallpaper size and border opacity transitions: 500 ms
+ *
+ * These changes were tested in one customized Quickshell setup. Other versions
+ * may need adaptation. Diagnostic excerpts are evidence, not full session logs.
+ */
+
+import Qt.labs.folderlistmodel
 import QtQuick
-import QtQuick.Controls
 import Quickshell
-import Quickshell.Bluetooth
+import Quickshell.Io
+import Quickshell.Wayland
 
-Item {
-    id: page
+PanelWindow {
+    id: main
 
-    readonly property BluetoothAdapter adapter: Bluetooth.defaultAdapter
-    readonly property bool powered: adapter ? adapter.enabled : false
-    readonly property bool scanning: adapter ? adapter.discovering : false
+    property bool pickerOpen: false
+    property int imageHeight: 450
+    property int inactiveImageHeight: 350
 
-    property string statusText: ""
-    property real marginLeft: 0
-    property real marginRight: 55
-    property real marginTop: 0
-    property real marginBottom: 0
-    property bool manualPowerOff: false
+    function showPicker() {
+        if (pickerOpen)
+            return ;
 
-    function setStatus(text) {
-        page.statusText = text
+        list.stopAnimations();
+        list.mouseEnabled = false;
+        list.keyboardMode = true;
+        mouseMovementHandler.lastPosition = mouseMovementHandler.point.position;
+        pickerOpen = true;
+        Quickshell.execDetached(["bash", Quickshell.shellPath("cache.sh"), Quickshell.shellDir]);
+        Qt.callLater(function() {
+            if (!main.pickerOpen)
+                return ;
 
-        if (text !== "")
-            statusTimer.restart()
-        else
-            statusTimer.stop()
+            list.forceActiveFocus();
+            list.wheelTargetX = list.clampX(list.contentX);
+            cacheRetryTimer.start();
+        });
     }
 
-    function tryAutoPower() {
-        if (page.manualPowerOff || !page.adapter)
-            return
-
-        if (page.adapter.enabled)
-            return
-
-        if (page.adapter.state === BluetoothAdapterState.Blocked) {
-            page.setStatus("Bluetooth is blocked by the system")
-            return
-        }
-
-        page.adapter.enabled = true
+    function hidePicker() {
+        pickerOpen = false;
+        list.stopAnimations();
+        list.mouseEnabled = false;
+        list.keyboardMode = true;
+        cacheRetryTimer.stop();
     }
 
-    function setDiscovering(on) {
-        if (!page.adapter)
-            return
-
-        page.adapter.discovering = Boolean(on && page.powered)
-    }
-
-    function togglePower() {
-        if (!page.adapter) {
-            page.setStatus("Bluetooth adapter unavailable")
-            return
-        }
-
-        if (page.powered) {
-            page.manualPowerOff = true
-            BluetoothState.reconnectPaused = true
-            page.setDiscovering(false)
-            page.adapter.enabled = false
-            page.setStatus("Turning Bluetooth off...")
-            return
-        }
-
-        page.manualPowerOff = false
-        BluetoothState.reconnectPaused = false
-        page.adapter.enabled = true
-        page.setStatus("Turning Bluetooth on...")
-    }
-
-    function deviceAction(dev) {
-        if (!dev)
-            return
-
-        var name = dev.name || dev.address || "device"
-
-        if (dev.state === BluetoothDeviceState.Connected) {
-            page.setStatus("Disconnecting " + name + "...")
-            BluetoothState.forget(dev.address)
-            dev.disconnect()
-            return
-        }
-
-        if (dev.state === BluetoothDeviceState.Connecting) {
-            page.setStatus("Connecting to " + name + "...")
-            return
-        }
-
-        if (dev.state === BluetoothDeviceState.Disconnecting) {
-            page.setStatus("Disconnecting " + name + "...")
-            return
-        }
-
-        page.setDiscovering(false)
-        dev.trusted = true
-        page.setStatus("Connecting to " + name + "...")
-        dev.connect()
-    }
-
-    function removeDevice(dev) {
-        if (!dev)
-            return
-
-        BluetoothState.markRemoved(dev)
-
-        if (
-            dev.state === BluetoothDeviceState.Connected ||
-            dev.state === BluetoothDeviceState.Connecting ||
-            dev.state === BluetoothDeviceState.Disconnecting
-        ) {
-            dev.disconnect()
-        }
-
-        dev.forget()
-    }
-
-    function actionLabel(dev) {
-        if (!dev)
-            return ""
-
-        if (dev.pairing)
-            return "PAIRING..."
-
-        switch (dev.state) {
-        case BluetoothDeviceState.Connected:
-            return "DISCONNECT"
-        case BluetoothDeviceState.Connecting:
-            return "CONNECTING..."
-        case BluetoothDeviceState.Disconnecting:
-            return "DISCONNECTING..."
-        default:
-            return "CONNECT"
-        }
-    }
-
-    onAdapterChanged: {
-        page.tryAutoPower()
-    }
-
-    onVisibleChanged: {
-        if (page.visible) {
-            page.tryAutoPower()
-            page.setDiscovering(page.powered)
-        } else {
-            page.setDiscovering(false)
-        }
-    }
-
-    onPoweredChanged: {
-        if (page.powered) {
-            if (page.manualPowerOff) {
-                page.adapter.enabled = false
-                return
-            }
-
-            BluetoothState.reconnectPaused = false
-            page.setStatus("Bluetooth on")
-            page.setDiscovering(page.visible)
-        } else {
-            page.setDiscovering(false)
-
-            if (page.manualPowerOff)
-                page.setStatus("Bluetooth off")
-        }
-    }
-
+    WlrLayershell.namespace: "hyprquickpaper"
+    visible: pickerOpen
+    color: "transparent"
+    aboveWindows: true
+    exclusionMode: "Ignore"
+    exclusiveZone: 0
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: pickerOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     Component.onCompleted: {
-        page.tryAutoPower()
+        Quickshell.execDetached(["bash", Quickshell.shellPath("cache.sh"), Quickshell.shellDir]);
     }
-
     Component.onDestruction: {
-        page.setDiscovering(false)
+        cacheRetryTimer.stop();
+        list.stopAnimations();
     }
+    onPickerOpenChanged: {
+        list.traceScroll("pickerOpenChanged open=" + pickerOpen);
+        list.mouseEnabled = false;
+        list.keyboardMode = true;
+        mouseMovementHandler.lastPosition = mouseMovementHandler.point.position;
+        if (pickerOpen) {
+            cacheRetryTimer.start();
+            Qt.callLater(function() {
+                if (main.pickerOpen)
+                    list.forceActiveFocus();
 
-    Timer {
-        id: statusTimer
-        interval: 3500
-
-        onTriggered: {
-            page.statusText = ""
+            });
+        } else {
+            cacheRetryTimer.stop();
+            list.stopAnimations();
         }
     }
 
-    Timer {
-        id: autoPowerTimer
-        interval: 2000
-        repeat: true
-        running: !page.manualPowerOff && !page.powered
-
-        onTriggered: {
-            page.tryAutoPower()
-        }
+    anchors {
+        top: true
+        bottom: true
+        left: true
+        right: true
     }
 
-    Timer {
-        id: discoveryRetryTimer
-        interval: 2000
-        repeat: true
-
-        running: page.visible &&
-                 page.powered &&
-                 !page.manualPowerOff
-
-        onTriggered: {
-            if (
-                page.adapter &&
-                page.powered &&
-                !page.adapter.discovering
-            ) {
-                page.adapter.discovering = true
-            }
+    IpcHandler {
+        function toggle() {
+            if (main.pickerOpen)
+                main.hidePicker();
+            else
+                main.showPicker();
         }
+
+        function show() {
+            main.showPicker();
+        }
+
+        function hide() {
+            main.hidePicker();
+        }
+
+        target: "hyprquickpaper"
     }
 
-    Connections {
-        target: page.adapter
+    FileView {
+        id: configFile
 
-        function onEnabledChanged() {
-            if (!page.adapter)
-                return
+        path: Quickshell.shellPath("config.json")
+        watchChanges: true
+        onFileChanged: reload()
 
-            if (page.adapter.enabled && page.manualPowerOff) {
-                page.adapter.enabled = false
-                return
-            }
+        JsonAdapter {
+            id: configs
 
-            if (page.adapter.enabled) {
-                BluetoothState.reconnectPaused = false
-                page.setStatus("Bluetooth on")
-                page.setDiscovering(page.visible)
-            } else {
-                page.setDiscovering(false)
-
-                if (page.manualPowerOff)
-                    page.setStatus("Bluetooth off")
-            }
+            property string wallpaper_path: ""
+            property string cache_path: ""
+            property int number_of_pictures: 5
+            property string border_color: "#89b4fa"
         }
+
     }
 
-    Column {
+    FolderListModel {
+        id: folderModel
+
+        folder: "file://" + configs.wallpaper_path
+        showDirs: false
+        nameFilters: ["*.png", "*.jpg", "*.jpeg"]
+        sortField: FolderListModel.Name
+    }
+
+    MouseArea {
+        id: backgroundArea
+
         anchors.fill: parent
-        anchors.leftMargin: page.marginLeft
-        anchors.rightMargin: page.marginRight
-        anchors.topMargin: page.marginTop
-        anchors.bottomMargin: page.marginBottom
-        spacing: 14
+        z: 0
+        onClicked: main.hidePicker()
+    }
 
-        Text {
-            text: "BLUETOOTH"
-            color: Theme.text
-            font.family: "Noto Sans"
-            font.pixelSize: 19
-            font.letterSpacing: 3
+    HoverHandler {
+        id: mouseMovementHandler
+
+        property point lastPosition: point.position
+
+        onActiveChanged: {
+            if (!active) {
+                list.mouseEnabled = false;
+                list.keyboardMode = true;
+            } else {
+                lastPosition = point.position;
+                list.mouseEnabled = false;
+                list.keyboardMode = true;
+            }
+        }
+        onPointChanged: {
+            // Pointer position changes are observable even while HoverHandler.active is false.
+            // Do not discard those movement events, or mouse mode can remain disabled indefinitely.
+            if (point.position.x === lastPosition.x && point.position.y === lastPosition.y)
+                return ;
+
+            lastPosition = point.position;
+            list.mouseEnabled = true;
+            list.keyboardMode = false;
+            // The pointer may already be inside a MouseArea, so onEntered may not fire again.
+            Qt.callLater(function() {
+                list.activateHoveredDelegate();
+            });
+        }
+    }
+
+    ListView {
+        id: list
+
+        property int selectedIndex: 0
+        property int previousSelectedIndex: 0
+        property bool keyboardMode: false
+        property bool mouseEnabled: false
+        property real lastValidWidth: 0
+        property real effectiveWidth: width > 1 ? width : lastValidWidth
+        property real tileWidth: {
+            if (configs.number_of_pictures <= 0)
+                return 1;
+
+            return Math.max(1, effectiveWidth / configs.number_of_pictures - 10);
+        }
+        property real wheelTargetX: contentX
+
+        function traceScroll(cause) {
+            console.warn("[QKP_TRACE]", cause, "contentX=" + Number(contentX).toFixed(2), "targetX=" + Number(wheelTargetX).toFixed(2), "originX=" + Number(originX).toFixed(2), "contentWidth=" + Number(contentWidth).toFixed(2), "viewWidth=" + Number(width).toFixed(2), "selectedIndex=" + selectedIndex, "keyboardAnimation=" + keyboardScrollAnimation.running, "wheelAnimation=" + wheelAnimation.running, "mouseEnabled=" + mouseEnabled, "keyboardMode=" + keyboardMode);
         }
 
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.border
+        function stopAnimations() {
+            keyboardScrollAnimation.stop();
+            wheelAnimation.stop();
+            wheelTargetX = clampX(contentX);
         }
 
-        Rectangle {
-            width: parent.width
-            height: 36
-            radius: Theme.radius
+        function activateHoveredDelegate() {
+            if (keyboardMode || !mouseEnabled)
+                return ;
 
-            color: page.powered
-                   ? Theme.alpha(Theme.accent, 0.1)
-                   : Theme.alpha(Theme.textFaint, 0.15)
+            for (let i = 0; i < count; i++) {
+                const item = itemAtIndex(i);
+                if (item && item.pointerHovered) {
+                    item.scheduleHover();
+                    return ;
+                }
+            }
+        }
 
-            border.width: 1
-            border.color: page.powered
-                          ? Theme.accent
-                          : Theme.textFaint
+        function selectIndex(index) {
+            if (count <= 0)
+                return ;
 
-            Text {
-                anchors.centerIn: parent
+            index = Math.max(0, Math.min(index, count - 1));
+            if (index === selectedIndex)
+                return ;
 
-                text: {
-                    if (!page.adapter)
-                        return "BLUETOOTH UNAVAILABLE"
+            previousSelectedIndex = selectedIndex;
+            selectedIndex = index;
+        }
 
-                    if (page.adapter.state === BluetoothAdapterState.Enabling)
-                        return "TURNING BLUETOOTH ON..."
+        function keyboardSelect(index) {
+            traceScroll("keyboardSelect index=" + index);
+            keyboardMode = true;
+            mouseEnabled = false;
+            mouseMovementHandler.lastPosition = mouseMovementHandler.point.position;
+            wheelAnimation.stop();
+            wheelTargetX = clampX(contentX);
+            selectIndex(index);
+            ensureVisibleAnimated(selectedIndex);
+        }
 
-                    if (page.adapter.state === BluetoothAdapterState.Disabling)
-                        return "TURNING BLUETOOTH OFF..."
+        function activateCurrent() {
+            if (folderModel.count <= 0 || selectedIndex < 0 || selectedIndex >= folderModel.count)
+                return ;
 
-                    return page.powered
-                           ? "BLUETOOTH ON · CLICK TO TURN OFF"
-                           : "BLUETOOTH OFF · CLICK TO TURN ON"
+            const path = folderModel.get(selectedIndex, "filePath");
+            if (!path || String(path).length === 0) {
+                console.warn("HyprQuickpaper: empty wallpaper path for index", selectedIndex);
+                return ;
+            }
+            Quickshell.execDetached(["bash", Quickshell.shellPath("commands.sh"), String(path)]);
+            main.hidePicker();
+        }
+
+        function clampX(x) {
+            const minX = originX;
+            const maxX = minX + Math.max(0, contentWidth - width);
+            const value = Number(x);
+            return Math.max(minX, Math.min(isFinite(value) ? value : minX, maxX));
+        }
+
+        function ensureVisibleAnimated(i) {
+            const item = list.itemAtIndex(i);
+            if (!item)
+                return ;
+
+            wheelAnimation.stop();
+            keyboardScrollAnimation.stop();
+            wheelTargetX = clampX(contentX);
+            if (i === 0) {
+                keyboardScrollAnimation.stop();
+                if (Math.abs(contentX - originX) > 0.5) {
+                    keyboardScrollAnimation.from = contentX;
+                    keyboardScrollAnimation.to = originX;
+                    keyboardScrollAnimation.start();
+                }
+                return ;
+            }
+            const expandedWidth = list.tileWidth * 1.5 + 40;
+            const extraWidth = Math.max(0, expandedWidth - list.tileWidth);
+            const itemStart = item.x - extraWidth / 2;
+            const itemEnd = item.x + item.width + extraWidth / 2;
+            let target = contentX;
+            if (itemStart < contentX)
+                target = itemStart;
+            else if (itemEnd > contentX + width)
+                target = itemEnd - width;
+            target = clampX(target);
+            if (target !== contentX) {
+                keyboardScrollAnimation.stop();
+                keyboardScrollAnimation.from = contentX;
+                keyboardScrollAnimation.to = target;
+                keyboardScrollAnimation.start();
+            }
+        }
+
+        height: main.imageHeight
+        z: 1
+        focus: main.pickerOpen
+        model: folderModel
+        orientation: ListView.Horizontal
+        spacing: 0
+        clip: true
+        cacheBuffer: effectiveWidth * 2
+        onWidthChanged: {
+            if (width > 1) {
+                lastValidWidth = width;
+                Qt.callLater(function() {
+                    if (!main.pickerOpen || list.width <= 1)
+                        return ;
+
+                    list.forceLayout();
+                    list.positionViewAtIndex(list.selectedIndex, ListView.Contain);
+                    list.forceLayout();
+                    list.wheelTargetX = list.clampX(list.contentX);
+                });
+            }
+            traceScroll("widthChanged");
+        }
+        onContentXChanged: traceScroll("contentXChanged")
+        onOriginXChanged: traceScroll("originXChanged")
+        onContentWidthChanged: traceScroll("contentWidthChanged")
+        onCountChanged: traceScroll("countChanged")
+        onSelectedIndexChanged: traceScroll("selectedIndexChanged")
+        Keys.onPressed: function(event) {
+            const step = 1;
+            if (event.key === Qt.Key_L || event.key === Qt.Key_Right)
+                keyboardSelect(selectedIndex + step);
+            else if (event.key === Qt.Key_H || event.key === Qt.Key_Left)
+                keyboardSelect(selectedIndex - step);
+            else if (event.key === Qt.Key_J || event.key === Qt.Key_Down)
+                keyboardSelect(selectedIndex + 5);
+            else if (event.key === Qt.Key_K || event.key === Qt.Key_Up)
+                keyboardSelect(selectedIndex - 5);
+            else if (event.key === Qt.Key_Space || event.key === Qt.Key_Return)
+                activateCurrent();
+            else if (event.key === Qt.Key_Escape)
+                main.hidePicker();
+            else
+                return ;
+            event.accepted = true;
+        }
+
+        anchors {
+            left: parent.left
+            right: parent.right
+            verticalCenter: parent.verticalCenter
+        }
+
+        NumberAnimation {
+            id: keyboardScrollAnimation
+
+            target: list
+            property: "contentX"
+            duration: 1000
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            id: wheelAnimation
+
+            target: list
+            property: "contentX"
+            duration: 750
+            easing.type: Easing.OutCubic
+        }
+
+        Timer {
+            id: cacheRetryTimer
+
+            interval: 2000
+            repeat: true
+            running: main.pickerOpen
+            onTriggered: {
+                for (let i = 0; i < list.count; i++) {
+                    const item = list.itemAtIndex(i);
+                    if (item)
+                        item.retryImage();
+
+                }
+            }
+        }
+
+        delegate: Item {
+            id: delegateItem
+
+            required property int index
+            property bool active: index === list.selectedIndex
+            property bool pointerHovered: hitArea.containsMouse
+            property real entranceOffset: 25
+
+            function scheduleHover() {
+                if (!list.keyboardMode && list.mouseEnabled)
+                    hoverTimer.start();
+
+            }
+
+            function cancelHover() {
+                hoverTimer.stop();
+            }
+
+            function retryImage() {
+                if (img.status !== Image.Error)
+                    return false;
+
+                const source = img.source;
+                img.source = "";
+                img.source = source;
+                return true;
+            }
+
+            width: list.tileWidth
+            height: main.imageHeight
+            z: {
+                if (index === list.selectedIndex)
+                    return 10;
+
+                if (index === list.previousSelectedIndex)
+                    return 9;
+
+                return 0;
+            }
+            opacity: 0
+            Component.onCompleted: {
+                if (index < 15) {
+                    entranceTimer.start();
+                } else {
+                    delegateItem.opacity = 1;
+                    delegateItem.entranceOffset = 0;
+                }
+            }
+
+            Item {
+                id: wallpaperItem
+
+                width: active ? list.tileWidth * 1.5 + 40 : list.tileWidth
+                height: active ? main.imageHeight : main.inactiveImageHeight
+
+                anchors {
+                    horizontalCenter: parent.horizontalCenter
+                    verticalCenter: parent.verticalCenter
                 }
 
-                color: page.powered ? Theme.accent : Theme.textFaint
-                font.family: "Noto Sans"
-                font.pixelSize: 10
-                font.bold: true
-                font.letterSpacing: 1
+                Text {
+                    id: alt
+
+                    visible: img.status === Image.Error
+                    text: "Caching"
+                    color: configs.border_color
+                    anchors.centerIn: parent
+                    font.pixelSize: 16
+
+                    transform: Shear {
+                        xFactor: -0.25
+                    }
+
+                }
+
+                Image {
+                    id: img
+
+                    anchors.fill: parent
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    cache: true
+                    smooth: true
+                    source: "file://" + configs.cache_path + folderModel.get(index, "fileName")
+                    sourceSize.width: list.tileWidth * 1.5 + 40
+                    sourceSize.height: main.imageHeight
+
+                    transform: Shear {
+                        xFactor: -0.25
+                    }
+
+                }
+
+                Rectangle {
+                    id: border
+
+                    anchors.fill: parent
+                    z: 10
+                    color: "transparent"
+                    border.width: 2
+                    border.color: configs.border_color
+                    radius: 4
+                    opacity: delegateItem.active ? 1 : 0
+
+                    transform: Shear {
+                        xFactor: -0.25
+                    }
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 500
+                            easing.type: Easing.OutCubic
+                        }
+
+                    }
+
+                }
+
+                transform: Translate {
+                    y: delegateItem.entranceOffset
+                }
+
+                Behavior on width {
+                    NumberAnimation {
+                        duration: 500
+                        easing.type: Easing.OutCubic
+                    }
+
+                }
+
+                Behavior on height {
+                    NumberAnimation {
+                        duration: 500
+                        easing.type: Easing.OutCubic
+                    }
+
+                }
+
             }
 
             MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: page.togglePower()
+                id: hitArea
+
+                // Keep the hit area within the fixed delegate slot.
+                // The selected image grows visually, but its hit area must not overlap neighbors.
+                width: list.tileWidth
+                height: wallpaperItem.height
+                z: 20
+                hoverEnabled: true
+                onEntered: {
+                    list.traceScroll("MouseArea entered index=" + index);
+                    // Scrolling moves delegates beneath a stationary pointer.
+                    // Ignore those synthetic hover transitions while the wheel animates.
+                    // Real pointer movement is handled by HoverHandler and activateHoveredDelegate().
+                    if (wheelAnimation.running)
+                        return ;
+
+                    if (!list.keyboardMode && list.mouseEnabled)
+                        hoverTimer.start();
+
+                }
+                onExited: hoverTimer.stop()
+                onClicked: {
+                    hoverTimer.stop();
+                    list.keyboardMode = false;
+                    list.selectIndex(index);
+                    list.activateCurrent();
+                }
+                onWheel: function(wheel) {
+                    keyboardScrollAnimation.stop();
+                    // Wheel input is mouse interaction; keep hover enabled during wheel animation.
+                    list.keyboardMode = false;
+                    list.mouseEnabled = true;
+                    // Cancel pending hover timers before scrolling starts. Otherwise a timer
+                    // started by a previous delegate entry can change selection mid-scroll.
+                    for (let i = 0; i < list.count; i++) {
+                        const item = list.itemAtIndex(i);
+                        if (item)
+                            item.cancelHover();
+
+                    }
+                    if (!wheelAnimation.running)
+                        list.wheelTargetX = list.clampX(list.contentX);
+
+                    const delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x;
+                    list.traceScroll("wheel event delta=" + delta);
+                    list.wheelTargetX = list.clampX(list.wheelTargetX - delta * 0.8);
+                    wheelAnimation.stop();
+                    wheelAnimation.from = list.contentX;
+                    wheelAnimation.to = list.wheelTargetX;
+                    wheelAnimation.start();
+                    wheel.accepted = true;
+                }
+
+                anchors {
+                    horizontalCenter: parent.horizontalCenter
+                    verticalCenter: parent.verticalCenter
+                }
+
+                Timer {
+                    id: hoverTimer
+
+                    interval: 30
+                    repeat: false
+                    onTriggered: {
+                        list.traceScroll("hoverTimer triggered index=" + index);
+                        if (list.keyboardMode || !list.mouseEnabled)
+                            return ;
+
+                        // Delay hover only while keyboard navigation is still repositioning the list.
+                        // Wheel scrolling may continue while the hovered wallpaper expands.
+                        if (keyboardScrollAnimation.running) {
+                            start();
+                            return ;
+                        }
+                        list.selectIndex(index);
+                    }
+                }
+
+                transform: Shear {
+                    xFactor: -0.25
+                }
+
             }
-        }
 
-        Text {
-            width: parent.width
-            visible: page.statusText !== ""
-            text: page.statusText
-            color: Theme.accent
-            font.family: "Noto Sans"
-            font.pixelSize: 10
-            wrapMode: Text.Wrap
-            horizontalAlignment: Text.AlignHCenter
-        }
+            Timer {
+                id: entranceTimer
 
-        Flickable {
-            id: flick
-
-            width: parent.width
-            height: Math.max(0, parent.height - y)
-            clip: true
-            contentWidth: width
-            contentHeight: list.implicitHeight
-            boundsBehavior: Flickable.StopAtBounds
-
-            Column {
-                id: list
-
-                width: flick.width
-                spacing: 6
-
-                Item {
-                    width: list.width
-                    height: 100
-                    visible: !page.adapter
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "NO BLUETOOTH ADAPTER"
-                        color: Theme.textDim
-                        font.family: "Noto Sans"
-                        font.pixelSize: 11
-                        font.letterSpacing: 1
-                    }
-                }
-
-                Item {
-                    width: list.width
-                    height: 100
-                    visible: page.adapter && !page.powered
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 8
-
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: "\uf294"
-                            color: Theme.textDim
-                            font.family: Theme.iconFont
-                            font.pixelSize: 24
-                        }
-
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: "BLUETOOTH IS OFF"
-                            color: Theme.textDim
-                            font.family: "Noto Sans"
-                            font.pixelSize: 11
-                            font.letterSpacing: 1
-                        }
-                    }
-                }
-
-                Item {
-                    width: list.width
-                    height: 112
-                    visible: page.powered && repeater.count === 0
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 8
-
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: page.scanning ? "\uf1eb" : "\uf071"
-                            color: Theme.textDim
-                            font.family: Theme.iconFont
-                            font.pixelSize: 22
-                        }
-
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: page.scanning
-                                  ? "SCANNING FOR DEVICES..."
-                                  : "NO DEVICES FOUND"
-                            color: Theme.textDim
-                            font.family: "Noto Sans"
-                            font.pixelSize: 11
-                            font.letterSpacing: 1
-                        }
-
-                        Text {
-                            width: list.width - 20
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: "Make your device discoverable and keep this page open."
-                            color: Theme.textFaint
-                            font.family: "Noto Sans"
-                            font.pixelSize: 9
-                            wrapMode: Text.Wrap
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                    }
-                }
-
-                Repeater {
-                    id: repeater
-
-                    model: page.adapter && page.powered
-                           ? page.adapter.devices
-                           : null
-
-                    delegate: Rectangle {
-                        id: card
-
-                        required property BluetoothDevice modelData
-
-                        readonly property bool isConnected:
-                            modelData.state === BluetoothDeviceState.Connected
-
-                        readonly property string deviceKey:
-                            modelData.address || modelData.name || ""
-
-                        visible: !(BluetoothState.removingDevices &&
-                                   BluetoothState.removingDevices[deviceKey])
-
-                        width: list.width
-                        height: visible ? 52 : 0
-                        radius: Theme.radius
-
-                        color: isConnected
-                               ? Theme.alpha(Theme.accent, 0.1)
-                               : "transparent"
-
-                        border.width: 1
-                        border.color: isConnected
-                                      ? Theme.accent
-                                      : Theme.border
-
-                        Item {
-                            id: actionArea
-
-                            x: 14
-                            y: 0
-                            width: 120
-                            height: card.height
-
-                            Text {
-                                id: actionText
-
-                                x: 0
-                                y: (parent.height - height) / 2
-
-                                width: Math.min(
-                                    implicitWidth,
-                                    parent.width - removeButton.width - 12
-                                )
-
-                                text: page.actionLabel(card.modelData)
-                                color: card.isConnected
-                                       ? Theme.danger
-                                       : Theme.accent
-
-                                font.family: "Noto Sans"
-                                font.pixelSize: 10
-                                verticalAlignment: Text.AlignVCenter
-                                elide: Text.ElideRight
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: page.deviceAction(card.modelData)
-                                }
-                            }
-
-                            Item {
-                                id: removeButton
-
-                                x: actionText.width + 12
-                                y: (parent.height - height) / 2
-                                width: 28
-                                height: 28
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "\uf293"
-                                    color: Theme.textDim
-                                    font.family: Theme.iconFont
-                                    font.pixelSize: 16
-                                }
-
-                                MouseArea {
-                                    id: unpairMouseArea
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-                                    onClicked: page.removeDevice(card.modelData)
-                                }
-
-                                Rectangle {
-                                    visible: unpairMouseArea.containsMouse
-                                    z: 100
-                                    x: -8
-                                    y: removeButton.height + 6
-                                    width: tooltipText.width + 16
-                                    height: 24
-                                    radius: 4
-                                    color: "transparent"
-
-                                    Text {
-                                        id: tooltipText
-
-                                        anchors.centerIn: parent
-                                        text: "Unpair"
-                                        color: "white"
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 10
-                                    }
-                                }
-                            }
-                        }
-
-                        Item {
-                            id: deviceInfo
-
-                            x: actionArea.width + 28
-                            y: 0
-                            width: Math.max(0, card.width - actionArea.width - 42)
-                            height: card.height
-
-                            Text {
-                                id: deviceIcon
-
-                                x: 0
-                                y: (parent.height - height) / 2
-                                width: 18
-                                height: 18
-                                text: "\uf294"
-                                color: card.isConnected
-                                       ? Theme.accent
-                                       : Theme.textDim
-                                font.family: Theme.iconFont
-                                font.pixelSize: 15
-                                verticalAlignment: Text.AlignVCenter
-                            }
-
-                            Column {
-                                id: deviceText
-
-                                x: 28
-                                y: (parent.height - height) / 2
-                                width: Math.max(0, parent.width - x)
-                                spacing: 2
-
-                                Text {
-                                    width: parent.width
-                                    text: card.modelData.name || card.modelData.address
-                                    elide: Text.ElideRight
-                                    color: Theme.text
-                                    font.family: "Noto Sans"
-                                    font.pixelSize: 12
-                                }
-
-                                Text {
-                                    width: parent.width
-
-                                    text: {
-                                        var parts = []
-
-                                        if (card.modelData.address)
-                                            parts.push(card.modelData.address)
-
-                                        if (card.isConnected)
-                                            parts.push("connected")
-                                        else if (card.modelData.paired)
-                                            parts.push("paired")
-
-                                        if (card.modelData.batteryAvailable)
-                                            parts.push(
-                                                Math.round(card.modelData.battery * 100) + "%"
-                                            )
-
-                                        return parts.join("  •  ")
-                                    }
-
-                                    color: card.isConnected
-                                           ? Theme.accent
-                                           : Theme.textFaint
-                                    font.family: "Noto Sans"
-                                    font.pixelSize: 9
-                                    elide: Text.ElideRight
-                                }
-                            }
-                        }
-                    }
-                }
+                interval: index * 30
+                repeat: false
+                onTriggered: entranceAnimation.start()
             }
+
+            ParallelAnimation {
+                id: entranceAnimation
+
+                NumberAnimation {
+                    target: delegateItem
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 220
+                    easing.type: Easing.OutExpo
+                }
+
+                NumberAnimation {
+                    target: delegateItem
+                    property: "entranceOffset"
+                    from: 35
+                    to: 0
+                    duration: 220
+                    easing.type: Easing.OutExpo
+                }
+
+            }
+
         }
+
     }
+
 }
