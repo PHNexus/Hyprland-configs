@@ -43,8 +43,7 @@ Item {
     }
 
     function setWifiEnabled(on) {
-        page.wifiEnabled = on;
-        pRadioSet.command = ["nmcli", "networking", on ? "on" : "off"];
+        pRadioSet.command = ["nmcli", "radio", "wifi", on ? "on" : "off"];
         pRadioSet.running = true;
     }
 
@@ -59,7 +58,7 @@ Item {
     }
 
     function disconnect(ssid) {
-        pConnect.command = ["nmcli", "device", "disconnect", ssid];
+        pConnect.command = ["nmcli", "connection", "down", "id", ssid];
         pConnect.running = true;
     }
 
@@ -69,6 +68,7 @@ Item {
         pEthernet.running = true;
     }
 
+<<<<<<< HEAD
     Timer {
         interval: 1500
         running: true
@@ -91,6 +91,8 @@ Item {
         }
     }
 
+=======
+>>>>>>> parent of 614e6a7 (update configs - 2026-10-15 18:51:37)
     Process {
         id: pNet
 
@@ -202,7 +204,7 @@ Item {
     Process {
         id: pRadioGet
 
-        command: ["nmcli", "networking"]
+        command: ["nmcli", "radio", "wifi"]
         running: true
 
         stdout: StdioCollector {
