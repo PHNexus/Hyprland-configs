@@ -85,9 +85,9 @@ Item {
         repeat: true
         triggeredOnStart: true
         onTriggered: {
-            if (page.wifiEnabled && !pList.running) {
+            if (page.wifiEnabled && !pList.running)
                 pList.running = true;
-            }
+
         }
     }
 
@@ -210,6 +210,7 @@ Item {
                 page.wifiEnabled = text.trim() === "enabled";
                 if (page.wifiEnabled && !pList.running)
                     pList.running = true;
+
             }
         }
 
