@@ -74,6 +74,232 @@ if ! sudo -v; then
 fi
 
 # --------------------------------------------
+# Configure Bluetooth only when relevant
+# --------------------------------------------
+bluetooth_module_service_exists() {
+    if command -v systemctl >/dev/null 2>&1 &&
+        systemctl cat bluetooth.service >/dev/null 2>&1; then
+        return 0
+    fi
+
+    [[ -e /usr/lib/systemd/system/bluetooth.service ||
+        -e /etc/systemd/system/bluetooth.service ||
+        -e /lib/systemd/system/bluetooth.service ]]
+}
+
+bluetooth_module_adapter_detected() {
+    local controller usb_iface interface_class interface_subclass
+
+    # Most reliable signal: the kernel has registered a Bluetooth controller.
+    for controller in /sys/class/bluetooth/hci*; do
+        [[ -e "$controller" ]] && return 0
+    done
+
+    # Covers USB adapters already bound to the standard Linux btusb driver,
+    # including models with vendor-specific USB IDs.
+    for usb_iface in /sys/bus/usb/drivers/btusb/*:*; do
+        [[ -e "$usb_iface" ]] && return 0
+    done
+
+    # Also catch class-compliant USB Bluetooth interfaces before an HCI
+    # controller appears, so BlueZ can be installed/configured when needed.
+    for usb_iface in /sys/bus/usb/devices/*:*; do
+        [[ -r "$usb_iface/bInterfaceClass" &&
+            -r "$usb_iface/bInterfaceSubClass" ]] || continue
+
+        interface_class="$(< "$usb_iface/bInterfaceClass")"
+        interface_subclass="$(< "$usb_iface/bInterfaceSubClass")"
+
+        if [[ "${interface_class,,}" == "e0" &&
+            "${interface_subclass,,}" == "01" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+configure_bluetooth_module() {
+    local has_service=0
+    local has_adapter=0
+
+    bluetooth_module_service_exists && has_service=1 || true
+    bluetooth_module_adapter_detected && has_adapter=1 || true
+
+    if [[ "$has_service" -eq 0 && "$has_adapter" -eq 0 ]]; then
+        echo
+        echo "Bluetooth: no service or recognized adapter found; skipping configuration."
+        return 0
+    fi
+
+    echo
+    echo "Configuring Bluetooth (service found: $has_service; adapter found: $has_adapter)..."
+
+    # BlueZ provides bluetooth.service. Install it only after the detection gate.
+    if ! pacman -Q bluez bluez-utils >/dev/null 2>&1; then
+        if ! sudo pacman -S --needed --noconfirm bluez bluez-utils; then
+            warn "Could not install BlueZ; skipping the Bluetooth configuration."
+            return 0
+        fi
+    fi
+
+    if ! bluetooth_module_service_exists; then
+        warn "BlueZ packages are installed, but bluetooth.service was not found; skipping further changes."
+        return 0
+    fi
+
+    local conf="/etc/bluetooth/main.conf"
+    local conf_tmp conf_updated conf_backup
+    conf_tmp="$(mktemp)"
+    conf_updated="$(mktemp)"
+
+    if [[ -f "$conf" ]]; then
+        if ! sudo cat "$conf" > "$conf_tmp"; then
+            rm -f "$conf_tmp" "$conf_updated"
+            warn "Could not read $conf; skipping Bluetooth config edits."
+            return 0
+        fi
+    else
+        : > "$conf_tmp"
+    fi
+
+    # Preserve existing settings. ControllerMode stays at bredr as requested;
+    # FastConnectable belongs in [General] and AutoEnable belongs in [Policy].
+    if ! awk '
+        function add_general() {
+            if (!general_written) {
+                print "ControllerMode = bredr"
+                print "FastConnectable = true"
+                general_written = 1
+            }
+        }
+        function add_policy() {
+            if (!policy_written) {
+                print "AutoEnable = true"
+                policy_written = 1
+            }
+        }
+        /^[[:space:]]*\[[^]]+\][[:space:]]*$/ {
+            if (section == "General") add_general()
+            if (section == "Policy") add_policy()
+            section = $0
+            sub(/^[[:space:]]*\[/, "", section)
+            sub(/\][[:space:]]*$/, "", section)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", section)
+            if (section == "General") seen_general = 1
+            if (section == "Policy") seen_policy = 1
+            print
+            next
+        }
+        section == "General" && /^[[:space:]]*(ControllerMode|FastConnectable)[[:space:]]*=/ { next }
+        section == "Policy" && /^[[:space:]]*AutoEnable[[:space:]]*=/ { next }
+        { print }
+        END {
+            if (section == "General") add_general()
+            if (section == "Policy") add_policy()
+            if (!seen_general) {
+                print ""
+                print "[General]"
+                add_general()
+            }
+            if (!seen_policy) {
+                print ""
+                print "[Policy]"
+                add_policy()
+            }
+        }
+    ' "$conf_tmp" > "$conf_updated"; then
+        rm -f "$conf_tmp" "$conf_updated"
+        warn "Could not prepare $conf; skipping Bluetooth config edits."
+        return 0
+    fi
+
+    if [[ ! -f "$conf" ]] || ! cmp -s "$conf_updated" "$conf"; then
+        if [[ -f "$conf" ]]; then
+            conf_backup="${conf}.backup-$(date +%Y%m%d-%H%M%S)"
+            if ! sudo cp -a "$conf" "$conf_backup"; then
+                rm -f "$conf_tmp" "$conf_updated"
+                warn "Could not back up $conf; leaving it unchanged."
+                return 0
+            fi
+            echo "  - Backed up main.conf to $conf_backup"
+        fi
+
+        if ! sudo install -D -o root -g root -m 0644 "$conf_updated" "$conf"; then
+            rm -f "$conf_tmp" "$conf_updated"
+            warn "Could not install updated $conf."
+            return 0
+        fi
+        echo "  - Configured AutoEnable=true, ControllerMode=bredr and FastConnectable=true."
+    else
+        echo "  - main.conf already has the desired Bluetooth settings."
+    fi
+    rm -f "$conf_tmp" "$conf_updated"
+
+    # Do not hard-code a USB vendor/product ID. These rules match USB
+    # interfaces handled by btusb and standard Bluetooth-class interfaces.
+    # This keeps the power-management rule usable across different dongles.
+    local rule="/etc/udev/rules.d/50-bluetooth.rules"
+    local rule_line usb_iface
+    local -a rule_lines=(
+        'ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_interface", DRIVER=="btusb", TEST=="power/control", ATTR{power/control}="on"'
+        'ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_interface", ATTR{bInterfaceClass}=="e0", ATTR{bInterfaceSubClass}=="01", TEST=="power/control", ATTR{power/control}="on"'
+    )
+
+    if ! sudo test -f "$rule"; then
+        if ! sudo install -D -o root -g root -m 0644 /dev/null "$rule"; then
+            warn "Could not create $rule; continuing with the service setup."
+        fi
+    fi
+
+    if sudo test -f "$rule"; then
+        for rule_line in "${rule_lines[@]}"; do
+            if ! sudo grep -Fqx -- "$rule_line" "$rule"; then
+                if printf '%s\n' "$rule_line" | sudo tee -a "$rule" >/dev/null; then
+                    echo "  - Added a generic Bluetooth USB power rule to $rule."
+                else
+                    warn "Could not add a USB rule to $rule."
+                fi
+            fi
+        done
+    fi
+
+    if command -v udevadm >/dev/null 2>&1; then
+        sudo udevadm control --reload-rules || warn "Could not reload udev rules."
+
+        # Re-apply only to interfaces already bound to btusb; avoid retriggering
+        # unrelated USB devices. New adapters will match when plugged in.
+        for usb_iface in /sys/bus/usb/drivers/btusb/*:*; do
+            [[ -e "$usb_iface" ]] || continue
+            if sudo test -e "$usb_iface/power/control"; then
+                if ! printf 'on\n' | sudo tee "$usb_iface/power/control" >/dev/null; then
+                    warn "Could not set USB power control for $usb_iface."
+                fi
+            fi
+            sudo udevadm trigger --action=add "$usb_iface" 2>/dev/null || true
+        done
+
+        # This selector is limited to standard Bluetooth-class USB interfaces.
+        sudo udevadm trigger --action=add --subsystem-match=usb \
+            --attr-match=bInterfaceClass=e0 --attr-match=bInterfaceSubClass=01 \
+            2>/dev/null || true
+    fi
+
+    if command -v systemctl >/dev/null 2>&1; then
+        if sudo systemctl enable --now bluetooth.service; then
+            echo "  - bluetooth.service enabled and started."
+        else
+            warn "Could not enable/start bluetooth.service."
+        fi
+    else
+        warn "systemctl was not found; could not enable bluetooth.service."
+    fi
+}
+
+configure_bluetooth_module
+
+
+# --------------------------------------------
 # Ensure multilib repository is enabled
 # --------------------------------------------
 echo
