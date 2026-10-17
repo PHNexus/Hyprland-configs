@@ -202,6 +202,7 @@ text/x-c++=com.microsoft.VSCode.desktop
 text/x-sh=com.microsoft.VSCode.desktop
 text/x-bash=com.microsoft.VSCode.desktop
 text/x-zsh=com.microsoft.VSCode.desktop
+x-scheme-handler/ton=org.telegram.desktop.desktop
 
 [Added Associations]
 image/png=imv.desktop;
@@ -214,3 +215,4 @@ video/x-matroska=mpv.desktop;
 video/avi=mpv.desktop;
 audio/mp3=mpv.desktop;
 audio/flac=mpv.desktop;
+x-scheme-handler/ton=org.telegram.desktop.desktop;
