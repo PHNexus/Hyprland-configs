@@ -2,6 +2,7 @@
 text/html=helium.desktop
 x-scheme-handler/http=helium.desktop
 x-scheme-handler/https=helium.desktop
+x-scheme-handler/mailto=helium.desktop
 x-scheme-handler/about=helium.desktop
 x-scheme-handler/unknown=helium.desktop
 x-scheme-handler/chrome=helium.desktop
@@ -216,3 +217,4 @@ video/avi=mpv.desktop;
 audio/mp3=mpv.desktop;
 audio/flac=mpv.desktop;
 x-scheme-handler/ton=org.telegram.desktop.desktop;
+x-scheme-handler/mailto=helium.desktop;
