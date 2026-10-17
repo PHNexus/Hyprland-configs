@@ -285,6 +285,8 @@ configure_bluetooth_module() {
             2>/dev/null || true
     fi
 
+    echo "options btusb enable_autosuspend=0" | sudo tee /etc/modprobe.d/btusb.conf >/dev/null
+
     if command -v systemctl >/dev/null 2>&1; then
         if sudo systemctl enable --now bluetooth.service; then
             echo "  - bluetooth.service enabled and started."
