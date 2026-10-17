@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Bluetooth
+import Quickshell.Io
 
 Item {
     id: page
@@ -68,20 +69,12 @@ Item {
             return
 
         var name = dev.name || dev.deviceName || dev.address || "device"
+        var address = dev.address
 
-        if (dev.state === BluetoothDeviceState.Connected) {
+        if (dev.connected || dev.state === BluetoothDeviceState.Connected) {
             page.setStatus("Disconnecting " + name + "...")
-            dev.disconnect()
-            return
-        }
-
-        if (dev.state === BluetoothDeviceState.Connecting) {
-            page.setStatus("Connecting to " + name + "...")
-            return
-        }
-
-        if (dev.state === BluetoothDeviceState.Disconnecting) {
-            page.setStatus("Disconnecting " + name + "...")
+            disconnectProcess.command = ["bluetoothctl", "disconnect", address]
+            disconnectProcess.running = true
             return
         }
 
@@ -103,7 +96,25 @@ Item {
         }
 
         page.setStatus("Connecting to " + name + "...")
-        dev.connect()
+        connectProcess.command = ["bluetoothctl", "connect", address]
+        connectProcess.running = true
+    }
+
+    Process {
+        id: connectProcess
+        running: false
+        onExited: (exitCode) => {
+            if (exitCode === 0) {
+                page.setStatus("Connected successfully!")
+            } else {
+                page.setStatus("Connection failed. Check device.")
+            }
+        }
+    }
+
+    Process {
+        id: disconnectProcess
+        running: false
     }
 
     function removeDevice(dev) {
@@ -115,6 +126,7 @@ Item {
         }
 
         if (
+            dev.connected ||
             dev.state === BluetoothDeviceState.Connected ||
             dev.state === BluetoothDeviceState.Connecting ||
             dev.state === BluetoothDeviceState.Disconnecting
@@ -134,10 +146,10 @@ Item {
         if (dev.pairing)
             return "PAIRING..."
 
-        switch (dev.state) {
-        case BluetoothDeviceState.Connected:
+        if (dev.connected || dev.state === BluetoothDeviceState.Connected)
             return "DISCONNECT"
 
+        switch (dev.state) {
         case BluetoothDeviceState.Connecting:
             return "CONNECTING..."
 
@@ -180,9 +192,7 @@ Item {
 
     Timer {
         id: statusTimer
-
         interval: 3500
-
         onTriggered: {
             page.statusText = ""
         }
@@ -190,11 +200,9 @@ Item {
 
     Timer {
         id: autoPowerTimer
-
         interval: 1500
         repeat: true
         running: true
-
         onTriggered: {
             if (!page.adapter) {
                 return
@@ -220,10 +228,8 @@ Item {
 
     Timer {
         id: discoveryRetryTimer
-
         interval: 1500
         repeat: true
-
         running: page.powered &&
                  page.adapter &&
                  page.adapter.enabled
@@ -308,10 +314,8 @@ Item {
 
         Text {
             width: parent.width
-
             visible: page.statusText !== ""
             text: page.statusText
-
             color: Theme.accent
             font.family: "Noto Sans"
             font.pixelSize: 10
@@ -321,11 +325,9 @@ Item {
 
         Text {
             width: parent.width
-
             visible: !page.adapter
             text: "Waiting for Bluetooth service and adapter..."
             color: Theme.textDim
-
             font.family: "Noto Sans"
             font.pixelSize: 10
             wrapMode: Text.Wrap
@@ -334,26 +336,21 @@ Item {
 
         Flickable {
             id: flick
-
             width: parent.width
             height: Math.max(0, parent.height - y)
-
             clip: true
             contentWidth: width
             contentHeight: list.implicitHeight
-
             boundsBehavior: Flickable.StopAtBounds
 
             Column {
                 id: list
-
                 width: flick.width
                 spacing: 6
 
                 Item {
                     width: list.width
                     height: 100
-
                     visible: page.adapter && !page.powered
 
                     Column {
@@ -382,7 +379,6 @@ Item {
                 Item {
                     width: list.width
                     height: 112
-
                     visible: page.powered && repeater.count === 0
 
                     Column {
@@ -402,7 +398,6 @@ Item {
                             text: page.scanning
                                   ? "SCANNING FOR DEVICES..."
                                   : "NO DEVICES FOUND"
-
                             color: Theme.textDim
                             font.family: "Noto Sans"
                             font.pixelSize: 11
@@ -412,11 +407,9 @@ Item {
                         Text {
                             width: list.width - 20
                             anchors.horizontalCenter: parent.horizontalCenter
-
                             text: page.scanning
                                   ? "Make your device discoverable and keep this page open."
                                   : "Waiting for Bluetooth discovery..."
-
                             color: Theme.textFaint
                             font.family: "Noto Sans"
                             font.pixelSize: 9
@@ -447,7 +440,7 @@ Item {
                         property bool connectAfterPair: false
 
                         readonly property bool isConnected:
-                            modelData.state === BluetoothDeviceState.Connected
+                            modelData.connected || modelData.state === BluetoothDeviceState.Connected
 
                         readonly property string deviceKey:
                             modelData.address || modelData.name || ""
@@ -486,12 +479,25 @@ Item {
                                          card.modelData.address) + "..."
                                     )
 
-                                    card.modelData.connect()
+                                    connectProcess.command = ["bluetoothctl", "connect", card.modelData.address]
+                                    connectProcess.running = true
+                                }
+                            }
+
+                            function onConnectedChanged() {
+                                if (card.modelData.connected) {
+                                    page.setStatus(
+                                        "Connected to " +
+                                        (card.modelData.name ||
+                                         card.modelData.deviceName ||
+                                         card.modelData.address)
+                                    )
                                 }
                             }
 
                             function onStateChanged() {
                                 if (
+                                    card.modelData.connected ||
                                     card.modelData.state ===
                                     BluetoothDeviceState.Connected
                                 ) {
@@ -518,7 +524,6 @@ Item {
 
                         Item {
                             id: actionArea
-
                             x: 14
                             y: 0
                             width: 140
@@ -530,15 +535,12 @@ Item {
 
                                 Text {
                                     id: actionText
-
                                     width: Math.min(implicitWidth, 80)
                                     height: parent.height
-
                                     text: page.actionLabel(card.modelData)
                                     color: card.isConnected
                                            ? Theme.danger
                                            : Theme.accent
-
                                     font.family: "Noto Sans"
                                     font.pixelSize: 10
                                     verticalAlignment: Text.AlignVCenter
@@ -547,7 +549,6 @@ Item {
                                     MouseArea {
                                         anchors.fill: parent
                                         cursorShape: Qt.PointingHandCursor
-
                                         onClicked: {
                                             page.deviceAction(
                                                 card.modelData,
@@ -559,7 +560,6 @@ Item {
 
                                 Item {
                                     id: removeButton
-
                                     width: 28
                                     height: 28
                                     anchors.verticalCenter: parent.verticalCenter
@@ -574,11 +574,9 @@ Item {
 
                                     MouseArea {
                                         id: unpairMouseArea
-
                                         anchors.fill: parent
                                         cursorShape: Qt.PointingHandCursor
                                         hoverEnabled: true
-
                                         onClicked: {
                                             page.removeDevice(card.modelData)
                                         }
@@ -586,24 +584,19 @@ Item {
 
                                     Rectangle {
                                         visible: unpairMouseArea.containsMouse
-
                                         z: 100
                                         x: -8
                                         y: removeButton.height + 6
-
                                         width: tooltipText.width + 16
                                         height: 24
-
                                         radius: 4
                                         color: "transparent"
 
                                         Text {
                                             id: tooltipText
-
                                             anchors.centerIn: parent
                                             text: "Unpair"
                                             color: "white"
-
                                             font.family: "Noto Sans"
                                             font.pixelSize: 10
                                         }
@@ -614,32 +607,24 @@ Item {
 
                         Item {
                             id: deviceInfo
-
                             x: actionArea.width + 28
                             y: 0
-
                             width: Math.max(
                                 0,
                                 card.width - actionArea.width - 42
                             )
-
                             height: card.height
 
                             Text {
                                 id: deviceIcon
-
                                 x: 0
                                 y: (parent.height - height) / 2
-
                                 width: 18
                                 height: 18
-
                                 text: "\uf294"
-
                                 color: card.isConnected
                                        ? Theme.accent
                                        : Theme.textDim
-
                                 font.family: Theme.iconFont
                                 font.pixelSize: 15
                                 verticalAlignment: Text.AlignVCenter
@@ -647,30 +632,24 @@ Item {
 
                             Column {
                                 id: deviceText
-
                                 x: 28
                                 y: (parent.height - height) / 2
-
                                 width: Math.max(0, parent.width - x)
                                 spacing: 2
 
                                 Text {
                                     width: parent.width
-
                                     text: card.modelData.name ||
                                           card.modelData.deviceName ||
                                           card.modelData.address
-
                                     elide: Text.ElideRight
                                     color: Theme.text
-
                                     font.family: "Noto Sans"
                                     font.pixelSize: 12
                                 }
 
                                 Text {
                                     width: parent.width
-
                                     text: {
                                         var parts = []
 
@@ -692,11 +671,9 @@ Item {
 
                                         return parts.join("  •  ")
                                     }
-
                                     color: card.isConnected
                                            ? Theme.accent
                                            : Theme.textFaint
-
                                     font.family: "Noto Sans"
                                     font.pixelSize: 9
                                     elide: Text.ElideRight
