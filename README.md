@@ -74,6 +74,7 @@ Other repos used by this dotfiles:
 | [![AppManager](https://img.shields.io/badge/-AppManager-blue?logo=github)](https://github.com/PHNexus/AppManager) | Fork of https://github.com/kem-a/AppManager — AppImage installer/manager. Installed automatically by `install.sh` and used to install other AppImages. |
 | [![helium-drm-fixer](https://img.shields.io/badge/-helium--drm--fixer-blue?logo=github)](https://github.com/PHNexus/helium-drm-fixer) | Fork of https://github.com/vikas5914/helium-drm-fixer — fixes DRM (Widevine) for the Helium browser. Run automatically by `install.sh`. |
 | [![MacTahoe Icons](https://img.shields.io/badge/-MacTahoe--Icons-blue?logo=github)](https://github.com/PHNexus/MacTahoe-icon-theme) | Fork of https://github.com/vinceliuice/MacTahoe-icon-theme — macOS Tahoe-style icon theme. Cloned directly by `install.sh` to bypass slow AUR packaging. |
+| ![Games Scripts](https://img.shields.io/badge/-Games--Scripts-blue?logo=github) | Linux gaming scripts https://github.com/PHNexus/games-scripts for game-specific optimizations, patches, and Gamescope wrappers for Wayland/Hyprland. |
 
 ### Hyprquickpaper — Bug Fixes
 
