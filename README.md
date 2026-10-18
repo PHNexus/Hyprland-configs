@@ -4,9 +4,9 @@
 [![Shell](https://img.shields.io/badge/shell-Fish-4AAE47?logo=fish-shell&logoColor=white)](https://fishshell.com/)
 [![Editor](https://img.shields.io/badge/editor-Neovim-57A143?logo=neovim&logoColor=white)](https://neovim.io/)
 [![License](https://img.shields.io/github/license/PHNexus/Hyprland-configs?color=blue)](https://github.com/PHNexus/Hyprland-configs/blob/main/LICENSE)
-[![Last Commit](https://img.shields.io/github/last-commit/PHNexus/Hyprland-configs?color=green)](https://github.com/PHNexus/Hyprland-configs/commits/main)
+[![Last Commit](https://img.shields.io/github/last-commit/PHNexus/Hyprland-configs?style=flat-square&label=updated)](https://github.com/PHNexus/Hyprland-configs/commits/main)
 [![Repo Size](https://img.shields.io/github/repo-size/PHNexus/Hyprland-configs)](https://github.com/PHNexus/Hyprland-configs)
-[![Stars](https://img.shields.io/github/stars/PHNexus/Hyprland-configs?style=social&cacheSeconds=60)](https://github.com/PHNexus/Hyprland-configs/stargazers)
+[![Stars](https://img.shields.io/github/stars/PHNexus/Hyprland-configs?style=social)](https://github.com/PHNexus/Hyprland-configs/stargazers)
 [![Created At](https://img.shields.io/github/created-at/PHNexus/Hyprland-configs?color=blue&label=created)](https://github.com/PHNexus/Hyprland-configs)
 ---
 
