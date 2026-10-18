@@ -121,14 +121,30 @@ Item {
             page.setStatus(name + " is blocked by Bluetooth.");
             return ;
         }
+        if (dev.state === BluetoothDeviceState.Connecting || dev.state === BluetoothDeviceState.Disconnecting) {
+            page.setStatus("Please wait for " + name + " to finish changing state.");
+            return ;
+        }
         if (deviceCard.timedOut) {
             var retryAction = deviceCard.lastFailedAction;
-            deviceCard.timedOut = false;
-            deviceCard.lastFailedAction = "";
+            if (retryAction === "connect" && (dev.connected || dev.state === BluetoothDeviceState.Connected)) {
+                deviceCard.timedOut = false;
+                deviceCard.lastFailedAction = "";
+                page.setStatus("Connected to " + name);
+                return ;
+            }
             if (retryAction === "disconnect") {
+                deviceCard.timedOut = false;
+                deviceCard.lastFailedAction = "";
+                if (!dev.connected && dev.state === BluetoothDeviceState.Disconnected) {
+                    page.setStatus(name + " is already disconnected.");
+                    return ;
+                }
                 deviceCard.beginDisconnect();
                 return ;
             }
+            deviceCard.timedOut = false;
+            deviceCard.lastFailedAction = "";
             if (retryAction === "pair" && !dev.paired) {
                 deviceCard.beginPairing();
                 return ;
@@ -140,9 +156,6 @@ Item {
             deviceCard.beginConnect();
             return ;
         }
-        if (dev.state === BluetoothDeviceState.Connecting || dev.state === BluetoothDeviceState.Disconnecting)
-            return ;
-
         if (dev.connected || dev.state === BluetoothDeviceState.Connected) {
             deviceCard.beginDisconnect();
             return ;
@@ -164,11 +177,20 @@ Item {
         if (!dev)
             return ;
 
+        for (var i = 0; i < repeater.count; i++) {
+            var deviceCard = repeater.itemAt(i);
+            if (deviceCard && deviceCard.modelData === dev) {
+                deviceCard.beginForget();
+                return ;
+            }
+        }
+        if (dev.connected || dev.state === BluetoothDeviceState.Connected || dev.state === BluetoothDeviceState.Connecting || dev.state === BluetoothDeviceState.Disconnecting) {
+            dev.disconnect();
+            page.setStatus("Disconnecting before removing " + (dev.name || dev.deviceName || dev.address || "device") + "...");
+            return ;
+        }
         if (typeof BluetoothState !== "undefined" && BluetoothState.markRemoved)
             BluetoothState.markRemoved(dev);
-
-        if (dev.connected || dev.state === BluetoothDeviceState.Connected || dev.state === BluetoothDeviceState.Connecting || dev.state === BluetoothDeviceState.Disconnecting)
-            dev.disconnect();
 
         dev.forget();
     }
@@ -260,6 +282,18 @@ Item {
         }
     }
 
+    Timer {
+        id: powerRecoveryTimer
+
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (page.adapter && page.visible && !page.manualOff && !page.powerRequestPending && page.adapter.state === BluetoothAdapterState.Disabled)
+                page.requestPower(true);
+
+        }
+    }
+
     Connections {
         function onStateChanged() {
             if (!page.adapter)
@@ -278,6 +312,8 @@ Item {
                     page.powerRequestPending = false;
                     powerTimeout.stop();
                     page.setStatus("Bluetooth off");
+                } else if (!page.manualOff && !page.powerRequestPending && page.visible) {
+                    powerRecoveryTimer.restart();
                 }
             } else if (page.adapter.state === BluetoothAdapterState.Blocked) {
                 page.setDiscovering(false);
@@ -472,6 +508,7 @@ Item {
                         property bool timedOut: false
                         property string pendingAction: ""
                         property string lastFailedAction: ""
+                        property bool forgetPending: false
                         readonly property bool isConnected: modelData.connected || modelData.state === BluetoothDeviceState.Connected
                         readonly property string deviceKey: modelData.address || modelData.name || ""
 
@@ -530,6 +567,41 @@ Item {
                             page.setStatus(message);
                         }
 
+                        function beginForget() {
+                            if (!modelData || forgetPending)
+                                return ;
+
+                            forgetPending = true;
+                            actionTimeout.stop();
+                            actionPending = false;
+                            timedOut = false;
+                            pendingAction = "";
+                            connectAfterPair = false;
+                            var name = modelData.name || modelData.deviceName || modelData.address || "device";
+                            page.setStatus("Removing " + name + "...");
+                            if (!modelData.connected && modelData.state === BluetoothDeviceState.Disconnected) {
+                                finalizeForget();
+                                return ;
+                            }
+                            modelData.disconnect();
+                            forgetTimeout.restart();
+                        }
+
+                        function finalizeForget() {
+                            if (!forgetPending || !modelData)
+                                return ;
+
+                            forgetTimeout.stop();
+                            var target = modelData;
+                            var name = target.name || target.deviceName || target.address || "device";
+                            forgetPending = false;
+                            if (typeof BluetoothState !== "undefined" && BluetoothState.markRemoved)
+                                BluetoothState.markRemoved(target);
+
+                            target.forget();
+                            page.setStatus("Removal requested for " + name + ".");
+                        }
+
                         visible: !(BluetoothState.removingDevices && BluetoothState.removingDevices[deviceKey])
                         width: list.width
                         height: visible ? 52 : 0
@@ -537,6 +609,21 @@ Item {
                         color: isConnected ? Theme.alpha(Theme.accent, 0.1) : "transparent"
                         border.width: 1
                         border.color: isConnected ? Theme.accent : Theme.border
+
+                        Timer {
+                            id: forgetTimeout
+
+                            interval: 10000
+                            repeat: false
+                            onTriggered: {
+                                if (!card.forgetPending)
+                                    return ;
+
+                                var name = card.modelData.name || card.modelData.deviceName || card.modelData.address || "device";
+                                card.forgetPending = false;
+                                page.setStatus("Could not disconnect " + name + "; device was not removed.");
+                            }
+                        }
 
                         Timer {
                             id: actionTimeout
@@ -548,11 +635,11 @@ Item {
                                     return ;
 
                                 var name = card.modelData.name || card.modelData.deviceName || card.modelData.address || "device";
-                                if (card.modelData.connected || card.modelData.state === BluetoothDeviceState.Connected) {
+                                if (card.pendingAction === "connect" && (card.modelData.connected || card.modelData.state === BluetoothDeviceState.Connected)) {
                                     card.finishAction("Connected to " + name);
                                     return ;
                                 }
-                                if (card.pendingAction === "disconnect" && card.modelData.state === BluetoothDeviceState.Disconnected) {
+                                if (card.pendingAction === "disconnect" && !card.modelData.connected && card.modelData.state === BluetoothDeviceState.Disconnected) {
                                     card.finishAction("Disconnected from " + name);
                                     return ;
                                 }
@@ -585,10 +672,13 @@ Item {
                             function onConnectedChanged() {
                                 var name = card.modelData.name || card.modelData.deviceName || card.modelData.address || "device";
                                 if (card.modelData.connected) {
-                                    if (card.actionPending && card.pendingAction === "connect")
+                                    if (card.actionPending && card.pendingAction === "connect") {
                                         card.finishAction("Connected to " + name);
-                                    else if (!card.actionPending)
+                                    } else if (!card.actionPending) {
+                                        card.timedOut = false;
+                                        card.lastFailedAction = "";
                                         page.setStatus("Connected to " + name);
+                                    }
                                 } else if (card.actionPending && card.pendingAction === "disconnect" && card.modelData.state === BluetoothDeviceState.Disconnected) {
                                     card.finishAction("Disconnected from " + name);
                                 }
@@ -596,13 +686,24 @@ Item {
 
                             function onStateChanged() {
                                 var name = card.modelData.name || card.modelData.deviceName || card.modelData.address || "device";
+                                if (card.forgetPending && !card.modelData.connected && card.modelData.state === BluetoothDeviceState.Disconnected) {
+                                    card.finalizeForget();
+                                    return ;
+                                }
                                 if (card.modelData.state === BluetoothDeviceState.Connected) {
-                                    if (card.actionPending && card.pendingAction === "connect")
+                                    if (card.actionPending && card.pendingAction === "connect") {
                                         card.finishAction("Connected to " + name);
-                                    else if (!card.actionPending)
+                                    } else if (!card.actionPending) {
+                                        card.timedOut = false;
+                                        card.lastFailedAction = "";
                                         page.setStatus("Connected to " + name);
+                                    }
                                 } else if (card.actionPending && card.pendingAction === "disconnect" && card.modelData.state === BluetoothDeviceState.Disconnected) {
                                     card.finishAction("Disconnected from " + name);
+                                } else if (!card.actionPending && card.modelData.state === BluetoothDeviceState.Disconnected && card.lastFailedAction === "disconnect") {
+                                    card.timedOut = false;
+                                    card.lastFailedAction = "";
+                                    page.setStatus("Disconnected from " + name);
                                 }
                             }
 

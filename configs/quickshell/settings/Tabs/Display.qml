@@ -22,10 +22,15 @@ Item {
     })
     property var pendingScaleMonitor: null
     property real pendingScaleValue: 1
-
+    property string pendingMonitorConfigText: ""
+    property bool monitorConfigWritePending: false
+    property bool monitorConfigWriteInProgress: false
     readonly property var bboxCenter: {
         if (activeMonitors.length === 0)
-            return { "x": 0, "y": 0 };
+            return {
+            "x": 0,
+            "y": 0
+        };
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         for (let i = 0; i < activeMonitors.length; i++) {
@@ -53,6 +58,7 @@ Item {
                 savedState = saved.monitors;
 
         } catch (error) {
+            console.warn("Display: could not read saved monitor state: " + error);
         }
     }
 
@@ -78,9 +84,29 @@ Item {
     }
 
     function monitorMode(mon) {
+        if (!mon)
+            return "";
+
+        const width = Number(mon.width);
+        const height = Number(mon.height);
         const rate = Number(mon.refreshRate);
-        const safeRate = isNaN(rate) ? 0 : rate;
-        return mon.width + "x" + mon.height + "@" + safeRate.toFixed(2);
+        if (width > 0 && height > 0 && isFinite(rate) && rate > 0)
+            return width + "x" + height + "@" + rate.toFixed(2);
+
+        const modes = mon.availableModes || [];
+        if (width > 0 && height > 0) {
+            const prefix = width + "x" + height + "@";
+            for (let i = 0; i < modes.length; i++) {
+                const candidate = String(modes[i]).replace(/Hz$/i, "");
+                if (candidate.indexOf(prefix) === 0)
+                    return candidate;
+
+            }
+        }
+        if (modes.length > 0)
+            return String(modes[0]).replace(/Hz$/i, "");
+
+        return "";
     }
 
     function luaString(value) {
@@ -88,58 +114,88 @@ Item {
     }
 
     function updateMonitorConfig(output, mode, position, scale, disabled) {
-        const source = monitorConfigFile.text();
+        const source = page.pendingMonitorConfigText !== "" ? page.pendingMonitorConfigText : monitorConfigFile.text();
         if (typeof source !== "string" || source.length === 0) {
             console.warn("Display: could not read " + page.monitorConfigPath);
             return false;
         }
-        const lines = source.split("\n");
+        const calls = /hl\.monitor\s*\(\s*\{[\s\S]*?\}\s*\)/g;
+        let match;
+        let updatedSource = source;
         let found = false;
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            if (line.indexOf("hl.monitor(") < 0)
+        while ((match = calls.exec(source)) !== null) {
+            let block = match[0];
+            const outputMatch = block.match(/\boutput\s*=\s*(["'])(.*?)\1/);
+            if (!outputMatch || outputMatch[2] !== output)
                 continue;
 
-            const outputMatch = line.match(/output\s*=\s*[\"']([^\"']+)[\"']/);
-            if (!outputMatch || outputMatch[1] !== output)
-                continue;
-
-            let updated = line;
             const replaceStringField = (key, value) => {
                 if (value === null || value === undefined)
                     return ;
 
-                const pattern = new RegExp('(' + key + '\\s*=\\s*[\"\'])[^\"\']*([\"\'])');
-                if (pattern.test(updated))
-                    updated = updated.replace(pattern, (_, before, after) => {
-                        return before + String(value) + after;
-                    });
-                else
-                    updated = updated.replace(/\s*}\s*\)\s*$/, ', ' + key + ' = "' + String(value).replace(/\"/g, '\\"') + '})');
+                const pattern = new RegExp("\\b" + key + "\\s*=\\s*([\"'])([^\"']*)\\1");
+                const safeValue = String(value).replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+                if (pattern.test(block)) {
+                    block = block.replace(pattern, key + ' = "' + safeValue + '"');
+                } else {
+                    const closing = block.lastIndexOf("}");
+                    if (closing < 0)
+                        return ;
+
+                    const before = block.slice(0, closing);
+                    const trailingMatch = before.match(/\s*$/);
+                    const trailing = trailingMatch ? trailingMatch[0] : "";
+                    const core = before.slice(0, before.length - trailing.length);
+                    const separator = /,\s*$/.test(core) ? " " : ", ";
+                    block = core + separator + key + ' = "' + safeValue + '"' + trailing + block.slice(closing);
+                }
+            };
+            const replaceNumberField = (key, value) => {
+                if (value === null || value === undefined)
+                    return ;
+
+                const number = Number(value);
+                if (!isFinite(number) || number <= 0)
+                    return ;
+
+                const rendered = number.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+                const pattern = new RegExp("\\b" + key + "\\s*=\\s*[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)");
+                if (pattern.test(block)) {
+                    block = block.replace(pattern, key + " = " + rendered);
+                } else {
+                    const closing = block.lastIndexOf("}");
+                    if (closing < 0)
+                        return ;
+
+                    const before = block.slice(0, closing);
+                    const trailingMatch = before.match(/\s*$/);
+                    const trailing = trailingMatch ? trailingMatch[0] : "";
+                    const core = before.slice(0, before.length - trailing.length);
+                    const separator = /,\s*$/.test(core) ? " " : ", ";
+                    block = core + separator + key + " = " + rendered + trailing + block.slice(closing);
+                }
             };
             replaceStringField("mode", mode);
             replaceStringField("position", position);
-            if (scale !== null && scale !== undefined) {
-                const scalePattern = /(scale\s*=\s*)[\d.]+/;
-                if (scalePattern.test(updated))
-                    updated = updated.replace(scalePattern, (_, before) => {
-                        return before + Number(scale).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
-                    });
-                else
-                    updated = updated.replace(/\s*}\s*\)\s*$/, ', scale = ' + Number(scale).toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + '})');
-            }
-            if (disabled !== null && disabled !== undefined) {
-                const disabledPattern = /(disabled\s*=\s*)(true|false)/;
-                if (disabled === true) {
-                    if (disabledPattern.test(updated))
-                        updated = updated.replace(disabledPattern, "$1true");
-                    else
-                        updated = updated.replace(/\s*}\s*\)\s*$/, ', disabled = true})');
-                } else if (disabledPattern.test(updated)) {
-                    updated = updated.replace(/,\s*disabled\s*=\s*(?:true|false)/, "");
+            replaceNumberField("scale", scale);
+            if (disabled === true) {
+                if (/\bdisabled\s*=\s*(?:true|false)/.test(block)) {
+                    block = block.replace(/\bdisabled\s*=\s*(?:true|false)/, "disabled = true");
+                } else {
+                    const closing = block.lastIndexOf("}");
+                    if (closing >= 0) {
+                        const before = block.slice(0, closing);
+                        const trailingMatch = before.match(/\s*$/);
+                        const trailing = trailingMatch ? trailingMatch[0] : "";
+                        const core = before.slice(0, before.length - trailing.length);
+                        const separator = /,\s*$/.test(core) ? " " : ", ";
+                        block = core + separator + "disabled = true" + trailing + block.slice(closing);
+                    }
                 }
+            } else if (disabled === false && /\bdisabled\s*=\s*(?:true|false)/.test(block)) {
+                block = block.replace(/\bdisabled\s*=\s*(?:true|false)/, "disabled = false");
             }
-            lines[i] = updated;
+            updatedSource = source.slice(0, match.index) + block + source.slice(match.index + match[0].length);
             found = true;
             break;
         }
@@ -147,10 +203,10 @@ Item {
             console.warn("Display: no existing hl.monitor entry found for " + output);
             return false;
         }
-        const updatedSource = lines.join("\n");
         if (updatedSource !== source) {
-            monitorConfigFile.setText(updatedSource);
-            configReloadTimer.restart();
+            page.pendingMonitorConfigText = updatedSource;
+            page.monitorConfigWritePending = true;
+            monitorConfigWriteTimer.restart();
         }
         return true;
     }
@@ -172,11 +228,16 @@ Item {
 
     function gluePosition(movedMon, x, y, w, h) {
         if (activeMonitors.length <= 1)
-            return { "x": Math.round(x), "y": Math.round(y) };
+            return {
+            "x": Math.round(x),
+            "y": Math.round(y)
+        };
 
         let bestDist = Infinity;
-        let best = { "x": Math.round(x), "y": Math.round(y) };
-
+        let best = {
+            "x": Math.round(x),
+            "y": Math.round(y)
+        };
         for (let i = 0; i < activeMonitors.length; i++) {
             const other = activeMonitors[i];
             if (other.name === movedMon.name)
@@ -187,23 +248,34 @@ Item {
             const oy = Number(other.y || 0);
             const ow = other.width / s;
             const oh = other.height / s;
-
-            const candidates = [
-                { "x": ox + ow, "y": y, "dist": Math.abs(ox + ow - x) }, 
-                { "x": ox - w,  "y": y, "dist": Math.abs(ox - w - x) },  
-                { "x": x, "y": oy - h,  "dist": Math.abs(oy - h - y) },   
-                { "x": x, "y": oy + oh, "dist": Math.abs(oy + oh - y) }  
-            ];
-
+            const candidates = [{
+                "x": ox + ow,
+                "y": y,
+                "dist": Math.abs(ox + ow - x)
+            }, {
+                "x": ox - w,
+                "y": y,
+                "dist": Math.abs(ox - w - x)
+            }, {
+                "x": x,
+                "y": oy - h,
+                "dist": Math.abs(oy - h - y)
+            }, {
+                "x": x,
+                "y": oy + oh,
+                "dist": Math.abs(oy + oh - y)
+            }];
             for (let c = 0; c < candidates.length; c++) {
                 const cand = candidates[c];
                 if (cand.dist < bestDist) {
                     bestDist = cand.dist;
-                    best = { "x": Math.round(cand.x), "y": Math.round(cand.y) };
+                    best = {
+                        "x": Math.round(cand.x),
+                        "y": Math.round(cand.y)
+                    };
                 }
             }
         }
-
         return best;
     }
 
@@ -214,7 +286,6 @@ Item {
         const cx = bboxCenter.x;
         const cy = bboxCenter.y;
         let maxHalfW = 150, maxHalfH = 100;
-
         for (let i = 0; i < activeMonitors.length; i++) {
             const m = activeMonitors[i];
             const s = m.scale > 0 ? m.scale : 1;
@@ -225,7 +296,6 @@ Item {
             maxHalfW = Math.max(maxHalfW, Math.abs(x1), Math.abs(x2));
             maxHalfH = Math.max(maxHalfH, Math.abs(y1), Math.abs(y2));
         }
-
         const margin = 24;
         const availW = Math.max(50, graphWidth / 2 - margin);
         const availH = Math.max(50, graphHeight / 2 - margin);
@@ -248,8 +318,9 @@ Item {
                 "position": pos,
                 "disabled": false
             });
-            updateMonitorConfig(m.name, mode, pos, m.scale !== undefined ? m.scale : 1);
-            x += Math.round(m.width / m.scale);
+            const safeScale = Number(m.scale) > 0 ? Number(m.scale) : 1;
+            updateMonitorConfig(m.name, mode, pos, safeScale);
+            x += Math.round(Number(m.width) / safeScale);
         }
         if (ordered.length > 0)
             cmds.push("hyprctl dispatch focusmonitor '" + ordered[0].name + "'");
@@ -279,17 +350,29 @@ Item {
         if (enabled) {
             const entry = savedState[mon.name] || {
             };
-            const mode = typeof entry.mode === "string" ? entry.mode : monitorMode(mon);
-            const scale = typeof entry.scale === "number" ? entry.scale : (mon.scale !== undefined ? mon.scale : 1);
-            const position = typeof entry.position === "string" ? entry.position : (mon.x + "x" + mon.y);
+            const liveMode = monitorMode(mon);
+            const savedMode = typeof entry.mode === "string" && /^\d+x\d+@\d+(?:\.\d+)?$/.test(entry.mode) ? entry.mode : "";
+            const mode = savedMode || liveMode;
+            if (!mode) {
+                console.warn("Display: no valid mode is available to re-enable " + mon.name);
+                return ;
+            }
+            const scaleValue = Number(entry.scale !== undefined ? entry.scale : mon.scale);
+            const scale = isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+            const position = typeof entry.position === "string" && /^-?\d+x-?\d+$/.test(entry.position) ? entry.position : (Number(mon.x || 0) + "x" + Number(mon.y || 0));
             rememberMonitor(mon, {
                 "mode": mode,
                 "scale": scale,
                 "position": position,
                 "disabled": false
             });
-            updateMonitorConfig(mon.name, mode, position, scale, false);
-            cmds.push("hyprctl reload");
+            const configUpdated = updateMonitorConfig(mon.name, mode, position, scale, false);
+            if (!configUpdated)
+                return ;
+
+            if (!page.monitorConfigWritePending && !page.monitorConfigWriteInProgress)
+                configReloadTimer.restart();
+
         } else {
             if (page.activeMonitors.length <= 1)
                 return ;
@@ -300,7 +383,10 @@ Item {
                 "scale": mon.scale,
                 "disabled": true
             });
-            updateMonitorConfig(mon.name, monitorMode(mon), mon.x + "x" + mon.y, mon.scale !== undefined ? mon.scale : 1, true);
+            const configUpdated = updateMonitorConfig(mon.name, monitorMode(mon), mon.x + "x" + mon.y, mon.scale !== undefined ? mon.scale : 1, true);
+            if (!configUpdated)
+                return ;
+
             cmds.push("hyprctl keyword monitor '" + mon.name + ",disable'");
             if (wasMain) {
                 const rest = page.activeMonitors.filter((m) => {
@@ -311,8 +397,10 @@ Item {
                 cmds = cmds.concat(layoutCommands(rest));
             }
         }
-        pShell.command = ["sh", "-c", cmds.join("; ")];
-        pShell.running = true;
+        if (cmds.length > 0) {
+            pShell.command = ["sh", "-c", cmds.join("; ")];
+            pShell.running = true;
+        }
     }
 
     function refresh() {
@@ -333,9 +421,9 @@ Item {
 
             const logicalWidth = width / scale;
             const logicalHeight = height / scale;
-            if (Math.abs(logicalWidth - Math.round(logicalWidth)) < 0.01 && Math.abs(logicalHeight - Math.round(logicalHeight)) < 0.01) {
+            if (Math.abs(logicalWidth - Math.round(logicalWidth)) < 0.01 && Math.abs(logicalHeight - Math.round(logicalHeight)) < 0.01)
                 options.push(scale);
-            }
+
         }
         return options;
     }
@@ -343,7 +431,7 @@ Item {
     function validScale(mon, requested) {
         const options = page.scaleOptions(mon);
         if (options.length === 0)
-            return 1.0;
+            return 1;
 
         let best = options[0];
         let bestDistance = Math.abs(options[0] - requested);
@@ -514,28 +602,50 @@ Item {
 
     Process {
         id: stateDirProcess
+
         command: ["mkdir", "-p", page.stateDir]
     }
 
     FileView {
         id: displayFile
+
         path: page.stateDir + "/display.json"
         blockLoading: true
     }
 
     FileView {
         id: displayLua
+
         path: page.stateDir + "/display.lua"
     }
 
     FileView {
         id: monitorConfigFile
+
         path: page.monitorConfigPath
         blockLoading: true
+        onSaved: {
+            page.monitorConfigWriteInProgress = false;
+            if (page.monitorConfigWritePending) {
+                monitorConfigWriteTimer.restart();
+                return ;
+            }
+            page.pendingMonitorConfigText = "";
+            configReloadTimer.restart();
+        }
+        onSaveFailed: (error) => {
+            page.monitorConfigWriteInProgress = false;
+            console.warn("Display: failed to save monitors.lua: " + error);
+            if (page.monitorConfigWritePending)
+                monitorConfigWriteTimer.restart();
+            else
+                page.pendingMonitorConfigText = "";
+        }
     }
 
     Timer {
         id: stateSaveTimer
+
         interval: 300
         onTriggered: {
             try {
@@ -549,13 +659,33 @@ Item {
 
     Process {
         id: pReset
+
         onExited: (exitCode) => {
             refreshTimer.restart();
         }
     }
 
     Timer {
+        id: monitorConfigWriteTimer
+
+        interval: 60
+        repeat: false
+        onTriggered: {
+            if (!page.monitorConfigWritePending || page.pendingMonitorConfigText === "")
+                return ;
+
+            if (page.monitorConfigWriteInProgress)
+                return ;
+
+            page.monitorConfigWritePending = false;
+            page.monitorConfigWriteInProgress = true;
+            monitorConfigFile.setText(page.pendingMonitorConfigText);
+        }
+    }
+
+    Timer {
         id: configReloadTimer
+
         interval: 500
         repeat: false
         onTriggered: {
@@ -566,6 +696,7 @@ Item {
 
     Process {
         id: pConfigReload
+
         onExited: (exitCode) => {
             return refreshTimer.restart();
         }
@@ -573,6 +704,7 @@ Item {
 
     Process {
         id: pShell
+
         onExited: (exitCode) => {
             refreshTimer.restart();
         }
@@ -580,6 +712,7 @@ Item {
 
     Process {
         id: pList
+
         command: ["hyprctl", "monitors", "all", "-j"]
         running: true
 
@@ -592,20 +725,24 @@ Item {
                 }
             }
         }
+
     }
 
     Timer {
         id: scaleApplyTimer
+
         interval: 180
         repeat: false
         onTriggered: {
             if (page.pendingScaleMonitor)
                 page.setScale(page.pendingScaleMonitor, page.pendingScaleValue);
+
         }
     }
 
     Timer {
         id: refreshTimer
+
         interval: 250
         onTriggered: page.refresh()
     }
@@ -625,6 +762,7 @@ Item {
 
         Column {
             id: content
+
             width: flick.width
             spacing: 14
 
@@ -659,8 +797,10 @@ Item {
 
                 Repeater {
                     model: 5
+
                     delegate: Rectangle {
                         required property int index
+
                         x: (index + 1) * monitorGraph.width / 6
                         y: 0
                         width: 1
@@ -668,6 +808,7 @@ Item {
                         color: Theme.alpha(Theme.text, 0.035)
                         z: 0
                     }
+
                 }
 
                 Rectangle {
@@ -697,7 +838,6 @@ Item {
 
                         required property var modelData
                         required property int index
-
                         readonly property real tileScale: monitorGraph.scaleFactor
                         readonly property real tileW: modelData.width / (modelData.scale > 0 ? modelData.scale : 1)
                         readonly property real tileH: modelData.height / (modelData.scale > 0 ? modelData.scale : 1)
@@ -740,15 +880,11 @@ Item {
                                 font.family: "Noto Sans"
                                 font.pixelSize: 9
                             }
+
                         }
 
                         MouseArea {
                             id: dragMouse
-
-                            anchors.fill: parent
-                            acceptedButtons: Qt.LeftButton
-                            preventStealing: true
-                            cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
 
                             property real pressGraphX: 0
                             property real pressGraphY: 0
@@ -763,19 +899,16 @@ Item {
                                 const dyWorld = (p.y - pressGraphY) / factor;
                                 const wantX = startWorldX + dxWorld;
                                 const wantY = startWorldY + dyWorld;
-
-                                const glued = page.gluePosition(
-                                    monitorTile.modelData,
-                                    wantX, wantY,
-                                    monitorTile.tileW, monitorTile.tileH
-                                );
-
+                                const glued = page.gluePosition(monitorTile.modelData, wantX, wantY, monitorTile.tileW, monitorTile.tileH);
                                 monitorTile.x = monitorGraph.width / 2 + (glued.x - monitorGraph.centerX) * factor;
                                 monitorTile.y = monitorGraph.height / 2 + (glued.y - monitorGraph.centerY) * factor;
-
                                 return glued;
                             }
 
+                            anchors.fill: parent
+                            acceptedButtons: Qt.LeftButton
+                            preventStealing: true
+                            cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
                             onPressed: function(mouse) {
                                 const p = dragMouse.mapToItem(monitorGraph, mouse.x, mouse.y);
                                 pressGraphX = p.x;
@@ -784,23 +917,26 @@ Item {
                                 startWorldY = Number(monitorTile.modelData.y || 0);
                                 moved = false;
                             }
-
                             onPositionChanged: function(mouse) {
                                 if (!pressed)
                                     return ;
+
                                 moved = true;
                                 applyGlue(mouse.x, mouse.y);
                             }
-
                             onReleased: function(mouse) {
                                 if (!moved)
                                     return ;
+
                                 const glued = applyGlue(mouse.x, mouse.y);
                                 page.setPosition(monitorTile.modelData, glued.x, glued.y);
                             }
                         }
+
                     }
+
                 }
+
             }
 
             Column {
@@ -858,6 +994,7 @@ Item {
                                         font.family: "Noto Sans"
                                         font.pixelSize: 12
                                     }
+
                                 }
 
                                 Row {
@@ -886,12 +1023,14 @@ Item {
 
                                         MouseArea {
                                             id: mainMouse
+
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             enabled: !card.main
                                             cursorShape: card.main ? Qt.ArrowCursor : Qt.PointingHandCursor
                                             onClicked: page.setMainMonitor(card.modelData)
                                         }
+
                                     }
 
                                     Rectangle {
@@ -915,13 +1054,17 @@ Item {
 
                                         MouseArea {
                                             id: toggleMouse
+
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: page.setMonitorEnabled(card.modelData, card.off)
                                         }
+
                                     }
+
                                 }
+
                             }
 
                             Row {
@@ -974,6 +1117,7 @@ Item {
                                     font.family: "Noto Sans"
                                     font.pixelSize: 11
                                 }
+
                             }
 
                             Row {
@@ -1000,6 +1144,7 @@ Item {
 
                                         delegate: Rectangle {
                                             id: resButton
+
                                             required property string modelData
                                             property bool current: modelData === card.modelData.width + "x" + card.modelData.height
 
@@ -1021,6 +1166,7 @@ Item {
 
                                             MouseArea {
                                                 id: resMouse
+
                                                 anchors.fill: parent
                                                 hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
@@ -1028,11 +1174,16 @@ Item {
                                                     const mode = page.bestMode(card.modelData, resButton.modelData);
                                                     if (mode)
                                                         page.setResolution(card.modelData, mode);
+
                                                 }
                                             }
+
                                         }
+
                                     }
+
                                 }
+
                             }
 
                             Row {
@@ -1059,6 +1210,7 @@ Item {
 
                                         delegate: Rectangle {
                                             id: rateButton
+
                                             required property var modelData
                                             property bool current: Math.abs(modelData - card.modelData.refreshRate) < 0.05
 
@@ -1080,18 +1232,27 @@ Item {
 
                                             MouseArea {
                                                 id: rateMouse
+
                                                 anchors.fill: parent
                                                 hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: page.setRefreshRate(card.modelData, rateButton.modelData)
                                             }
+
                                         }
+
                                     }
+
                                 }
+
                             }
+
                         }
+
                     }
+
                 }
+
             }
 
             Rectangle {
@@ -1114,24 +1275,32 @@ Item {
 
                 MouseArea {
                     id: resetMouse
+
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: page.resetToConfig()
                 }
+
             }
+
         }
 
         ScrollBar.vertical: ScrollBar {
             id: scrollBar
+
             background: Rectangle {
                 color: "transparent"
                 radius: width / 2
             }
+
             contentItem: Rectangle {
                 color: "transparent"
                 radius: width / 2
             }
+
         }
+
     }
+
 }

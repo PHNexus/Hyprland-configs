@@ -17,6 +17,9 @@ Item {
     property string editKey: ""
     property string editCommand: ""
     property bool fileReady: false
+    property bool saveInProgress: false
+    property bool queuedSave: false
+    property string queuedSaveText: ""
     readonly property var categories: ["All", "Apps", "Windows", "Workspaces", "Media", "Capture", "Other"]
 
     function skipString(s, i) {
@@ -153,26 +156,59 @@ Item {
     }
 
     function decodeLuaString(s) {
-        return s.replace(/\\([\s\S])/g, function(match, ch) {
-            if (ch === "n")
-                return "\n";
+        return s.replace(/\\(u\{[0-9a-fA-F]+\}|x[0-9a-fA-F]{2}|[0-9]{1,3}|z\s*|[\s\S])/g, function(match, escape) {
+            if (escape === "a")
+                return "\u0007";
 
-            if (ch === "r")
-                return "\r";
-
-            if (ch === "t")
-                return "\t";
-
-            if (ch === "b")
+            if (escape === "b")
                 return "\b";
 
-            if (ch === "f")
+            if (escape === "f")
                 return "\f";
 
-            if (ch === "v")
-                return "\v";
+            if (escape === "n")
+                return "\n";
 
-            return ch;
+            if (escape === "r")
+                return "\r";
+
+            if (escape === "t")
+                return "\t";
+
+            if (escape === "v")
+                return "\u000b";
+
+            if (escape === "\\")
+                return "\\";
+
+            if (escape === "\"")
+                return "\"";
+
+            if (escape === "'")
+                return "'";
+
+            if (escape.charAt(0) === "z")
+                return "";
+
+            if (escape.charAt(0) === "x")
+                return String.fromCharCode(parseInt(escape.slice(1), 16));
+
+            if (escape.charAt(0) === "u") {
+                var codePoint = parseInt(escape.slice(2, -1), 16);
+                try {
+                    return String.fromCodePoint(codePoint);
+                } catch (error) {
+                    return match;
+                }
+            }
+            if (/^[0-9]+$/.test(escape)) {
+                var decimalCode = parseInt(escape, 10);
+                return decimalCode <= 255 ? String.fromCharCode(decimalCode) : match;
+            }
+            if (escape === "\n" || escape === "\r")
+                return "\n";
+
+            return escape;
         });
     }
 
@@ -180,16 +216,22 @@ Item {
         return '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + '"';
     }
 
-    function getKey(raw) {
+    function mainModifier(source) {
+        var text = source === undefined ? sourceText : source;
+        var match = text.match(/(?:local\s+)?mainMod\s*=\s*["']([^"']+)["']/);
+        return match ? match[1].trim().toUpperCase() : "SUPER";
+    }
+
+    function getKey(raw, source) {
         var value = raw.trim();
         // Support format: mainMod .. " + B"
         if (value.indexOf("mainMod") >= 0) {
             var match = value.match(/["']([^"']*)["']/);
             if (match) {
                 var cleanMatch = match[1].replace(/^\s*\+\s*/, "");
-                return "SUPER + " + cleanMatch.toUpperCase();
+                return mainModifier(source) + " + " + cleanMatch.toUpperCase();
             }
-            return "SUPER";
+            return mainModifier(source);
         }
         var quoted = value.match(/^(['"])([\s\S]*)\1$/);
         if (quoted)
@@ -332,7 +374,7 @@ Item {
 
             var keyArg = call.args[0], actionArg = call.args[1];
             var keyRaw = keyArg.text, actionRaw = actionArg.text;
-            var key = getKey(keyRaw);
+            var key = getKey(keyRaw, s);
             var commandInfo = getCommand(actionRaw);
             var command = commandInfo.command;
             parsed.push({
@@ -381,6 +423,18 @@ Item {
         editDialog.open();
     }
 
+    function saveSource(text) {
+        sourceText = text;
+        statusMessage = "Saving keybinds.lua...";
+        if (saveInProgress) {
+            queuedSave = true;
+            queuedSaveText = text;
+            return ;
+        }
+        saveInProgress = true;
+        keybindFile.setText(text);
+    }
+
     function applyEdit() {
         if (!selectedBinding)
             return ;
@@ -389,9 +443,15 @@ Item {
         if (b.keyEditable && editKey.trim().length > 0 && editKey !== b.key) {
             var newKeyText = editKey.trim();
             var formattedKey = "";
-            if (/^SUPER\s*\+\s*/i.test(newKeyText)) {
-                var actualKey = newKeyText.replace(/^SUPER\s*\+\s*/i, "").trim();
-                formattedKey = 'mainMod .. " + ' + actualKey + '"';
+            var modifier = mainModifier(sourceText);
+            var modifierPrefix = new RegExp("^" + modifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\+\\s*", "i");
+            if (modifierPrefix.test(newKeyText)) {
+                var actualKey = newKeyText.replace(modifierPrefix, "").trim();
+                if (!actualKey) {
+                    statusMessage = "Enter a key after the modifier";
+                    return ;
+                }
+                formattedKey = "mainMod .. " + encodeLuaString(" + " + actualKey);
             } else {
                 formattedKey = encodeLuaString(newKeyText);
             }
@@ -412,6 +472,20 @@ Item {
             statusMessage = "No changes to save";
             return ;
         }
+        if (b.keyEditable && editKey.trim().length > 0 && editKey !== b.key) {
+            var candidateKey = editKey.trim().replace(/\s*\+\s*/g, " + ").toUpperCase();
+            for (var duplicateIndex = 0; duplicateIndex < bindings.length; duplicateIndex++) {
+                var existing = bindings[duplicateIndex];
+                if (existing === b)
+                    continue;
+
+                var existingKey = existing.key.trim().replace(/\s*\+\s*/g, " + ").toUpperCase();
+                if (candidateKey === existingKey) {
+                    statusMessage = "That shortcut is already assigned to another action";
+                    return ;
+                }
+            }
+        }
         replacements.sort(function(a, b) {
             return b.start - a.start;
         });
@@ -422,8 +496,7 @@ Item {
         }
         sourceText = updated;
         bindings = parseBindings(updated);
-        keybindFile.setText(updated);
-        statusMessage = "Saving keybinds.lua...";
+        saveSource(updated);
     }
 
     FileView {
@@ -443,10 +516,28 @@ Item {
             page.statusMessage = "Unable to load keybinds.lua";
         }
         onSaved: {
+            page.saveInProgress = false;
+            if (page.queuedSave) {
+                var nextText = page.queuedSaveText;
+                page.queuedSave = false;
+                page.queuedSaveText = "";
+                page.saveInProgress = true;
+                keybindFile.setText(nextText);
+                return ;
+            }
             page.statusMessage = "Changes saved to keybinds.lua";
-            page.loadBindings(page.sourceText);
+            page.loadBindings(keybindFile.text());
         }
         onSaveFailed: (error) => {
+            page.saveInProgress = false;
+            if (page.queuedSave) {
+                var nextText = page.queuedSaveText;
+                page.queuedSave = false;
+                page.queuedSaveText = "";
+                page.saveInProgress = true;
+                keybindFile.setText(nextText);
+                return ;
+            }
             page.statusMessage = "Could not save keybinds.lua; reloading saved file...";
             keybindFile.reload();
         }

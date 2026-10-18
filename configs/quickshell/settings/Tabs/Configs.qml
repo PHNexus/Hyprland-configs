@@ -31,6 +31,14 @@ Item {
             exec >>"$logFile" 2>&1
             echo "=== $(date): $file ==="
 
+            for dependency in nvim kitty flock hyprctl jq; do
+                if ! command -v "$dependency" >/dev/null 2>&1; then
+                    echo "ERROR: Required command not found: $dependency"
+                    settings hide
+                    exit 127
+                fi
+            done
+
             exec 9>"$lockFile" || exit 1
             flock -x 9 || exit 1
 
@@ -39,9 +47,16 @@ Item {
             }
 
             if server_found; then
-                nvim --server "$socket" --remote "$file"
-                result=$?
-                echo "Remote request exit code: $result"
+                if nvim --server "$socket" --remote "$file"; then
+                    echo "Remote request succeeded."
+                else
+                    result=$?
+                    echo "ERROR: Remote request failed with exit code: $result"
+                    flock -u 9
+                    exec 9>&-
+                    settings hide
+                    exit "$result"
+                fi
             else
                 rm -f "$socket"
 
