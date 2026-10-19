@@ -218,4 +218,3 @@ audio/mp3=mpv.desktop;
 audio/flac=mpv.desktop;
 x-scheme-handler/ton=org.telegram.desktop.desktop;
 x-scheme-handler/mailto=helium.desktop;
-x-scheme-handler/bitwarden=bitwarden.desktop;
