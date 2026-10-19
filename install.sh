@@ -1713,6 +1713,50 @@ if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
     trap - EXIT
 
     echo "Helium DRM Fixer step finished."
+
+    # --------------------------------------------
+    # Configure Helium Browser Flags
+    # --------------------------------------------
+    echo
+    echo "Configuring Helium browser flags..."
+
+    mkdir -p "$CONFIG_DIR"
+
+    cat >"$CONFIG_DIR/helium-browser-flags.conf" <<'EOF'
+--enable-features=VaapiVideoDecoder,AcceleratedVideoDecodeLinuxGL,VaapiVideoEncoder
+--ignore-gpu-blocklist
+--enable-zero-copy
+--ozone-platform=wayland
+--enable-gpu-rasterization
+--use-gl=angle
+--use-angle=gl
+EOF
+
+    echo "  - Created helium-browser-flags.conf successfully."
+
+    # --------------------------------------------
+    # Configure Helium Cookie Exceptions via Policy
+    # --------------------------------------------
+    echo
+    echo "Configuring Helium cookie exceptions..."
+
+    sudo mkdir -p /etc/chromium/policies/managed
+
+    sudo tee /etc/chromium/policies/managed/cookie_exceptions.json >/dev/null <<'EOF'
+{
+  "CookiesAllowedForUrls": [
+    "[*.]google.com",
+    "[*.]accounts.google.com",
+    "accounts.google.com",
+    "google.com"
+  ]
+}
+EOF
+
+    echo "  - Cookie exceptions policy configured successfully."
+else
+    echo
+    echo "Skipping Helium browser configuration: helium-browser-bin is not listed in packages.txt."
 fi
 
 # --------------------------------------------
