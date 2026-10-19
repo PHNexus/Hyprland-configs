@@ -1506,6 +1506,9 @@ if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
     sudo pacman -S --needed --noconfirm bun
 
     HELIUM_DRM_DIR="/tmp/helium-drm-fixer"
+    HELIUM_PROFILE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/net.imput.helium"
+    HELIUM_BOOTSTRAP_LOG="${TMPDIR:-/tmp}/helium-drm-bootstrap-$$.log"
+    HELIUM_BOOTSTRAP_PID=""
     CHROME_WAS_INSTALLED=0
     CHROME_INSTALLED_BY_SCRIPT=0
 
@@ -1513,7 +1516,148 @@ if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
         CHROME_WAS_INSTALLED=1
     fi
 
+    helium_profile_files_ready() {
+        [[ -s "$HELIUM_PROFILE_DIR/Local State" &&
+            -s "$HELIUM_PROFILE_DIR/Default/Preferences" ]]
+    }
+
+    collect_helium_bootstrap_tree() {
+        local parent_pid="$1"
+        local child_pid
+
+        while IFS= read -r child_pid; do
+            [[ -n "$child_pid" ]] || continue
+            HELIUM_BOOTSTRAP_TREE+=("$child_pid")
+            collect_helium_bootstrap_tree "$child_pid"
+        done < <(pgrep -P "$parent_pid" 2>/dev/null || true)
+    }
+
+    stop_helium_bootstrap() {
+        [[ -n "$HELIUM_BOOTSTRAP_PID" ]] || return 0
+
+        if kill -0 "$HELIUM_BOOTSTRAP_PID" 2>/dev/null; then
+            local -a HELIUM_BOOTSTRAP_TREE=()
+            local -a HELIUM_BOOTSTRAP_TARGETS=()
+            local pid
+            local running
+
+            collect_helium_bootstrap_tree "$HELIUM_BOOTSTRAP_PID"
+            HELIUM_BOOTSTRAP_TARGETS=(
+                "${HELIUM_BOOTSTRAP_TREE[@]}"
+                "$HELIUM_BOOTSTRAP_PID"
+            )
+
+            kill -TERM "${HELIUM_BOOTSTRAP_TARGETS[@]}" 2>/dev/null || true
+
+            for _ in {1..10}; do
+                running=0
+
+                for pid in "${HELIUM_BOOTSTRAP_TARGETS[@]}"; do
+                    if kill -0 "$pid" 2>/dev/null; then
+                        running=1
+                        break
+                    fi
+                done
+
+                [[ "$running" -eq 1 ]] || break
+                sleep 1
+            done
+
+            for pid in "${HELIUM_BOOTSTRAP_TARGETS[@]}"; do
+                kill -KILL "$pid" 2>/dev/null || true
+            done
+        fi
+
+        wait "$HELIUM_BOOTSTRAP_PID" 2>/dev/null || true
+        HELIUM_BOOTSTRAP_PID=""
+    }
+
+    prepare_helium_profile() {
+        local HELIUM_LAUNCHER
+        local PROFILE_READY=0
+
+        if helium_profile_files_ready; then
+            echo "  - Helium profile files already exist."
+            return 0
+        fi
+
+        if [[ -L "$HELIUM_PROFILE_DIR/SingletonLock" ||
+              -e "$HELIUM_PROFILE_DIR/SingletonLock" ||
+              -L "$HELIUM_PROFILE_DIR/SingletonSocket" ||
+              -e "$HELIUM_PROFILE_DIR/SingletonSocket" ]]; then
+
+            echo "  - Helium profile appears to be in use."
+            echo "  - Waiting for the profile files without launching another instance..."
+
+            for _ in {1..30}; do
+                if helium_profile_files_ready; then
+                    echo "  - Helium profile files verified."
+                    return 0
+                fi
+
+                sleep 1
+            done
+
+            warn "Helium profile is in use, but the required files are missing."
+            return 1
+        fi
+
+        HELIUM_LAUNCHER="$(command -v helium-browser || true)"
+
+        if [[ -z "$HELIUM_LAUNCHER" ]]; then
+            warn "Helium launcher was not found."
+            return 1
+        fi
+
+        mkdir -p "$HELIUM_PROFILE_DIR" || {
+            warn "Could not create the Helium profile directory."
+            return 1
+        }
+
+        : > "$HELIUM_BOOTSTRAP_LOG"
+
+        echo "  - Starting Helium in the background..."
+        echo "  - Waiting for profile files..."
+        echo "  - Log: $HELIUM_BOOTSTRAP_LOG"
+
+        "$HELIUM_LAUNCHER" \
+            --headless \
+            --disable-gpu \
+            --no-first-run \
+            --no-default-browser-check \
+            --user-data-dir="$HELIUM_PROFILE_DIR" \
+            about:blank \
+            > >(tee -a "$HELIUM_BOOTSTRAP_LOG") 2>&1 &
+
+        HELIUM_BOOTSTRAP_PID=$!
+
+        for _ in {1..30}; do
+            if helium_profile_files_ready; then
+                PROFILE_READY=1
+                break
+            fi
+
+            if ! kill -0 "$HELIUM_BOOTSTRAP_PID" 2>/dev/null; then
+                break
+            fi
+
+            sleep 1
+        done
+
+        stop_helium_bootstrap
+
+        if [[ "$PROFILE_READY" -eq 1 ]]; then
+            echo "  - Helium profile files verified."
+            return 0
+        fi
+
+        warn "Helium did not create the required profile files."
+        warn "Check the bootstrap log: $HELIUM_BOOTSTRAP_LOG"
+        return 1
+    }
+
     cleanup_helium_drm() {
+        stop_helium_bootstrap
         rm -rf -- "$HELIUM_DRM_DIR"
 
         if [[ "$CHROME_INSTALLED_BY_SCRIPT" -eq 1 ]]; then
@@ -1545,10 +1689,18 @@ if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
         fi
 
         if pacman -Qi google-chrome &>/dev/null; then
-            if (cd "$HELIUM_DRM_DIR" && bun install && bun run cli.ts); then
-                echo "  - Helium DRM Fixer completed."
+            if prepare_helium_profile; then
+                if (
+                    cd "$HELIUM_DRM_DIR" &&
+                    bun install &&
+                    bun run cli.ts
+                ); then
+                    echo "  - Helium DRM Fixer completed."
+                else
+                    warn "Helium DRM Fixer failed; continuing."
+                fi
             else
-                warn "Helium DRM Fixer failed; continuing."
+                warn "Helium profile initialization failed; skipping the DRM fixer."
             fi
         else
             warn "Google Chrome is unavailable; skipping the DRM fixer."
@@ -1561,50 +1713,6 @@ if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
     trap - EXIT
 
     echo "Helium DRM Fixer step finished."
-
-    # --------------------------------------------
-    # Configure Helium Browser Flags
-    # --------------------------------------------
-    echo
-    echo "Configuring Helium browser flags..."
-
-    mkdir -p "$CONFIG_DIR"
-
-    cat >"$CONFIG_DIR/helium-browser-flags.conf" <<'EOF'
---enable-features=VaapiVideoDecoder,AcceleratedVideoDecodeLinuxGL,VaapiVideoEncoder
---ignore-gpu-blocklist
---enable-zero-copy
---ozone-platform=wayland
---enable-gpu-rasterization
---use-gl=angle
---use-angle=gl
-EOF
-
-    echo "  - Created helium-browser-flags.conf successfully."
-
-    # --------------------------------------------
-    # Configure Helium Cookie Exceptions via Policy
-    # --------------------------------------------
-    echo
-    echo "Configuring Helium cookie exceptions..."
-
-    sudo mkdir -p /etc/chromium/policies/managed
-
-    sudo tee /etc/chromium/policies/managed/cookie_exceptions.json >/dev/null <<'EOF'
-{
-  "CookiesAllowedForUrls": [
-    "[*.]google.com",
-    "[*.]accounts.google.com",
-    "accounts.google.com",
-    "google.com"
-  ]
-}
-EOF
-
-    echo "  - Cookie exceptions policy configured successfully."
-else
-    echo
-    echo "Skipping Helium browser configuration: helium-browser-bin is not listed in packages.txt."
 fi
 
 # --------------------------------------------
