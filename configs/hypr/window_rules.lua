@@ -209,7 +209,7 @@ function M.setup()
         match = { title = "^(Settings)$" },
         float = true,
         center = true,
-        size = "1100 650",
+        size = "1200 700",
         rounding = 16,
     })
     hl.layer_rule({
