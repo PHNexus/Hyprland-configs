@@ -395,60 +395,229 @@ fi
 echo
 echo "Installing Arch Linux dependencies from packages.txt..."
 
-if [[ -f "$REPO_DIR/packages.txt" ]]; then
-    official_packages=()
-    aur_packages=()
-    is_aur=0
+OPTIONAL_PACKAGE_NAMES=(
+    steam
+    easyeffects
+    spotify
+    visual-studio-code-bin
+    helium-browser-bin
+    github-desktop-bin
+    bitwarden-bin
+)
 
+declare -A OPTIONAL_NAME_SET=()
+declare -A SEEN_PACKAGES=()
+declare -A PACKAGE_SOURCE=()
+declare -A SELECTED_OPTIONAL=()
+declare -A INSTALLED_OPTIONAL=()
+
+official_packages=()
+aur_packages=()
+flatpak_packages=()
+optional_packages=()
+
+for package in "${OPTIONAL_PACKAGE_NAMES[@]}"; do
+    OPTIONAL_NAME_SET["$package"]=1
+done
+
+PACKAGE_SECTION="official"
+
+if [[ -f "$REPO_DIR/packages.txt" ]]; then
     while IFS= read -r line || [[ -n "$line" ]]; do
-        line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+        line="$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
         [[ -z "$line" ]] && continue
 
-        if [[ "$line" =~ ^#[[:space:]]*AUR([[:space:]]|$) ]]; then
-            is_aur=1
+        if [[ "${line,,}" =~ ^#[[:space:]]*aur([[:space:]]|$) ]]; then
+            PACKAGE_SECTION="aur"
             continue
         fi
 
-        if [[ "$line" =~ ^#[[:space:]]*Flatpaks([[:space:]]|$) ]]; then
-            break
+        if [[ "${line,,}" =~ ^#[[:space:]]*flatpaks?([[:space:]]|$) ]]; then
+            PACKAGE_SECTION="flatpak"
+            continue
         fi
 
         [[ "$line" =~ ^# ]] && continue
+        [[ -n "${SEEN_PACKAGES["$line"]:-}" ]] && continue
 
-        if [[ $is_aur -eq 0 ]]; then
-            official_packages+=("$line")
-        else
-            aur_packages+=("$line")
+        SEEN_PACKAGES["$line"]=1
+        PACKAGE_SOURCE["$line"]="$PACKAGE_SECTION"
+
+        if [[ -n "${OPTIONAL_NAME_SET["$line"]:-}" ]]; then
+            optional_packages+=("$line")
+            continue
         fi
-    done <"$REPO_DIR/packages.txt"
 
-    if [[ ${#official_packages[@]} -gt 0 ]]; then
-        echo "Installing official packages via pacman..."
-        sudo pacman -S --needed --noconfirm "${official_packages[@]}"
-    fi
-
-    if [[ ${#aur_packages[@]} -gt 0 ]]; then
-        echo "Installing AUR packages via $AUR_HELPER..."
-        aur_install "${aur_packages[@]}"
-    fi
+        case "$PACKAGE_SECTION" in
+            official) official_packages+=("$line") ;;
+            aur) aur_packages+=("$line") ;;
+            flatpak) flatpak_packages+=("$line") ;;
+        esac
+    done < "$REPO_DIR/packages.txt"
 else
     echo "packages.txt not found in repository root."
 fi
 
-# --------------------------------------------
-# Detect optional packages enabled by packages.txt
-# --------------------------------------------
+if [[ ${#optional_packages[@]} -gt 0 ]]; then
+    echo
+    echo "Optional applications:"
+
+    for i in "${!optional_packages[@]}"; do
+        package="${optional_packages[$i]}"
+        printf '  %d) %s [%s]\n' "$((i + 1))" "$package" "${PACKAGE_SOURCE[$package]}"
+    done
+
+    echo "  0) None"
+    echo "  all) Select all"
+    echo
+
+    declare -a selections=()
+    declare -A seen_numbers=()
+
+    while true; do
+        if ! IFS= read -r -p "Select applications (numbers separated by spaces or commas): " selection_input; then
+            selection_input=""
+        fi
+
+        selection_input="${selection_input//,/ }"
+        selections=()
+        read -r -a selections <<< "$selection_input"
+
+        if [[ ${#selections[@]} -eq 0 ]]; then
+            echo "No optional applications selected."
+            break
+        fi
+
+        if [[ ${#selections[@]} -eq 1 && "${selections[0],,}" == "all" ]]; then
+            for package in "${optional_packages[@]}"; do
+                SELECTED_OPTIONAL["$package"]=1
+            done
+            break
+        fi
+
+        if [[ ${#selections[@]} -eq 1 && "${selections[0]}" == "0" ]]; then
+            echo "No optional applications selected."
+            break
+        fi
+
+        seen_numbers=()
+        valid_selection=1
+
+        for number in "${selections[@]}"; do
+            if [[ ! "$number" =~ ^[1-9][0-9]*$ ]]; then
+                valid_selection=0
+                break
+            fi
+
+            number_value=$((10#$number))
+            if (( number_value < 1 || number_value > ${#optional_packages[@]} )); then
+                valid_selection=0
+                break
+            fi
+
+            seen_numbers["$number_value"]=1
+        done
+
+        if [[ "$valid_selection" -ne 1 ]]; then
+            echo "Invalid selection. Enter valid numbers, 0 or all."
+            continue
+        fi
+
+        for number in "${!seen_numbers[@]}"; do
+            package="${optional_packages[$((number - 1))]}"
+            SELECTED_OPTIONAL["$package"]=1
+        done
+        break
+    done
+fi
+
+if [[ ${#official_packages[@]} -gt 0 ]]; then
+    echo "Installing required official packages via pacman..."
+    sudo pacman -S --needed --noconfirm "${official_packages[@]}"
+fi
+
+if [[ ${#aur_packages[@]} -gt 0 ]]; then
+    echo "Installing required AUR packages via $AUR_HELPER..."
+    aur_install "${aur_packages[@]}"
+fi
+
+FLATPAK_READY=0
+if command -v flatpak >/dev/null 2>&1; then
+    if flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
+        FLATPAK_READY=1
+    else
+        warn "Could not configure Flathub; Flatpak installations may be skipped."
+    fi
+else
+    echo "  - Flatpak is not installed; Flatpak applications will be skipped."
+fi
+
+for package in "${flatpak_packages[@]}"; do
+    if [[ "$FLATPAK_READY" -eq 1 ]]; then
+        echo "Installing required Flatpak: $package..."
+        if ! flatpak install --user -y flathub "$package"; then
+            warn "Failed to install Flatpak '$package'; continuing."
+        fi
+    else
+        warn "Cannot install Flatpak '$package' because Flatpak or Flathub is unavailable."
+    fi
+done
+
+install_optional_package() {
+    local package="$1"
+    local source="${PACKAGE_SOURCE["$package"]}"
+
+    case "$source" in
+        official)
+            sudo pacman -S --needed --noconfirm "$package"
+            ;;
+        aur)
+            aur_install "$package"
+            ;;
+        flatpak)
+            if [[ "$FLATPAK_READY" -ne 1 ]]; then
+                warn "Cannot install $package because Flatpak or Flathub is unavailable."
+                return 1
+            fi
+            flatpak install --user -y flathub "$package"
+            ;;
+        *)
+            warn "Unknown package source for $package."
+            return 1
+            ;;
+    esac
+}
+
+echo
+echo "Installing selected optional applications..."
+
+for package in "${optional_packages[@]}"; do
+    [[ "${SELECTED_OPTIONAL["$package"]:-0}" -eq 1 ]] || continue
+
+    echo "Installing $package..."
+    if install_optional_package "$package"; then
+        INSTALLED_OPTIONAL["$package"]=1
+    else
+        warn "Could not install optional application: $package"
+    fi
+done
+
 HAS_CLOUDFLARE_WARP=0
+if [[ -n "${SEEN_PACKAGES["cloudflare-warp-bin"]:-}" ]] && pacman -Q cloudflare-warp-bin >/dev/null 2>&1; then
+    HAS_CLOUDFLARE_WARP=1
+fi
+
 HAS_HELIUM_BROWSER=0
+if [[ "${INSTALLED_OPTIONAL["helium-browser-bin"]:-0}" -eq 1 ]] &&
+    pacman -Q helium-browser-bin >/dev/null 2>&1 &&
+    command -v helium-browser >/dev/null 2>&1; then
+    HAS_HELIUM_BROWSER=1
+fi
 
-if [[ -f "$REPO_DIR/packages.txt" ]]; then
-    if grep -qE '^[[:space:]]*cloudflare-warp-bin[[:space:]]*$' "$REPO_DIR/packages.txt"; then
-        HAS_CLOUDFLARE_WARP=1
-    fi
-
-    if grep -qE '^[[:space:]]*helium-browser-bin[[:space:]]*$' "$REPO_DIR/packages.txt"; then
-        HAS_HELIUM_BROWSER=1
-    fi
+HAS_EASYEFFECTS=0
+if [[ "${INSTALLED_OPTIONAL["easyeffects"]:-0}" -eq 1 ]] &&
+    pacman -Q easyeffects >/dev/null 2>&1; then
+    HAS_EASYEFFECTS=1
 fi
 
 # --------------------------------------------
@@ -1294,12 +1463,9 @@ hyprctl reload 2>/dev/null || true
 echo
 echo "Configuring EasyEffects user service..."
 
-HAS_EASYEFFECTS=0
-if [[ -f "$REPO_DIR/packages.txt" ]] && grep -qE '^[[:space:]]*easyeffects[[:space:]]*$' "$REPO_DIR/packages.txt"; then
-    HAS_EASYEFFECTS=1
-fi
-
-if [[ "$HAS_EASYEFFECTS" -eq 1 ]]; then
+if [[ "$HAS_EASYEFFECTS" -eq 1 ]] &&
+    pacman -Q easyeffects >/dev/null 2>&1 &&
+    [[ -x /usr/bin/easyeffects ]]; then
     SYSTEMD_USER_DIR="$CONFIG_DIR/systemd/user"
     EASYEFFECTS_SERVICE="$SYSTEMD_USER_DIR/easyeffects.service"
 
@@ -1333,7 +1499,7 @@ EOF
     fi
 
 else
-    echo "  - EasyEffects is not listed in packages.txt; skipping its user service."
+    echo "  - EasyEffects was not selected or installed; skipping its user service."
 fi
 
 # --------------------------------------------
@@ -1448,52 +1614,6 @@ for entry in btop.desktop nvim.desktop; do
 done
 if [[ "$found" -eq 0 ]]; then
     echo "  Warning: No desktop entries found"
-fi
-
-# --------------------------------------------
-# Install Flatpak Apps from packages.txt
-# --------------------------------------------
-echo
-echo "Configuring Flathub and installing Flatpak apps..."
-if command -v flatpak &>/dev/null; then
-    if ! flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
-        warn "Could not configure the Flathub user remote; skipping Flatpak packages."
-    elif [[ -f "$REPO_DIR/packages.txt" ]]; then
-        flatpak_packages=()
-        is_flatpaks=0
-
-        while IFS= read -r line || [[ -n "$line" ]]; do
-            line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-            [[ -z "$line" ]] && continue
-
-            if [[ "$line" =~ ^#[[:space:]]*Flatpaks([[:space:]]|$) ]]; then
-                is_flatpaks=1
-                continue
-            fi
-
-            if [[ "$line" =~ ^# ]]; then
-                is_flatpaks=0
-                continue
-            fi
-
-            [[ "$line" =~ ^# ]] && continue
-
-            if [[ $is_flatpaks -eq 1 ]]; then
-                flatpak_packages+=("$line")
-            fi
-        done <"$REPO_DIR/packages.txt"
-
-        if [[ ${#flatpak_packages[@]} -gt 0 ]]; then
-            for app in "${flatpak_packages[@]}"; do
-                echo "  - Installing Flatpak: $app..."
-                if ! flatpak install --user -y flathub "$app"; then
-                    warn "Failed to install Flatpak '$app'; continuing."
-                fi
-            done
-        fi
-    fi
-else
-    echo "  - Flatpak is not installed, skipping Flatpak applications."
 fi
 
 # --------------------------------------------
@@ -1756,7 +1876,7 @@ EOF
     echo "  - Cookie exceptions policy configured successfully."
 else
     echo
-    echo "Skipping Helium browser configuration: helium-browser-bin is not listed in packages.txt."
+    echo "Skipping Helium browser configuration: helium-browser-bin was not selected or installed."
 fi
 
 # --------------------------------------------
