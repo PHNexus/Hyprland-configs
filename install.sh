@@ -26,30 +26,54 @@ echo
 # --------------------------------------------
 # WARNING BANNER
 # --------------------------------------------
-RED='\033[1;31m'
-YELLOW='\033[1;33m'
-CYAN='\033[1;36m'
-GREEN='\033[1;32m'
-MAGENTA='\033[1;35m'
-BOLD='\033[1m'
-NC='\033[0m'
+BANNER_BORDER='\033[38;5;60m'
+BANNER_ACCENT='\033[38;5;141m'
+BANNER_PRIMARY='\033[38;5;75m'
+BANNER_TEXT='\033[38;5;255m'
+BANNER_MUTED='\033[38;5;245m'
+BANNER_WARNING='\033[38;5;203m'
+BANNER_RESET='\033[0m'
+BANNER_WIDTH=70
 
-echo -e "${CYAN}"
-echo "╔══════════════════════════════════════════════════════════╗"
-echo "║                     ⚙  SETUP  ⚙                          ║"
-echo "╠══════════════════════════════════════════════════════════╣"
-echo -e "║ ${YELLOW}•${NC} ${BOLD}Fresh Arch Linux${NC} only — no prior setup.                ${CYAN}║"
-echo -e "║ ${YELLOW}•${NC} Backs up ${MAGENTA}~/.config${NC} → ${MAGENTA}~/.config/backups/${NC}                ${CYAN}║"
-echo -e "║ ${YELLOW}•${NC} Installs ${GREEN}packages.txt${NC} (official + AUR).                ${CYAN}║"
-echo -e "║ ${YELLOW}•${NC} Removes ${RED}htop/vim/dolphin${NC}, sets shell to ${GREEN}fish${NC}.          ${CYAN}║"
-echo -e "║ ${YELLOW}•${NC} Fixes ${MAGENTA}DRM${NC} (Widevine/VAAPI) for Helium.                 ${CYAN}║"
-echo -e "║ ${YELLOW}•${NC} Auto-detects monitors → Hyprland workspaces.           ${CYAN}║"     
-echo -e "║ ${YELLOW}•${NC} Installs ${MAGENTA}dock-bar${NC} (Quickshell) + ${MAGENTA}hyprquickpaper${NC}.       ${CYAN}║"
-echo -e "║ ${YELLOW}•${NC} Adjusts ${MAGENTA}NVIDIA${NC} vars (removes on AMD/Intel).       ${NC}     ${CYAN}║"
-echo -e "║ ${RED}${BOLD}Review script before running. Reboot required after.${NC}     ${CYAN}║"
-echo "╚══════════════════════════════════════════════════════════╝"
-echo -e "${NC}"
+banner_rule() {
+    local left="$1" right="$2" fill="$3" line="" column
+    for ((column = 0; column < BANNER_WIDTH; column++)); do
+        line+="$fill"
+    done
+    printf '%b\n' "${BANNER_BORDER}${left}${line}${right}${BANNER_RESET}"
+}
 
+banner_row() {
+    local plain_text="$1" styled_text="$2"
+    local padding=$((BANNER_WIDTH - ${#plain_text}))
+    ((padding < 0)) && padding=0
+    printf '%b' "${BANNER_BORDER}│${BANNER_RESET}"
+    printf '%b' "$styled_text"
+    printf '%*s' "$padding" ''
+    printf '%b\n' "${BANNER_BORDER}│${BANNER_RESET}"
+}
+
+draw_setup_banner() {
+    local title='  ⚙  HYPRLAND RICE  ·  INSTALLER'
+
+    banner_rule '╭' '╮' '─'
+    banner_row "$title" "${BANNER_ACCENT}${title}${BANNER_RESET}"
+    banner_rule '├' '┤' '─'
+    banner_row '  ◈  Fresh Arch Linux installation recommended' "${BANNER_PRIMARY}  ◈${BANNER_RESET}  ${BANNER_TEXT}Fresh Arch Linux installation recommended${BANNER_RESET}"
+    banner_row '  ▣  Backs up ~/.config to ~/.config/backups/' "${BANNER_PRIMARY}  ▣${BANNER_RESET}  ${BANNER_TEXT}Backs up ${BANNER_ACCENT}~/.config${BANNER_TEXT} to ${BANNER_ACCENT}~/.config/backups/${BANNER_RESET}"
+    banner_row '  ◉  Installs required packages and selected optional apps' "${BANNER_PRIMARY}  ◉${BANNER_RESET}  ${BANNER_TEXT}Installs required packages and selected optional apps${BANNER_RESET}"
+    banner_row '  ⌁  Removes htop, vim and dolphin; sets Fish as shell' "${BANNER_PRIMARY}  ⌁${BANNER_RESET}  ${BANNER_TEXT}Removes htop, vim and dolphin; sets ${BANNER_ACCENT}Fish${BANNER_TEXT} as shell${BANNER_RESET}"
+    banner_row '  ◇  Helium DRM setup runs only when Helium is selected' "${BANNER_PRIMARY}  ◇${BANNER_RESET}  ${BANNER_TEXT}Helium DRM setup runs only when Helium is selected${BANNER_RESET}"
+    banner_row '  ▦  Detects monitors and configures Hyprland workspaces' "${BANNER_PRIMARY}  ▦${BANNER_RESET}  ${BANNER_TEXT}Detects monitors and configures Hyprland workspaces${BANNER_RESET}"
+    banner_row '  ◈  Installs Dock Bar (Quickshell) and Hyprquickpaper' "${BANNER_PRIMARY}  ◈${BANNER_RESET}  ${BANNER_TEXT}Installs Dock Bar (Quickshell) and Hyprquickpaper${BANNER_RESET}"
+    banner_row '  ▸  Removes NVIDIA variables on AMD/Intel systems' "${BANNER_PRIMARY}  ▸${BANNER_RESET}  ${BANNER_TEXT}Removes NVIDIA variables on AMD/Intel systems${BANNER_RESET}"
+    banner_rule '├' '┤' '─'
+    banner_row '  !  Review the script before running; reboot required' "${BANNER_WARNING}  !${BANNER_RESET}  ${BANNER_WARNING}Review the script before running; reboot required${BANNER_RESET}"
+    banner_rule '╰' '╯' '─'
+}
+
+draw_setup_banner
+echo
 # --------------------------------------------
 # Check OS & Root Execution
 # --------------------------------------------
@@ -458,24 +482,108 @@ else
     echo "packages.txt not found in repository root."
 fi
 
-if [[ ${#optional_packages[@]} -gt 0 ]]; then
-    echo
-    echo "Optional applications:"
+MENU_BORDER=$'\033[38;5;60m'
+MENU_ACCENT=$'\033[38;5;141m'
+MENU_PRIMARY=$'\033[38;5;75m'
+MENU_TEXT=$'\033[38;5;255m'
+MENU_MUTED=$'\033[38;5;245m'
+MENU_RESET=$'\033[0m'
+
+optional_source_marker() {
+    case "$1" in
+        official) printf '●' ;;
+        aur) printf '◆' ;;
+        flatpak) printf '⬡' ;;
+        *) printf '·' ;;
+    esac
+}
+
+optional_source_label() {
+    case "$1" in
+        official) printf 'PACMAN' ;;
+        aur) printf 'AUR' ;;
+        flatpak) printf 'FLATPAK' ;;
+        *) printf 'UNKNOWN' ;;
+    esac
+}
+
+menu_print_rule() {
+    local left="$1" right="$2" fill="$3" line="" column
+    for ((column = 0; column < menu_width; column++)); do
+        line+="$fill"
+    done
+    printf '%b\n' "${MENU_BORDER}${left}${line}${right}${MENU_RESET}"
+}
+
+menu_print_row() {
+    local plain_text="$1" styled_text="$2"
+    local padding=$((menu_width - ${#plain_text}))
+    ((padding < 0)) && padding=0
+    printf '%b' "${MENU_BORDER}│${MENU_RESET}"
+    printf '%b' "$styled_text"
+    printf '%*s' "$padding" ''
+    printf '%b\n' "${MENU_BORDER}│${MENU_RESET}"
+}
+
+menu_print_package() {
+    local number="$1" package="$2" source="$3"
+    local marker label plain_text padding
+    marker="$(optional_source_marker "$source")"
+    label="$(optional_source_label "$source")"
+    printf -v plain_text '  %2d  %s %-*s  %s' \
+        "$number" "$marker" "$package_width" "$package" "$label"
+    padding=$((menu_width - ${#plain_text}))
+    ((padding < 0)) && padding=0
+
+    printf '%b' "${MENU_BORDER}│${MENU_RESET}"
+    printf '%b' "${MENU_MUTED}  ${MENU_RESET}${MENU_PRIMARY}"
+    printf '%2d' "$number"
+    printf '%b' "${MENU_RESET}  ${MENU_ACCENT}${marker}${MENU_RESET} ${MENU_TEXT}"
+    printf '%-*s' "$package_width" "$package"
+    printf '%b' "${MENU_RESET}  ${MENU_MUTED}${label}${MENU_RESET}"
+    printf '%*s' "$padding" ''
+    printf '%b\n' "${MENU_BORDER}│${MENU_RESET}"
+}
+
+draw_optional_menu() {
+    local LC_ALL=C.UTF-8
+    local package i title subtitle legend marker package_width=0 menu_width=60
+    for package in "${optional_packages[@]}"; do
+        (( ${#package} > package_width )) && package_width=${#package}
+    done
+    ((package_width + 17 > menu_width)) && menu_width=$((package_width + 17))
+
+    menu_print_rule '╭' '╮' '─'
+    title='  ◈  OPTIONAL SOFTWARE'
+    menu_print_row "$title" "${MENU_ACCENT}${title}${MENU_RESET}"
+
+    subtitle='  Choose which applications to include in this setup.'
+    menu_print_row "$subtitle" "${MENU_TEXT}  Choose which applications to include in this setup.${MENU_RESET}"
+
+    legend='  ● PACMAN     ◆ AUR     ⬡ FLATPAK'
+    menu_print_row "$legend" "${MENU_PRIMARY}  ●${MENU_RESET} ${MENU_MUTED}PACMAN${MENU_RESET}     ${MENU_ACCENT}◆${MENU_RESET} ${MENU_MUTED}AUR${MENU_RESET}     ${MENU_PRIMARY}⬡${MENU_RESET} ${MENU_MUTED}FLATPAK${MENU_RESET}"
+    menu_print_rule '├' '┤' '─'
 
     for i in "${!optional_packages[@]}"; do
         package="${optional_packages[$i]}"
-        printf '  %d) %s [%s]\n' "$((i + 1))" "$package" "${PACKAGE_SOURCE[$package]}"
+        menu_print_package "$((i + 1))" "$package" "${PACKAGE_SOURCE[$package]}"
     done
 
-    echo "  0) None"
-    echo "  all) Select all"
-    echo
+    menu_print_rule '├' '┤' '─'
+    menu_print_row '  ↳  Enter or 0   Skip optional applications' "${MENU_ACCENT}  ↳${MENU_RESET}  ${MENU_TEXT}Enter or 0   Skip optional applications${MENU_RESET}"
+    menu_print_row '  ↳  all           Select every application' "${MENU_ACCENT}  ↳${MENU_RESET}  ${MENU_TEXT}all           Select every application${MENU_RESET}"
+    menu_print_row '  Example: 1 3 5  or  2,4,7' "${MENU_MUTED}  Example: ${MENU_TEXT}1 3 5${MENU_MUTED}  or  ${MENU_TEXT}2,4,7${MENU_RESET}"
+    menu_print_rule '╰' '╯' '─'
+}
 
-    declare -a selections=()
-    declare -A seen_numbers=()
+read_optional_selection() {
+    local selection_input number number_value package valid_selection selected_count
+    local -a selections=()
+    local -A seen_numbers=()
 
     while true; do
-        if ! IFS= read -r -p "Select applications (numbers separated by spaces or commas): " selection_input; then
+        printf '%b' "${MENU_ACCENT}  ❯ ${MENU_RESET}"
+        if ! IFS= read -r selection_input; then
             selection_input=""
         fi
 
@@ -484,7 +592,7 @@ if [[ ${#optional_packages[@]} -gt 0 ]]; then
         read -r -a selections <<< "$selection_input"
 
         if [[ ${#selections[@]} -eq 0 ]]; then
-            echo "No optional applications selected."
+            printf '%b\n' "${MENU_MUTED}  No optional applications selected.${MENU_RESET}"
             break
         fi
 
@@ -492,11 +600,12 @@ if [[ ${#optional_packages[@]} -gt 0 ]]; then
             for package in "${optional_packages[@]}"; do
                 SELECTED_OPTIONAL["$package"]=1
             done
+            printf '%b\n' "${MENU_PRIMARY}  ✓ All optional applications selected.${MENU_RESET}"
             break
         fi
 
         if [[ ${#selections[@]} -eq 1 && "${selections[0]}" == "0" ]]; then
-            echo "No optional applications selected."
+            printf '%b\n' "${MENU_MUTED}  No optional applications selected.${MENU_RESET}"
             break
         fi
 
@@ -519,7 +628,7 @@ if [[ ${#optional_packages[@]} -gt 0 ]]; then
         done
 
         if [[ "$valid_selection" -ne 1 ]]; then
-            echo "Invalid selection. Enter valid numbers, 0 or all."
+            printf '%b\n' "${MENU_ACCENT}  × Invalid selection. Enter valid numbers, 0 or all.${MENU_RESET}"
             continue
         fi
 
@@ -527,8 +636,17 @@ if [[ ${#optional_packages[@]} -gt 0 ]]; then
             package="${optional_packages[$((number - 1))]}"
             SELECTED_OPTIONAL["$package"]=1
         done
+
+        selected_count=${#seen_numbers[@]}
+        printf '%b\n' "${MENU_PRIMARY}  ✓ Selected ${selected_count} optional application(s).${MENU_RESET}"
         break
     done
+}
+
+if [[ ${#optional_packages[@]} -gt 0 ]]; then
+    echo
+    draw_optional_menu
+    read_optional_selection
 fi
 
 if [[ ${#official_packages[@]} -gt 0 ]]; then
