@@ -1,3 +1,24 @@
+<div align="center">
+  <h1>Hyprland Rice</h1>
+
+  <p>Welcome to my Hyprland Rice configuration!</p>
+
+  <p>A clean, efficient, and visually appealing desktop environment for Arch Linux.</p>
+
+  <p><strong>I use these configs daily.</strong></p>
+  
+  #### Scrolling mode | looks like Niri
+</div>
+
+<p align="center">
+  <a href="#screenshots">Screenshots</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#dependencies">Dependencies</a> •
+  <a href="#related-projects">Related Projects</a> •
+  <a href="#keybinds">Keybinds</a> •
+  <a href="#license">License</a>
+</p>
+
 <!-- Badges -->
 [![Platform](https://img.shields.io/badge/platform-Arch%20Linux-1793D1?logo=arch-linux&logoColor=white)](https://archlinux.org/)
 [![WM](https://img.shields.io/badge/WM-Hyprland-58E1FF)](https://hyprland.org/)
@@ -9,14 +30,6 @@
 [![Stars](https://img.shields.io/github/stars/PHNexus/Hyprland-configs?style=social)](https://github.com/PHNexus/Hyprland-configs/stargazers)
 [![Created At](https://img.shields.io/github/created-at/PHNexus/Hyprland-configs?color=blue&label=created)](https://github.com/PHNexus/Hyprland-configs)
 ---
-
-## Hyprland Rice
-
-Welcome to my Hyprland Rice configuration! This setup is designed to provide a clean, efficient, and visually appealing desktop environment.
-
-I use these configs daily.
-
-#### Scrolling mode | looks like Niri
 
 ## Screenshots
 
