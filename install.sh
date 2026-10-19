@@ -26,12 +26,12 @@ echo
 # --------------------------------------------
 # WARNING BANNER
 # --------------------------------------------
-BANNER_BORDER='\033[38;5;60m'
-BANNER_ACCENT='\033[38;5;141m'
-BANNER_PRIMARY='\033[38;5;75m'
+BANNER_BORDER='\033[38;5;130m'
+BANNER_ACCENT='\033[38;5;166m'
+BANNER_PRIMARY='\033[38;5;172m'
 BANNER_TEXT='\033[38;5;255m'
 BANNER_MUTED='\033[38;5;245m'
-BANNER_WARNING='\033[38;5;203m'
+BANNER_WARNING='\033[38;5;202m'
 BANNER_RESET='\033[0m'
 BANNER_WIDTH=70
 
@@ -497,9 +497,9 @@ if [[ -z "${SEEN_PACKAGES["artcraft-launcher"]:-}" ]]; then
     PACKAGE_SOURCE["artcraft-launcher"]="custom"
 fi
 
-MENU_BORDER=$'\033[38;5;60m'
-MENU_ACCENT=$'\033[38;5;141m'
-MENU_PRIMARY=$'\033[38;5;75m'
+MENU_BORDER=$'\033[38;5;130m'
+MENU_ACCENT=$'\033[38;5;166m'
+MENU_PRIMARY=$'\033[38;5;172m'
 MENU_TEXT=$'\033[38;5;255m'
 MENU_MUTED=$'\033[38;5;245m'
 MENU_RESET=$'\033[0m'
@@ -879,7 +879,7 @@ fi
 # -----------------------------------------------------------------
 # Set Initial Default Wallpaper with Cache
 # -----------------------------------------------------------------
-DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/18.png"
+DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/06.png"
 CACHE_DIR="$HOME/.cache/wallpapers_state"
 mkdir -p "$CACHE_DIR"
 
