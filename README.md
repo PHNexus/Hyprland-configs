@@ -13,10 +13,10 @@
 <p align="center">
   <a href="#screenshots">Screenshots</a> •
   <a href="#installation">Installation</a> •
-  <a href="#dependencies">Dependencies</a> •
+  <a href="packages.txt">Dependencies</a> •
   <a href="#related-projects">Related Projects</a> •
   <a href="#keybinds">Keybinds</a> •
-  <a href="#license">License</a>
+  <a href="LICENSE">License</a>
 </p>
 
 <!-- Badges -->
