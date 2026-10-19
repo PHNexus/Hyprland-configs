@@ -91,15 +91,13 @@ Other repos used by this dotfiles:
 
 ### Hyprquickpaper — Bug Fixes
 
+I've already fixed it, but if there are any similar errors in HyperQuickpaper related to scrolling, here are the docs.
+
 Fixes horizontal scrolling boundaries and hover animations during mouse-wheel scrolling.
 
 - [Config](configs/quickshell/hyprquickpaper/)
 - [Fix documentation](configs/quickshell/hyprquickpaper/docs/debugging/README.md)
 - [Debug logs](configs/quickshell/hyprquickpaper/docs/debugging/logs/)
-
-## License
-
-MIT — see [LICENSE](LICENSE).
 
 ---
 
@@ -193,3 +191,8 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | Keybind | Action |
 |---|---|
 | `SUPER + G` | Start / stop screen recording with audio and microphone → saves recordings to `~/Videos` |
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
