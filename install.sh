@@ -427,8 +427,15 @@ OPTIONAL_PACKAGE_NAMES=(
     helium-browser-bin
     github-desktop-bin
     bitwarden-bin
+    artcraft-launcher
 )
 
+declare -A OPTIONAL_DESCRIPTIONS=(
+    [artcraft-launcher]="Free, open-source Adobe alternatives"
+)
+declare -A OPTIONAL_DISPLAY_NAMES=(
+    [artcraft-launcher]="ArtCraft Launcher"
+)
 declare -A OPTIONAL_NAME_SET=()
 declare -A SEEN_PACKAGES=()
 declare -A PACKAGE_SOURCE=()
@@ -468,6 +475,9 @@ if [[ -f "$REPO_DIR/packages.txt" ]]; then
         PACKAGE_SOURCE["$line"]="$PACKAGE_SECTION"
 
         if [[ -n "${OPTIONAL_NAME_SET["$line"]:-}" ]]; then
+            if [[ "$line" == "artcraft-launcher" ]]; then
+                PACKAGE_SOURCE["$line"]="custom"
+            fi
             optional_packages+=("$line")
             continue
         fi
@@ -482,6 +492,11 @@ else
     echo "packages.txt not found in repository root."
 fi
 
+if [[ -z "${SEEN_PACKAGES["artcraft-launcher"]:-}" ]]; then
+    optional_packages+=("artcraft-launcher")
+    PACKAGE_SOURCE["artcraft-launcher"]="custom"
+fi
+
 MENU_BORDER=$'\033[38;5;60m'
 MENU_ACCENT=$'\033[38;5;141m'
 MENU_PRIMARY=$'\033[38;5;75m'
@@ -494,6 +509,7 @@ optional_source_marker() {
         official) printf '●' ;;
         aur) printf '◆' ;;
         flatpak) printf '⬡' ;;
+        custom) printf '✦' ;;
         *) printf '·' ;;
     esac
 }
@@ -503,6 +519,7 @@ optional_source_label() {
         official) printf 'PACMAN' ;;
         aur) printf 'AUR' ;;
         flatpak) printf 'FLATPAK' ;;
+        custom) printf 'APPIMAGE' ;;
         *) printf 'UNKNOWN' ;;
     esac
 }
@@ -527,11 +544,12 @@ menu_print_row() {
 
 menu_print_package() {
     local number="$1" package="$2" source="$3"
-    local marker label plain_text padding
+    local marker label display_name plain_text padding
     marker="$(optional_source_marker "$source")"
     label="$(optional_source_label "$source")"
+    display_name="${OPTIONAL_DISPLAY_NAMES[$package]:-$package}"
     printf -v plain_text '  %2d  %s %-*s  %s' \
-        "$number" "$marker" "$package_width" "$package" "$label"
+        "$number" "$marker" "$package_width" "$display_name" "$label"
     padding=$((menu_width - ${#plain_text}))
     ((padding < 0)) && padding=0
 
@@ -539,7 +557,7 @@ menu_print_package() {
     printf '%b' "${MENU_MUTED}  ${MENU_RESET}${MENU_PRIMARY}"
     printf '%2d' "$number"
     printf '%b' "${MENU_RESET}  ${MENU_ACCENT}${marker}${MENU_RESET} ${MENU_TEXT}"
-    printf '%-*s' "$package_width" "$package"
+    printf '%-*s' "$package_width" "$display_name"
     printf '%b' "${MENU_RESET}  ${MENU_MUTED}${label}${MENU_RESET}"
     printf '%*s' "$padding" ''
     printf '%b\n' "${MENU_BORDER}│${MENU_RESET}"
@@ -547,9 +565,14 @@ menu_print_package() {
 
 draw_optional_menu() {
     local LC_ALL=C.UTF-8
-    local package i title subtitle legend marker package_width=0 menu_width=60
+    local package i title subtitle legend marker display_name description package_width=0 menu_width=60
     for package in "${optional_packages[@]}"; do
-        (( ${#package} > package_width )) && package_width=${#package}
+        display_name="${OPTIONAL_DISPLAY_NAMES[$package]:-$package}"
+        (( ${#display_name} > package_width )) && package_width=${#display_name}
+        description="${OPTIONAL_DESCRIPTIONS[$package]:-}"
+        if [[ -n "$description" ]] && (( ${#description} + 10 > menu_width )); then
+            menu_width=$((${#description} + 10))
+        fi
     done
     ((package_width + 17 > menu_width)) && menu_width=$((package_width + 17))
 
@@ -560,13 +583,17 @@ draw_optional_menu() {
     subtitle='  Choose which applications to include in this setup.'
     menu_print_row "$subtitle" "${MENU_TEXT}  Choose which applications to include in this setup.${MENU_RESET}"
 
-    legend='  ● PACMAN     ◆ AUR     ⬡ FLATPAK'
-    menu_print_row "$legend" "${MENU_PRIMARY}  ●${MENU_RESET} ${MENU_MUTED}PACMAN${MENU_RESET}     ${MENU_ACCENT}◆${MENU_RESET} ${MENU_MUTED}AUR${MENU_RESET}     ${MENU_PRIMARY}⬡${MENU_RESET} ${MENU_MUTED}FLATPAK${MENU_RESET}"
+    legend='  ● PACMAN     ◆ AUR     ⬡ FLATPAK     ✦ APPIMAGE'
+    menu_print_row "$legend" "${MENU_PRIMARY}  ●${MENU_RESET} ${MENU_MUTED}PACMAN${MENU_RESET}     ${MENU_ACCENT}◆${MENU_RESET} ${MENU_MUTED}AUR${MENU_RESET}     ${MENU_PRIMARY}⬡${MENU_RESET} ${MENU_MUTED}FLATPAK${MENU_RESET}     ${MENU_ACCENT}✦${MENU_RESET} ${MENU_MUTED}APPIMAGE${MENU_RESET}"
     menu_print_rule '├' '┤' '─'
 
     for i in "${!optional_packages[@]}"; do
         package="${optional_packages[$i]}"
         menu_print_package "$((i + 1))" "$package" "${PACKAGE_SOURCE[$package]}"
+        description="${OPTIONAL_DESCRIPTIONS[$package]:-}"
+        if [[ -n "$description" ]]; then
+            menu_print_row "       ↳ $description" "       ${MENU_MUTED}↳ ${MENU_TEXT}${description}${MENU_RESET}"
+        fi
     done
 
     menu_print_rule '├' '┤' '─'
@@ -711,6 +738,9 @@ echo "Installing selected optional applications..."
 
 for package in "${optional_packages[@]}"; do
     [[ "${SELECTED_OPTIONAL["$package"]:-0}" -eq 1 ]] || continue
+    if [[ "$package" == "artcraft-launcher" ]]; then
+        continue
+    fi
 
     echo "Installing $package..."
     if install_optional_package "$package"; then
@@ -1208,84 +1238,87 @@ else
 fi
 
 # --------------------------------------------
-# Install ArtCraft Launcher and import into AppManager
+# Install selected ArtCraft Launcher and import into AppManager
 # --------------------------------------------
-echo
-echo "Installing ArtCraft Launcher..."
+if [[ "${SELECTED_OPTIONAL["artcraft-launcher"]:-0}" -eq 1 ]]; then
+    echo
+    echo "Installing ArtCraft Launcher..."
 
-if ! command -v curl &>/dev/null || ! command -v jq &>/dev/null; then
-    echo "Warning: curl and jq are required. Skipping ArtCraft Launcher."
-else
-    case "$(uname -m)" in
-        x86_64|amd64)
-            ARTCRAFT_ARCH="x86_64"
-            ;;
-        aarch64|arm64)
-            ARTCRAFT_ARCH="aarch64"
-            ;;
-        *)
-            ARTCRAFT_ARCH=""
-            echo "Warning: Unsupported architecture. Skipping ArtCraft Launcher."
-            ;;
-    esac
+    if ! command -v curl &>/dev/null || ! command -v jq &>/dev/null; then
+        echo "Warning: curl and jq are required. Skipping ArtCraft Launcher."
+    else
+        case "$(uname -m)" in
+            x86_64|amd64)
+                ARTCRAFT_ARCH="x86_64"
+                ;;
+            aarch64|arm64)
+                ARTCRAFT_ARCH="aarch64"
+                ;;
+            *)
+                ARTCRAFT_ARCH=""
+                echo "Warning: Unsupported architecture. Skipping ArtCraft Launcher."
+                ;;
+        esac
 
-    if [[ -n "$ARTCRAFT_ARCH" ]]; then
-        ARTCRAFT_API="https://api.github.com/repos/storytold/craft-launcher/releases/latest"
+        if [[ -n "$ARTCRAFT_ARCH" ]]; then
+            ARTCRAFT_API="https://api.github.com/repos/storytold/craft-launcher/releases/latest"
+            ARTCRAFT_RELEASE="$(curl -fsSL --retry 2 "$ARTCRAFT_API" 2>/dev/null || true)"
 
-        ARTCRAFT_RELEASE="$(curl -fsSL --retry 2 "$ARTCRAFT_API" 2>/dev/null || true)"
+            ARTCRAFT_URL="$(jq -r --arg suffix "-linux-${ARTCRAFT_ARCH}.AppImage" '
+                [.assets[]? | select(.name | endswith($suffix))][0].browser_download_url // empty
+            ' <<<"$ARTCRAFT_RELEASE")"
 
-        ARTCRAFT_URL="$(jq -r --arg suffix "-linux-${ARTCRAFT_ARCH}.AppImage" '
-            [.assets[]? | select(.name | endswith($suffix))][0].browser_download_url // empty
-        ' <<<"$ARTCRAFT_RELEASE")"
+            ARTCRAFT_DIGEST="$(jq -r --arg suffix "-linux-${ARTCRAFT_ARCH}.AppImage" '
+                [.assets[]? | select(.name | endswith($suffix))][0].digest // empty
+            ' <<<"$ARTCRAFT_RELEASE")"
 
-        ARTCRAFT_DIGEST="$(jq -r --arg suffix "-linux-${ARTCRAFT_ARCH}.AppImage" '
-            [.assets[]? | select(.name | endswith($suffix))][0].digest // empty
-        ' <<<"$ARTCRAFT_RELEASE")"
+            if [[ -z "$ARTCRAFT_URL" ]]; then
+                echo "Warning: Could not find the latest AppImage."
+            else
+                ARTCRAFT_DIR="$HOME/Applications"
+                ARTCRAFT_APP="$ARTCRAFT_DIR/ArtCraft-Launcher.AppImage"
+                mkdir -p "$ARTCRAFT_DIR"
+                ARTCRAFT_TMP="$(mktemp "$ARTCRAFT_DIR/.artcraft.XXXXXX")"
 
-        if [[ -z "$ARTCRAFT_URL" ]]; then
-            echo "Warning: Could not find the latest AppImage."
-        else
-            ARTCRAFT_DIR="$HOME/Applications"
-            ARTCRAFT_APP="$ARTCRAFT_DIR/ArtCraft-Launcher.AppImage"
+                if curl -fL --retry 3 "$ARTCRAFT_URL" -o "$ARTCRAFT_TMP"; then
+                    ARTCRAFT_VALID=1
 
-        mkdir -p "$ARTCRAFT_DIR"
+                    if [[ "$ARTCRAFT_DIGEST" == sha256:* ]]; then
+                        ARTCRAFT_EXPECTED="${ARTCRAFT_DIGEST#sha256:}"
+                        ARTCRAFT_ACTUAL="$(sha256sum "$ARTCRAFT_TMP" | awk '{print $1}')"
 
-            ARTCRAFT_TMP="$(mktemp "$ARTCRAFT_DIR/.artcraft.XXXXXX")"
-
-            if curl -fL --retry 3 "$ARTCRAFT_URL" -o "$ARTCRAFT_TMP"; then
-                ARTCRAFT_VALID=1
-
-                if [[ "$ARTCRAFT_DIGEST" == sha256:* ]]; then
-                    ARTCRAFT_EXPECTED="${ARTCRAFT_DIGEST#sha256:}"
-                    ARTCRAFT_ACTUAL="$(sha256sum "$ARTCRAFT_TMP" | awk '{print $1}')"
-
-                    if [[ "$ARTCRAFT_EXPECTED" != "$ARTCRAFT_ACTUAL" ]]; then
-                        ARTCRAFT_VALID=0
-                        echo "Warning: SHA-256 mismatch."
-                    fi
-                fi
-
-                if [[ "$ARTCRAFT_VALID" -eq 1 && -s "$ARTCRAFT_TMP" ]]; then
-                    chmod 755 "$ARTCRAFT_TMP"
-
-                    if mv -f "$ARTCRAFT_TMP" "$ARTCRAFT_APP"; then
-                        echo "ArtCraft Launcher downloaded: $ARTCRAFT_APP"
-
-                        if command -v app-manager &>/dev/null; then
-                            app-manager install "$ARTCRAFT_APP" \
-                                || echo "Warning: AppManager import failed; AppImage is available manually."
-                        else
-                            echo "AppManager CLI not found; AppImage was saved without importing."
+                        if [[ "$ARTCRAFT_EXPECTED" != "$ARTCRAFT_ACTUAL" ]]; then
+                            ARTCRAFT_VALID=0
+                            echo "Warning: SHA-256 mismatch."
                         fi
                     fi
-                fi
-            else
-                echo "Warning: ArtCraft Launcher download failed."
-            fi
 
-            rm -f "$ARTCRAFT_TMP"
+                    if [[ "$ARTCRAFT_VALID" -eq 1 && -s "$ARTCRAFT_TMP" ]]; then
+                        chmod 755 "$ARTCRAFT_TMP"
+
+                        if mv -f "$ARTCRAFT_TMP" "$ARTCRAFT_APP"; then
+                            echo "ArtCraft Launcher downloaded: $ARTCRAFT_APP"
+                            INSTALLED_OPTIONAL["artcraft-launcher"]=1
+
+                            if command -v app-manager &>/dev/null; then
+                                app-manager install "$ARTCRAFT_APP" \
+                                    || echo "Warning: AppManager import failed; AppImage is available manually."
+                            else
+                                echo "AppManager CLI not found; AppImage was saved without importing."
+                            fi
+                        fi
+                    fi
+                else
+                    echo "Warning: ArtCraft Launcher download failed."
+                fi
+
+                rm -f "$ARTCRAFT_TMP"
+            fi
         fi
     fi
+else
+    echo
+    echo "Skipping ArtCraft Launcher (not selected)."
 fi
 
 # --------------------------------------------
