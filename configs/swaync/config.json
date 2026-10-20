@@ -53,6 +53,7 @@
     },
     "notifications": {},
     "buttons-grid": {
+      "buttons-per-row": 4,
       "actions": [
         {
           "label": "󰖩",
