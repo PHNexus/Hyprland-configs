@@ -66,7 +66,7 @@
           "type": "toggle",
           "active": false,
           "command": "sh -c 'swaync-client --close-panel; settings bluetooth'",
-          "update-command": "sh -c 'bluetoothctl show 2>/dev/null | grep -q \"Powered: yes\" && echo true || echo false'"
+          "update-command": "bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo true || echo false"
         },
         {
           "label": "󰝟",
@@ -137,7 +137,7 @@
         "label": "󰒓",
         "position": "left",
         "actions": [
-           {
+          {
             "label": "󰍹   Display",
             "command": "sh -c 'swaync-client --close-panel; settings display'"
           },
