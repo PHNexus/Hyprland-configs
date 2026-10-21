@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# Start HyprQuickpaper independently or send it an IPC action.
+
+set -uo pipefail
+
+PICKER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/hyprquickpaper"
+IPC_TARGET="hyprquickpaper"
+LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hyprquickpaper"
+LOG_FILE="$LOG_DIR/quickshell.log"
+IPC_LOG="$LOG_DIR/ipc.log"
+ACTION="${1:-toggle}"
+
+usage() {
+    cat <<'USAGE'
+Usage: hyprquickpaper [command]
+
+Commands:
+  start    Start the independent HyprQuickpaper shell (default)
+  stop     Stop the independent shell
+  restart  Restart the independent shell
+  toggle   Toggle the wallpaper picker
+  show     Show the wallpaper picker
+  hide     Hide the wallpaper picker
+  log      Display the latest shell log
+  help     Display this help message
+USAGE
+}
+
+if ! command -v qs >/dev/null 2>&1; then
+    echo "ERROR: Quickshell (qs) was not found in PATH." >&2
+    exit 127
+fi
+
+if [[ ! -f "$PICKER_DIR/shell.qml" ]]; then
+    echo "ERROR: HyprQuickpaper shell not found at $PICKER_DIR/shell.qml" >&2
+    exit 1
+fi
+
+mkdir -p "$LOG_DIR"
+
+call_ipc() {
+    qs -p "$PICKER_DIR" ipc call "$IPC_TARGET" "$1"
+}
+
+case "$ACTION" in
+    start)
+        exec qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1
+        ;;
+    stop)
+        qs kill -p "$PICKER_DIR"
+        ;;
+    restart)
+        qs kill -p "$PICKER_DIR" >/dev/null 2>&1 || true
+        exec qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1
+        ;;
+    log)
+        tail -n 100 "$LOG_FILE"
+        ;;
+    toggle|show|hide)
+        if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
+            cat "$IPC_LOG"
+            exit 0
+        fi
+
+        if [[ "$ACTION" == "hide" ]]; then
+            exit 0
+        fi
+
+        qs kill -p "$PICKER_DIR" >/dev/null 2>&1 || true
+
+        MONITOR=""
+        if command -v hyprctl >/dev/null 2>&1 &&
+           command -v jq >/dev/null 2>&1; then
+            MONITOR="$(hyprctl monitors -j 2>/dev/null |
+                jq -er '.[] | select(.focused == true) | .name' 2>/dev/null)" || MONITOR=""
+        fi
+
+        if [[ -n "$MONITOR" ]]; then
+            HYPRQUICKPAPER_MONITOR="$MONITOR" qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1 &
+        else
+            qs -n -p "$PICKER_DIR" >>"$LOG_FILE" 2>&1 &
+        fi
+        SHELL_PID=$!
+
+        for _ in {1..50}; do
+            if call_ipc "$ACTION" >"$IPC_LOG" 2>&1; then
+                cat "$IPC_LOG"
+                exit 0
+            fi
+
+            if ! kill -0 "$SHELL_PID" 2>/dev/null; then
+                break
+            fi
+
+            sleep 0.1
+        done
+
+        echo "ERROR: Failed to execute IPC command $IPC_TARGET $ACTION." >&2
+        echo "Configuration log: $LOG_FILE" >&2
+        tail -n 40 "$LOG_FILE" >&2 || true
+        cat "$IPC_LOG" >&2 2>/dev/null || true
+        exit 1
+        ;;
+    help|-h|--help)
+        usage
+        ;;
+    *)
+        usage
+        exit 2
+        ;;
+esac

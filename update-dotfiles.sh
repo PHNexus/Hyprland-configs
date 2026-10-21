@@ -6,6 +6,9 @@ REPO_DIR="$HOME/Documents/GitHub/Hyprland-configs"
 CONFIG_DIR="$REPO_DIR/configs"
 WALLPAPER_SOURCE="$HOME/Pictures/Wallpapers"
 DOCKBAR_SOURCE="$HOME/.local/share/dock-bar"
+LOCAL_BIN_SOURCE="$HOME/.local/bin"
+LOCAL_BIN_TARGET="$REPO_DIR/tlg"
+LOCAL_BIN_SCRIPTS=("dock-bar" "hyprquickpaper" "settings")
 MAX_NEW_DOCKBAR_ASSET_SIZE_MB=5
 
 CONFIG_FOLDERS=(
@@ -86,6 +89,25 @@ else
     warn "Dock-bar folder not found: $DOCKBAR_SOURCE"
 fi
 
+# Sync only the selected scripts from ~/.local/bin into the repository's tlg folder.
+if [[ -d "$LOCAL_BIN_SOURCE" ]]; then
+    mkdir -p "$LOCAL_BIN_TARGET"
+
+    for file in "${LOCAL_BIN_SCRIPTS[@]}"; do
+        source="$LOCAL_BIN_SOURCE/$file"
+        target="$LOCAL_BIN_TARGET/$file"
+
+        if [[ -f "$source" || -L "$source" ]]; then
+            rsync -aL --checksum -- "$source" "$target"
+            ok "Local bin: $file"
+        else
+            warn "File not found: $source"
+        fi
+    done
+else
+    warn "Local bin folder not found: $LOCAL_BIN_SOURCE"
+fi
+
 # Sync configuration directories.
 msg "Copying configs..."
 
@@ -148,6 +170,7 @@ managed_paths=(
     "configs"
     "Wallpapers"
     "dock-bar"
+    "tlg"
     "update-dotfiles.sh"
     "install.sh"
     "install-ai-local-1660TI+.sh"
