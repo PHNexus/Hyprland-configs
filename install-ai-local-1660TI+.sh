@@ -34,17 +34,56 @@ BATCH_SIZE=4096
 UBATCH_SIZE=4096
 
 # Colors
-RED='\033[1;31m'
-GREEN='\033[1;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[1;34m'
-NC='\033[0m'
+AI_BORDER='\033[38;5;130m'
+AI_ACCENT='\033[38;5;166m'
+AI_PRIMARY='\033[38;5;172m'
+AI_TEXT='\033[38;5;255m'
+AI_MUTED='\033[38;5;245m'
+AI_WARNING='\033[38;5;202m'
+AI_ERROR='\033[38;5;196m'
+AI_RESET='\033[0m'
+BANNER_WIDTH=70
 
 # ─── Helpers ─────────────────────────────────────────────────
-say()  { printf "${BLUE}==>${NC} %s\n" "$*"; }
-ok()   { printf "${GREEN}✓${NC} %s\n" "$*"; }
-warn() { printf "${YELLOW}!${NC} %s\n" "$*"; }
-die()  { printf "${RED}✗${NC} %s\n" "$*" >&2; exit 1; }
+say()  { printf '%b %s\n' "${AI_ACCENT}==>${AI_RESET}" "$*"; }
+ok()   { printf '%b %s\n' "${AI_PRIMARY}✓${AI_RESET}" "$*"; }
+warn() { printf '%b %s\n' "${AI_WARNING}!${AI_RESET}" "$*"; }
+die()  { printf '%b %s\n' "${AI_ERROR}✗${AI_RESET}" "$*" >&2; exit 1; }
+
+banner_rule() {
+    local left="$1" right="$2" fill="$3" line="" column
+    for ((column = 0; column < BANNER_WIDTH; column++)); do
+        line+="$fill"
+    done
+    printf '%b\n' "${AI_BORDER}${left}${line}${right}${AI_RESET}"
+}
+
+banner_row() {
+    local plain_text="$1" styled_text="$2"
+    local padding=$((BANNER_WIDTH - ${#plain_text}))
+    ((padding < 0)) && padding=0
+    printf '%b' "${AI_BORDER}│${AI_RESET}"
+    printf '%b' "$styled_text"
+    printf '%*s' "$padding" ''
+    printf '%b\n' "${AI_BORDER}│${AI_RESET}"
+}
+
+draw_setup_banner() {
+    local title='  ◈  LOCAL AI  ·  INSTALLER'
+
+    banner_rule '╭' '╮' '─'
+    banner_row "$title" "${AI_ACCENT}${title}${AI_RESET}"
+    banner_rule '├' '┤' '─'
+    banner_row '  ◈  Requires Arch Linux and NVIDIA drivers' "${AI_PRIMARY}  ◈${AI_RESET}  ${AI_TEXT}Requires Arch Linux and NVIDIA drivers${AI_RESET}"
+    banner_row '  ▣  Builds llama.cpp with CUDA support' "${AI_PRIMARY}  ▣${AI_RESET}  ${AI_TEXT}Builds ${AI_ACCENT}llama.cpp${AI_TEXT} with CUDA support${AI_RESET}"
+    banner_row '  ◉  Downloads the model unless --skip-models is used' "${AI_PRIMARY}  ◉${AI_RESET}  ${AI_TEXT}Downloads the model unless ${AI_ACCENT}--skip-models${AI_TEXT} is used${AI_RESET}"
+    banner_row '  ⌁  Creates and enables a user systemd service' "${AI_PRIMARY}  ⌁${AI_RESET}  ${AI_TEXT}Creates and enables a user systemd service${AI_RESET}"
+    banner_row '  ◇  Updates CUDA PATH and vm.max_map_count' "${AI_PRIMARY}  ◇${AI_RESET}  ${AI_TEXT}Updates CUDA PATH and ${AI_ACCENT}vm.max_map_count${AI_RESET}"
+    banner_row '  ▦  OpenCode setup is enabled unless --no-opencode is used' "${AI_PRIMARY}  ▦${AI_RESET}  ${AI_TEXT}OpenCode setup is enabled unless ${AI_ACCENT}--no-opencode${AI_TEXT} is used${AI_RESET}"
+    banner_rule '├' '┤' '─'
+    banner_row '  !  Review first; uses sudo and requires disk space' "${AI_WARNING}  !${AI_RESET}  ${AI_WARNING}Review first; uses sudo and requires disk space${AI_RESET}"
+    banner_rule '╰' '╯' '─'
+}
 
 # ─── Parse args ──────────────────────────────────────────────
 SKIP_MODELS=0
@@ -68,6 +107,10 @@ EOF
         *) die "unknown option: $arg" ;;
     esac
 done
+
+echo
+draw_setup_banner
+echo
 
 # ─── Preflight ───────────────────────────────────────────────
 say "Checking the system..."
@@ -279,11 +322,11 @@ fi
 
 # ─── Done ────────────────────────────────────────────────────
 echo
-echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  Installation complete!${NC}"
-echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
+printf '%b\n' "${AI_PRIMARY}═══════════════════════════════════════════════════════════${AI_RESET}"
+printf '%b\n' "${AI_ACCENT}  Installation complete!${AI_RESET}"
+printf '%b\n' "${AI_PRIMARY}═══════════════════════════════════════════════════════════${AI_RESET}"
 echo
-echo -e "  ${BLUE}Server status:${NC} systemctl --user status $SERVICE_NAME"
-echo -e "  ${BLUE}Interface:${NC}   http://localhost:$PORT"
-echo -e "  ${BLUE}Model File:${NC}  $MODEL_FILE"
+printf '%b\n' "  ${AI_ACCENT}Server status:${AI_RESET} systemctl --user status $SERVICE_NAME"
+printf '%b\n' "  ${AI_ACCENT}Interface:${AI_RESET}   http://localhost:$PORT"
+printf '%b\n' "  ${AI_ACCENT}Model File:${AI_RESET}  $MODEL_FILE"
 echo
