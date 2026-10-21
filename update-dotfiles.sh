@@ -6,9 +6,8 @@ REPO_DIR="$HOME/Documents/GitHub/Hyprland-configs"
 CONFIG_DIR="$REPO_DIR/configs"
 WALLPAPER_SOURCE="$HOME/Pictures/Wallpapers"
 DOCKBAR_SOURCE="$HOME/.local/share/dock-bar"
-LOCAL_BIN_SOURCE="$HOME/.local/bin/"
-LOCAL_BIN_TARGET="$REPO_DIR/local/bin/"
-LEGACY_BIN_TARGET="$REPO_DIR/tlg"
+LOCAL_BIN_SOURCE="$HOME/.local/bin"
+LOCAL_BIN_TARGET="$REPO_DIR/local/bin"
 MAX_NEW_DOCKBAR_ASSET_SIZE_MB=5
 
 LOCAL_BIN_FILES=(
@@ -110,23 +109,7 @@ for file in "${LOCAL_BIN_FILES[@]}"; do
     else
         warn "File not found: $source"
     fi
-
-    # Remove copies created by the previous version, which used the tlg folder.
-    legacy_file="$LEGACY_BIN_TARGET/$file"
-    if [[ -e "$legacy_file" || -L "$legacy_file" ]]; then
-        rm -f -- "$legacy_file"
-        ok "Removed legacy copy: tlg/$file"
-    fi
 done
-
-# Remove the old folder only if it is now empty.
-if [[ -d "$LEGACY_BIN_TARGET" ]]; then
-    if rmdir -- "$LEGACY_BIN_TARGET" 2>/dev/null; then
-        ok "Removed empty legacy folder: tlg"
-    else
-        warn "Keeping tlg/ because it still contains other files."
-    fi
-fi
 
 # Sync configuration directories.
 msg "Copying configs..."
@@ -213,14 +196,6 @@ if ((${#existing_paths[@]} == 0)); then
 fi
 
 git add -A -- "${existing_paths[@]}"
-
-# Stage deletions for legacy tlg files only if they were already tracked.
-for file in "${LOCAL_BIN_FILES[@]}"; do
-    legacy_relpath="tlg/$file"
-    if git ls-files --error-unmatch -- "$legacy_relpath" >/dev/null 2>&1; then
-        git add -u -- "$legacy_relpath"
-    fi
-done
 
 # Unstage oversized NEW dock-bar files only.
 # Files already present in HEAD and wallpapers are unaffected.
