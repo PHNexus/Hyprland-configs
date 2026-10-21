@@ -103,6 +103,7 @@ pacman-contrib
 ksshaskpass
 rsync
 seahorse
+tree
 brightnessctl
 wlr-randr
 hyprpolkitagent 
