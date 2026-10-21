@@ -6,6 +6,7 @@ REPO_DIR="$HOME/Documents/GitHub/Hyprland-configs"
 CONFIG_DIR="$REPO_DIR/configs"
 WALLPAPER_SOURCE="$HOME/Pictures/Wallpapers"
 DOCKBAR_SOURCE="$HOME/.local/share/dock-bar"
+DOCKBAR_TARGET="$REPO_DIR/local/share/dock-bar"
 LOCAL_BIN_SOURCE="$HOME/.local/bin"
 LOCAL_BIN_TARGET="$REPO_DIR/local/bin"
 MAX_NEW_DOCKBAR_ASSET_SIZE_MB=5
@@ -81,22 +82,21 @@ else
     warn "Wallpapers folder not found: $WALLPAPER_SOURCE"
 fi
 
-# Mirror dock-bar, excluding its own Git metadata.
+# Mirror dock-bar into local/share, excluding its own Git metadata.
 if [[ -d "$DOCKBAR_SOURCE" ]]; then
-    mkdir -p "$REPO_DIR/dock-bar"
+    mkdir -p "$DOCKBAR_TARGET"
 
     rsync -a --checksum --delete \
         --exclude='.git' \
-        -- "$DOCKBAR_SOURCE/" "$REPO_DIR/dock-bar/"
+        -- "$DOCKBAR_SOURCE/" "$DOCKBAR_TARGET/"
 
-    ok "Dock-bar synced"
+    ok "Dock-bar synced to local/share/dock-bar"
 else
     warn "Dock-bar folder not found: $DOCKBAR_SOURCE"
 fi
 
 # Sync only the selected executables from ~/.local/bin.
-# Dereference symlinks so the repository contains the actual script contents,
-# not links pointing to machine-specific paths.
+# Dereference symlinks so the repository contains the actual file contents.
 mkdir -p "$LOCAL_BIN_TARGET"
 
 for file in "${LOCAL_BIN_FILES[@]}"; do
@@ -172,7 +172,7 @@ fi
 managed_paths=(
     "configs"
     "Wallpapers"
-    "dock-bar"
+    "local/share/dock-bar"
     "local/bin/dock-bar"
     "local/bin/hyprquickpaper"
     "local/bin/settings"
@@ -197,19 +197,25 @@ fi
 
 git add -A -- "${existing_paths[@]}"
 
-# Unstage oversized NEW dock-bar files only.
+# Stage the removal of the legacy directory only if it was deleted manually.
+# This script never deletes the legacy directory itself.
+if [[ ! -e "$REPO_DIR/dock-bar" ]] \
+    && git ls-files --error-unmatch -- "dock-bar" >/dev/null 2>&1; then
+    git add -A -- "dock-bar"
+fi
+
+# Unstage oversized new dock-bar files only.
 # Files already present in HEAD and wallpapers are unaffected.
 max_bytes=$((MAX_NEW_DOCKBAR_ASSET_SIZE_MB * 1024 * 1024))
 
-if [[ -d "$REPO_DIR/dock-bar" ]]; then
+if [[ -d "$DOCKBAR_TARGET" ]]; then
     while IFS= read -r -d '' file; do
         [[ -f "$file" ]] || continue
 
-        # Convert absolute file path to a repository-relative path.
+        # Convert the absolute file path to a repository-relative path.
         relpath="${file#"$REPO_DIR"/}"
 
-        # Test whether the file exists in the current HEAD commit,
-        # rather than checking the index after git add.
+        # Check whether the file exists in the current HEAD commit.
         if ! git cat-file -e "HEAD:$relpath" 2>/dev/null; then
             size_bytes=$(stat -c '%s' -- "$file")
 
@@ -220,7 +226,7 @@ if [[ -d "$REPO_DIR/dock-bar" ]]; then
             fi
         fi
     done < <(
-        find "$REPO_DIR/dock-bar" \
+        find "$DOCKBAR_TARGET" \
             -type f \
             -not -path '*/.git/*' \
             -print0
@@ -243,7 +249,7 @@ else
     DATE=$(date '+%Y-%m-%d')
     TIME=$(date '+%H:%M:%S')
 
-    # Count additions + deletions in staged changes.
+    # Count additions and deletions in staged changes.
     total_lines=$(
         git diff --cached --numstat |
             awk '{
@@ -256,8 +262,8 @@ else
 
     total_lines=${total_lines:-0}
 
-    # <= 15 changed lines: "update"
-    # > 15 changed lines: "update configs - DATE TIME"
+    # Use a short commit message for small changes.
+    # Use a dated commit message for larger changes.
     if ((total_lines <= 15)); then
         COMMIT_MESSAGE="update"
     else

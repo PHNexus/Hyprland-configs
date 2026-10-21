@@ -934,12 +934,14 @@ echo "Installing Dock Bar..."
 if command -v qs &>/dev/null; then
     DOCK_DIR="$HOME/.local/share/dock-bar"
 
-    if [[ ! -d "$REPO_DIR/dock-bar" ]]; then
-        echo "  Warning: $REPO_DIR/dock-bar not found, skipping"
+    DOCKBAR_REPO_DIR="$REPO_DIR/local/share/dock-bar"
+
+    if [[ ! -d "$DOCKBAR_REPO_DIR" ]]; then
+        echo "  Warning: $DOCKBAR_REPO_DIR not found, skipping"
     else
         rm -rf "$DOCK_DIR"
         mkdir -p "$DOCK_DIR"
-        cp -r "$REPO_DIR/dock-bar/." "$DOCK_DIR/"
+        cp -r "$DOCKBAR_REPO_DIR/." "$DOCK_DIR/"
         chmod +x "$DOCK_DIR/bin/dock-bar" 2>/dev/null || true
         mkdir -p "$HOME/.local/bin"
         ln -sf "$DOCK_DIR/bin/dock-bar" "$HOME/.local/bin/dock-bar"
