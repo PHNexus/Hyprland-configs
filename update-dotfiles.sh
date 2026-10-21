@@ -6,8 +6,8 @@ REPO_DIR="$HOME/Documents/GitHub/Hyprland-configs"
 CONFIG_DIR="$REPO_DIR/configs"
 WALLPAPER_SOURCE="$HOME/Pictures/Wallpapers"
 DOCKBAR_SOURCE="$HOME/.local/share/dock-bar"
-LOCAL_BIN_SOURCE="$HOME/.local/bin"
-LOCAL_BIN_TARGET="$REPO_DIR/local/bin"
+LOCAL_BIN_SOURCE="$HOME/.local/bin/"
+LOCAL_BIN_TARGET="$REPO_DIR/local/bin/"
 LEGACY_BIN_TARGET="$REPO_DIR/tlg"
 MAX_NEW_DOCKBAR_ASSET_SIZE_MB=5
 
