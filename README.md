@@ -97,8 +97,6 @@ chmod +x install.sh
 ./install.sh
 ```
 
-## [Dependencies](packages.txt)
-
 See [`packages.txt`](packages.txt) for the complete package list.
 
 ---
