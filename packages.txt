@@ -126,13 +126,13 @@ steam
 #AUR
 awww
 cloudflare-warp-bin 
-bitwarden-bin 
+bitwarden-bin
 github-desktop-bin
+visual-studio-code-bin
 imagemagick 
 zen-browser-bin
 helium-browser-bin
 flow-browser-bin
-visual-studio-code-bin
 bazaar
 spotify
 nvibrant-bin

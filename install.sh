@@ -422,13 +422,13 @@ echo "Installing Arch Linux dependencies from packages.txt..."
 OPTIONAL_PACKAGE_NAMES=(
     steam
     easyeffects
-    spotify
+    bitwarden-bin
+    github-desktop-bin
     visual-studio-code-bin
     zen-browser-bin
     helium-browser-bin
     flow-browser-bin
-    github-desktop-bin
-    bitwarden-bin
+    spotify
     artcraft-launcher
 )
 
@@ -437,9 +437,6 @@ declare -A OPTIONAL_DESCRIPTIONS=(
 )
 declare -A OPTIONAL_DISPLAY_NAMES=(
     [artcraft-launcher]="ArtCraft Launcher"
-    [zen-browser-bin]="Zen Browser"
-    [helium-browser-bin]="Helium Browser"
-    [flow-browser-bin]="Flow Browser"
 )
 declare -A OPTIONAL_NAME_SET=()
 declare -A SEEN_PACKAGES=()
