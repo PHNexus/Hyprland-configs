@@ -12,6 +12,7 @@
 
 <p align="center">
   <a href="#screenshots">Screenshots</a> •
+  <a href="#components">Components</a> •
   <a href="#installation">Installation</a> •
   <a href="packages.txt">Dependencies</a> •
   <a href="#related-projects">Related Projects</a> •
@@ -19,32 +20,54 @@
   <a href="LICENSE">License</a>
 </p>
 
-<!-- Badges -->
-[![Platform](https://img.shields.io/badge/platform-Arch%20Linux-1793D1?logo=arch-linux&logoColor=white)](https://archlinux.org/)
-[![WM](https://img.shields.io/badge/WM-Hyprland-58E1FF)](https://hyprland.org/)
-[![Shell](https://img.shields.io/badge/shell-Fish-4AAE47?logo=fish-shell&logoColor=white)](https://fishshell.com/)
-[![Editor](https://img.shields.io/badge/editor-Neovim-57A143?logo=neovim&logoColor=white)](https://neovim.io/)
-[![License](https://img.shields.io/github/license/PHNexus/Hyprland-configs?color=blue)](https://github.com/PHNexus/Hyprland-configs/blob/main/LICENSE)
-[![Last Commit](https://img.shields.io/github/last-commit/PHNexus/Hyprland-configs?style=flat-square&label=updated)](https://github.com/PHNexus/Hyprland-configs/commits/main)
-[![Repo Size](https://img.shields.io/github/repo-size/PHNexus/Hyprland-configs)](https://github.com/PHNexus/Hyprland-configs)
-[![Stars](https://img.shields.io/github/stars/PHNexus/Hyprland-configs?style=social)](https://github.com/PHNexus/Hyprland-configs/stargazers)
-[![Created At](https://img.shields.io/github/created-at/PHNexus/Hyprland-configs?color=blue&label=created)](https://github.com/PHNexus/Hyprland-configs)
+<div align="center">
+
+<a href="https://archlinux.org/"><img src="https://img.shields.io/badge/platform-Arch%20Linux-1793D1?logo=arch-linux&logoColor=white&style=flat-square" alt="Platform"></a>
+<a href="https://hyprland.org/"><img src="https://img.shields.io/badge/WM-Hyprland-58E1FF?style=flat-square" alt="Window Manager"></a>
+<a href="https://fishshell.com/"><img src="https://img.shields.io/badge/shell-Fish-4AAE47?logo=fish-shell&logoColor=white&style=flat-square" alt="Shell"></a>
+<a href="https://neovim.io/"><img src="https://img.shields.io/badge/editor-Neovim-57A143?logo=neovim&logoColor=white&style=flat-square" alt="Editor"></a>
+<a href="LICENSE"><img src="https://img.shields.io/github/license/PHNexus/Hyprland-configs?color=blue&style=flat-square" alt="License"></a>
+<a href="https://github.com/PHNexus/Hyprland-configs/commits/main"><img src="https://img.shields.io/github/last-commit/PHNexus/Hyprland-configs?style=flat-square&label=updated" alt="Last Commit"></a>
+<a href="https://github.com/PHNexus/Hyprland-configs"><img src="https://img.shields.io/github/repo-size/PHNexus/Hyprland-configs?style=flat-square" alt="Repository Size"></a>
+<a href="https://github.com/PHNexus/Hyprland-configs/stargazers"><img src="https://img.shields.io/github/stars/PHNexus/Hyprland-configs?style=flat-square" alt="Stars"></a>
+<a href="https://github.com/PHNexus/Hyprland-configs"><img src="https://img.shields.io/github/created-at/PHNexus/Hyprland-configs?color=blue&label=created&style=flat-square" alt="Created At"></a>
+
+</div>
+
 ---
 
 ## Screenshots
 
-|<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0ce903b3-13a4-4219-8af9-731f268acf65" /> | <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/39e1a40a-1749-4401-bd92-0dcb8199654c" />  |
-|---|---|
-| <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0c3f0ce9-8959-4e09-9067-3a4f16e2d51c" /> | <img width="1920" height="1080" alt="print_hyprlock" src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" /> |
+<table>
+  <tr>
+    <td width="50%">
+      <img src="https://github.com/user-attachments/assets/0ce903b3-13a4-4219-8af9-731f268acf65" alt="Hyprland desktop screenshot" width="100%">
+    </td>
+    <td width="50%">
+      <img src="https://github.com/user-attachments/assets/39e1a40a-1749-4401-bd92-0dcb8199654c" alt="Hyprland desktop screenshot" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="https://github.com/user-attachments/assets/0c3f0ce9-8959-4e09-9067-3a4f16e2d51c" alt="Hyprland desktop screenshot" width="100%">
+    </td>
+    <td width="50%">
+      <img src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" alt="Hyprlock" width="100%">
+    </td>
+  </tr>
+</table>
 
 <div align="center">
- <h2>Preview</h2>
-  <img src="preview.gif" alt="Preview do setup" width="500">
+
+### Preview
+
+<img src="preview.gif" alt="Preview do setup" width="500">
+
 </div>
 
-<br>
-<br>
-<hr>
+---
+
+## Components
 
 | Component | Program |
 |---|---|
@@ -76,6 +99,8 @@ chmod +x install.sh
 
 ## [Dependencies](packages.txt)
 
+See [`packages.txt`](packages.txt) for the complete package list.
+
 ---
 
 ## Related Projects
@@ -105,7 +130,8 @@ Fixes horizontal scrolling boundaries and hover animations during mouse-wheel sc
 
 Modifier key (`$mainMod`) is **SUPER** (Windows key).
 
-## Apps
+<details>
+<summary><strong>Apps</strong></summary>
 
 | Keybind | Action |
 |---|---|
@@ -123,7 +149,10 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + W` | Open wallpaper picker (`quickshell`) |
 | `SUPER + Esc` | Settings Center (`quickshell`) |
 
-## Window Management
+</details>
+
+<details>
+<summary><strong>Window Management</strong></summary>
 
 | Keybind | Action |
 |---|---|
@@ -146,7 +175,10 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + Mouse Left` | Drag floating window |
 | `SUPER + Mouse Right` | Resize floating window |
 
-## Workspaces
+</details>
+
+<details>
+<summary><strong>Workspaces</strong></summary>
 
 | Keybind | Action |
 |---|---|
@@ -157,7 +189,10 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + Mouse Wheel Down` | Next workspace |
 | `SUPER + Mouse Wheel Up` | Previous workspace |
 
-## Window & Layout Navigation
+</details>
+
+<details>
+<summary><strong>Window & Layout Navigation</strong></summary>
 
 | Keybind | Action |
 |---|---|
@@ -165,7 +200,10 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `ALT + SHIFT + Tab` | Cycle to previous window |
 | `SUPER + ALT + L` | Cycle between scrolling, dwindle, master and monocle layouts |
 
-## Media & Brightness
+</details>
+
+<details>
+<summary><strong>Media & Brightness</strong></summary>
 
 | Keybind | Action |
 |---|---|
@@ -180,19 +218,20 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `XF86MonBrightnessUp` | Increase brightness by 5% |
 | `XF86MonBrightnessDown` | Decrease brightness by 5% |
 
-## Screenshots
+</details>
+
+<details>
+<summary><strong>Screenshots & Screen Recording</strong></summary>
 
 | Keybind | Action |
 |---|---|
 | `SUPER + SHIFT + S` | Screenshot region via `hyprshot` → `~/Pictures/Screenshots` |
-
-## Screen Recording
-
-| Keybind | Action |
-|---|---|
 | `SUPER + G` | Start / stop screen recording with audio and microphone → saves recordings to `~/Videos` |
+
+</details>
+
+---
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
