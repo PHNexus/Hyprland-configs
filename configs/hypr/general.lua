@@ -7,15 +7,15 @@ function M.setup()
     -- ============================================================
     hl.config({
         general = {
-            gaps_in = 9,
-            gaps_out = 17,
+            gaps_in = 5,
+            gaps_out = 10,
             border_size = 0,
             resize_on_border = true,
             allow_tearing = true,
             layout = "scrolling",
             col = {
-                active_border = "rgb(0f29c8)",
-                inactive_border = "rgb(c1c127)",
+                active_border = "rgb(bbbbbb)",
+                inactive_border = "rgb(666666)",
             },
         },
     })
@@ -52,15 +52,15 @@ function M.setup()
     -- ============================================================
     hl.config({
         decoration = {
-            rounding = 19,
+            rounding = 16,
             rounding_power = 10,
-            active_opacity = 0.921,
-            inactive_opacity = 0.938,
+            active_opacity = 0.9,
+            inactive_opacity = 0.9,
             shadow = { enabled = true, range = 16, render_power = 6, color = "rgb(15161e)" },
             blur = {
                 enabled = true,
                 size = 6,
-                passes = 3,
+                passes = 4,
                 vibrancy = 0.35,
                 brightness = 0.9,
                 noise = 0.0,
