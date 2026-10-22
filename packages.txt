@@ -130,6 +130,7 @@ bitwarden-bin
 github-desktop-bin
 imagemagick 
 helium-browser-bin
+flow-browser-bin
 visual-studio-code-bin
 bazaar
 spotify
