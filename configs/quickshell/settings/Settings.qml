@@ -25,43 +25,55 @@ FloatingWindow {
     }, {
         "group": "CONNECTIVITY",
         "name": "Network",
-        "short": "3",
+        "short": "5",
         "icon": "\uf1eb",
         "page": "Network"
     }, {
         "group": "CONNECTIVITY",
         "name": "Bluetooth",
-        "short": "4",
+        "short": "6",
         "icon": "󰂯",
         "page": "Bluetooth"
     }, {
         "group": "SYSTEM",
         "name": "Storage",
-        "short": "5",
+        "short": "7",
         "icon": "󰋊",
         "page": "Storage"
     }, {
         "group": "SYSTEM",
         "name": "Power",
-        "short": "6",
+        "short": "9",
         "icon": "󰐥",
         "page": "Power"
     }, {
         "group": "ADVANCED",
+        "name": "General",
+        "short": "4",
+        "icon": "\uf013",
+        "page": "General"
+    }, {
+        "group": "ADVANCED",
         "name": "Keybinds",
-        "short": "7",
+        "short": "8",
         "icon": "󰌌",
         "page": "Keybinds"
     }, {
         "group": "ADVANCED",
+        "name": "Input",
+        "short": "3",
+        "icon": "\uf11c",
+        "page": "Input"
+    }, {
+        "group": "ADVANCED",
         "name": "AutoStart",
-        "short": "8",
+        "short": "0",
         "icon": "󰧮",
         "page": "Autostart"
     }, {
         "group": "ADVANCED",
         "name": "Configs",
-        "short": "9",
+        "short": "-",
         "icon": "󰧮",
         "page": "Configs"
     }]
@@ -179,17 +191,17 @@ FloatingWindow {
         }
 
         function keybinds() {
-            root.selectedIndex = 6;
+            root.selectedIndex = 8;
             root.show();
         }
 
         function autostart() {
-            root.selectedIndex = 7;
+            root.selectedIndex = 9;
             root.show();
         }
 
         function configs() {
-            root.selectedIndex = 8;
+            root.selectedIndex = 10;
             root.show();
         }
 

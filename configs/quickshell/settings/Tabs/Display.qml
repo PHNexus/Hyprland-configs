@@ -79,7 +79,7 @@ Item {
         stateSaveTimer.stop();
         savedState = ({
         });
-        pReset.command = ["sh", "-c", "rm -f '" + page.stateDir + "/display.json' '" + page.stateDir + "/display.lua'; hyprctl reload"];
+        pReset.command = ["sh", "-c", "rm -f '" + page.stateDir + "/display.json'; hyprctl reload"];
         pReset.running = true;
     }
 
@@ -611,12 +611,6 @@ Item {
 
         path: page.stateDir + "/display.json"
         blockLoading: true
-    }
-
-    FileView {
-        id: displayLua
-
-        path: page.stateDir + "/display.lua"
     }
 
     FileView {

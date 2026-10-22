@@ -158,16 +158,6 @@ Item {
                 }
 
                 ConfigButton {
-                    label: "INPUT"
-                    path: "~/.config/hypr/input.lua"
-                }
-
-                ConfigButton {
-                    label: "GENERAL"
-                    path: "~/.config/hypr/general.lua"
-                }
-
-                ConfigButton {
                     label: "ENVIRONMENT"
                     path: "~/.config/hypr/environment.lua"
                 }
