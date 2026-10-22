@@ -129,6 +129,7 @@ cloudflare-warp-bin
 bitwarden-bin 
 github-desktop-bin
 imagemagick 
+zen-browser-bin
 helium-browser-bin
 flow-browser-bin
 visual-studio-code-bin

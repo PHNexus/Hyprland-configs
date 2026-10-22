@@ -424,7 +424,9 @@ OPTIONAL_PACKAGE_NAMES=(
     easyeffects
     spotify
     visual-studio-code-bin
+    zen-browser-bin
     helium-browser-bin
+    flow-browser-bin
     github-desktop-bin
     bitwarden-bin
     artcraft-launcher
@@ -435,6 +437,9 @@ declare -A OPTIONAL_DESCRIPTIONS=(
 )
 declare -A OPTIONAL_DISPLAY_NAMES=(
     [artcraft-launcher]="ArtCraft Launcher"
+    [zen-browser-bin]="Zen Browser"
+    [helium-browser-bin]="Helium Browser"
+    [flow-browser-bin]="Flow Browser"
 )
 declare -A OPTIONAL_NAME_SET=()
 declare -A SEEN_PACKAGES=()
@@ -879,7 +884,7 @@ fi
 # -----------------------------------------------------------------
 # Set Initial Default Wallpaper with Cache
 # -----------------------------------------------------------------
-DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/18.png"
+DEFAULT_WALLPAPER="$PICTURES_DIR/Wallpapers/06.png"
 CACHE_DIR="$HOME/.cache/wallpapers_state"
 mkdir -p "$CACHE_DIR"
 
@@ -934,12 +939,14 @@ echo "Installing Dock Bar..."
 if command -v qs &>/dev/null; then
     DOCK_DIR="$HOME/.local/share/dock-bar"
 
-    if [[ ! -d "$REPO_DIR/dock-bar" ]]; then
-        echo "  Warning: $REPO_DIR/dock-bar not found, skipping"
+    DOCKBAR_REPO_DIR="$REPO_DIR/local/share/dock-bar"
+
+    if [[ ! -d "$DOCKBAR_REPO_DIR" ]]; then
+        echo "  Warning: $DOCKBAR_REPO_DIR not found, skipping"
     else
         rm -rf "$DOCK_DIR"
         mkdir -p "$DOCK_DIR"
-        cp -r "$REPO_DIR/dock-bar/." "$DOCK_DIR/"
+        cp -r "$DOCKBAR_REPO_DIR/." "$DOCK_DIR/"
         chmod +x "$DOCK_DIR/bin/dock-bar" 2>/dev/null || true
         mkdir -p "$HOME/.local/bin"
         ln -sf "$DOCK_DIR/bin/dock-bar" "$HOME/.local/bin/dock-bar"
