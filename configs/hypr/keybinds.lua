@@ -13,7 +13,7 @@ function M.setup()
     hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"))
     hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("helium-browser"))
     hl.bind(mainMod .. " + X", hl.dsp.exec_cmd("spotify"))
-    hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("helium-browser http://localhost:8080")) -- Local AI
+    hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("zen-browser http://localhost:8080")) -- Local AI
     hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
     hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
     hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
