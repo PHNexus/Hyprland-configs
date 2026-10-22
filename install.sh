@@ -425,9 +425,7 @@ OPTIONAL_PACKAGE_NAMES=(
     bitwarden-bin
     github-desktop-bin
     visual-studio-code-bin
-    zen-browser-bin
     helium-browser-bin
-    flow-browser-bin
     spotify
     artcraft-launcher
 )

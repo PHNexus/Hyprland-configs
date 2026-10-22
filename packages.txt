@@ -130,9 +130,7 @@ bitwarden-bin
 github-desktop-bin
 visual-studio-code-bin
 imagemagick 
-zen-browser-bin
 helium-browser-bin
-flow-browser-bin
 bazaar
 spotify
 nvibrant-bin
