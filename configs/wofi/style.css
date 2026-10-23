@@ -38,7 +38,7 @@ window {
   margin: 2px;
   border: none;
   padding: 2px;
-  background-color: rgba(0, 0, 0, 0.705);
+  background-color: rgba(20, 20, 24, 0.7);
   border-radius: 12px;
 }
 
@@ -48,7 +48,9 @@ window {
   background: none;
 }
 
-scrollbar, scrollbar trough, scrollbar slider {
+scrollbar,
+scrollbar trough,
+scrollbar slider {
   opacity: 0;
   border: none;
   background: transparent;
@@ -79,7 +81,7 @@ scrollbar, scrollbar trough, scrollbar slider {
 }
 
 #entry:selected {
-  background-color: #2a2a30;
+  background-color: rgba(78, 78, 82, 0.253);
   border-radius: 12px;
 }
 

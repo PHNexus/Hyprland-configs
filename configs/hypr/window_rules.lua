@@ -196,7 +196,7 @@ function M.setup()
         match = { namespace = "wofi" },
         animation = "popin 60%",
         blur = true,
-        ignore_alpha = 0.5,
+        ignore_alpha = 0.4,
     })
     hl.layer_rule({
         name = "hyprquickpaper-slide",
