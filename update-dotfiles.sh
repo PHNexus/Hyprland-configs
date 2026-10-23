@@ -27,6 +27,7 @@ CONFIG_FOLDERS=(
     "kitty"
     "quickshell"
     "swaync"
+    "snappy-switcher"
     "waybar"
     "wlogout"
     "wofi"

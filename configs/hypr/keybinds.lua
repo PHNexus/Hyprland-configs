@@ -109,10 +109,7 @@ function M.setup()
         end
     end)
 
-    hl.bind("ALT + Tab", function()
-        hl.dispatch(hl.dsp.window.cycle_next())
-        hl.dispatch(hl.dsp.window.bring_to_top())
-    end)
+    hl.bind("ALT + Tab", hl.dsp.exec_cmd("snappy-switcher next --mod alt"))
     hl.bind("ALT + SHIFT + Tab", function()
         hl.dispatch(hl.dsp.window.cycle_next({ prev = true }))
         hl.dispatch(hl.dsp.window.bring_to_top())

@@ -811,7 +811,7 @@ echo "Checking for existing configurations and wallpapers..."
 
 configs=(
     btop nvim cava fastfetch fish hypr kitty
-    quickshell swaync waybar wlogout
+    quickshell swaync snappy-switcher waybar wlogout
     wofi xdg-desktop-portal dock-bar Thunar
 )
 

@@ -135,6 +135,7 @@ bazaar
 spotify
 nvibrant-bin
 wlogout
+snappy-switcher
 nwg-look
 quickshell
 bibata-cursor-theme

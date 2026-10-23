@@ -218,6 +218,12 @@ function M.setup()
         blur = true,
         ignore_alpha = 0.2,
     })
+    hl.layer_rule({
+        name = "snappy-switcher-blur",
+        match = { namespace = "snappy-switcher" },
+        blur = true,
+        ignore_alpha = 0.2,
+    })
 end
 
 return M
