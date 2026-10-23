@@ -206,7 +206,7 @@ text/x-zsh=com.microsoft.VSCode.desktop
 x-scheme-handler/ton=org.telegram.desktop.desktop
 
 [Added Associations]
-image/png=imv.desktop;
+image/png=ai.storyteller.photocraft.desktop;imv.desktop;
 image/jpg=imv.desktop;
 image/jpeg=imv.desktop;
 image/webp=imv.desktop;
