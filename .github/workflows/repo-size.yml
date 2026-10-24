@@ -1,10 +1,6 @@
-
-mkdir -p .github/workflows
-
-cat > .github/workflows/repo-size.yml <<'YAML'
 name: Update Repository Size Badge
 
-on:
+"on":
   push:
     branches:
       - main
@@ -22,19 +18,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out main branch
-        uses: actions/checkout@v7
+      - name: Checkout main branch
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 1
           fetch-tags: false
 
-      - name: Fetch complete main history only
+      - name: Fetch complete main history
         shell: bash
         run: |
           set -euo pipefail
           git fetch --no-tags --unshallow origin \
-            +refs/heads/main:refs/remotes/origin/main
+            '+refs/heads/main:refs/remotes/origin/main'
 
       - name: Calculate total repository size
         shell: bash
@@ -53,10 +49,11 @@ jobs:
           }')
 
           mkdir -p "$RUNNER_TEMP/badge"
+
           printf '{"schemaVersion":1,"label":"Repository Size","message":"%s","color":"blue","cacheSeconds":300}\n' \
             "$SIZE" > "$RUNNER_TEMP/badge/repo-size.json"
 
-          echo "Total checkout size: $SIZE ($SIZE_BYTES bytes)"
+          echo "Repository size: $SIZE ($SIZE_BYTES bytes)"
 
       - name: Publish badge data
         shell: bash
@@ -64,7 +61,8 @@ jobs:
           set -euo pipefail
 
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
 
           git checkout --orphan badges
           git rm -rf .
@@ -73,8 +71,3 @@ jobs:
           git add repo-size.json
           git commit -m "Update repository size badge"
           git push --force origin badges
-YAML
-
-git add .github/workflows/repo-size.yml
-git commit -m "Fix repository size calculation"
-git push origin main
