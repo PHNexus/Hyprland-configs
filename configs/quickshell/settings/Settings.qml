@@ -54,16 +54,16 @@ FloatingWindow {
         "page": "General"
     }, {
         "group": "ADVANCED",
-        "name": "Keybinds",
-        "short": "8",
-        "icon": "󰌌",
-        "page": "Keybinds"
-    }, {
-        "group": "ADVANCED",
         "name": "Input",
         "short": "3",
         "icon": "\uf11c",
         "page": "Input"
+    }, {
+        "group": "ADVANCED",
+        "name": "Keybinds",
+        "short": "8",
+        "icon": "󰌌",
+        "page": "Keybinds"
     }, {
         "group": "ADVANCED",
         "name": "AutoStart",
@@ -79,22 +79,29 @@ FloatingWindow {
     }]
 
     function show() {
-        if (showing)
-            return ;
-
         cardVisible = true;
+        if (showing) {
+            if (!root.backingWindowVisible) {
+                showing = false;
+                windowRecoveryTimer.restart();
+            }
+            return ;
+        }
         showing = true;
     }
 
     function hide() {
-        if (!showing)
-            return ;
-
+        windowRecoveryTimer.stop();
         showing = false;
+        cardVisible = false;
     }
 
     function toggle() {
-        showing ? hide() : show();
+        if (showing && root.backingWindowVisible) {
+            hide();
+            return ;
+        }
+        show();
     }
 
     function isFirstOfGroup(idx) {
@@ -112,6 +119,7 @@ FloatingWindow {
     minimumSize: Qt.size(720, 480)
     maximumSize: Qt.size(1400, 900)
     onClosed: {
+        windowRecoveryTimer.stop();
         root.showing = false;
         root.cardVisible = false;
     }
@@ -120,6 +128,18 @@ FloatingWindow {
             card.opacity = 0;
             card.scale = 0.96;
             openAnimation.start();
+        }
+    }
+
+    Timer {
+        id: windowRecoveryTimer
+
+        interval: 50
+        repeat: false
+        onTriggered: {
+            if (root.cardVisible)
+                root.showing = true;
+
         }
     }
 

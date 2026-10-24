@@ -33,6 +33,9 @@ Item {
     property bool manualOff: false
     property bool powerRequestPending: false
     property bool requestedPower: false
+    property bool discoveryCommandPending: false
+    property bool desiredDiscovery: false
+    property bool lastDiscoveryRequest: false
 
     function setStatus(text) {
         page.statusText = text;
@@ -43,13 +46,18 @@ Item {
     }
 
     function setDiscovering(on) {
+        var shouldDiscover = Boolean(on) && page.visible;
+        page.desiredDiscovery = shouldDiscover;
         if (!page.adapter || page.adapter.state !== BluetoothAdapterState.Enabled)
             return ;
 
-        var shouldDiscover = Boolean(on) && page.visible;
-        if (page.adapter.discovering !== shouldDiscover)
-            page.adapter.discovering = shouldDiscover;
+        if (page.discoveryCommandPending || page.adapter.discovering === shouldDiscover)
+            return ;
 
+        page.discoveryCommandPending = true;
+        page.lastDiscoveryRequest = shouldDiscover;
+        page.adapter.discovering = shouldDiscover;
+        discoveryCommandTimer.restart();
     }
 
     function syncDiscovery() {
@@ -258,6 +266,19 @@ Item {
 
         interval: 4000
         onTriggered: page.statusText = ""
+    }
+
+    Timer {
+        id: discoveryCommandTimer
+
+        interval: 1200
+        repeat: false
+        onTriggered: {
+            page.discoveryCommandPending = false;
+            if (page.desiredDiscovery !== page.lastDiscoveryRequest)
+                page.setDiscovering(page.desiredDiscovery);
+
+        }
     }
 
     Timer {
@@ -602,7 +623,7 @@ Item {
                             page.setStatus("Removal requested for " + name + ".");
                         }
 
-                        visible: !(BluetoothState.removingDevices && BluetoothState.removingDevices[deviceKey])
+                        visible: !(typeof BluetoothState !== "undefined" && BluetoothState.removingDevices && BluetoothState.removingDevices[deviceKey])
                         width: list.width
                         height: visible ? 52 : 0
                         radius: Theme.radius
