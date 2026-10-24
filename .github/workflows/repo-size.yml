@@ -1,4 +1,5 @@
-name: Update Repository Size Badge
+
+name: Update Clone Download Badge
 
 "on":
   push:
@@ -10,7 +11,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: repository-size-badge
+  group: clone-download-badge
   cancel-in-progress: false
 
 jobs:
@@ -18,42 +19,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout main branch
+      - name: Check out repository
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 1
-          fetch-tags: false
 
-      - name: Fetch complete main history
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch --no-tags --unshallow origin \
-            '+refs/heads/main:refs/remotes/origin/main'
-
-      - name: Calculate total repository size
+      - name: Measure clone download size
         shell: bash
         run: |
           set -euo pipefail
 
-          SIZE_BYTES=$(du -sb . | cut -f1)
+          CLONE_DIR="$RUNNER_TEMP/clone-size-check"
+          CLONE_LOG="$RUNNER_TEMP/clone.log"
+          PROGRESS_LOG="$RUNNER_TEMP/clone-progress.log"
 
-          SIZE=$(awk -v bytes="$SIZE_BYTES" 'BEGIN {
-            if (bytes >= 1073741824)
-              printf "%.2f GiB", bytes / 1073741824
-            else if (bytes >= 1048576)
-              printf "%.2f MiB", bytes / 1048576
-            else
-              printf "%.2f KiB", bytes / 1024
-          }')
+          git clone --progress --single-branch --no-tags \
+            --branch main \
+            "https://github.com/${GITHUB_REPOSITORY}.git" \
+            "$CLONE_DIR" 2> "$CLONE_LOG"
 
-          mkdir -p "$RUNNER_TEMP/badge"
+          tr '\r' '\n' < "$CLONE_LOG" > "$PROGRESS_LOG"
+          cat "$PROGRESS_LOG"
 
-          printf '{"schemaVersion":1,"label":"Repository Size","message":"%s","color":"blue","cacheSeconds":300}\n' \
-            "$SIZE" > "$RUNNER_TEMP/badge/repo-size.json"
+          SIZE=$(sed -nE \
+            's/.*Receiving objects: *100% \([0-9]+\/[0-9]+\), ([0-9]+([.][0-9]+)? [KMGT]iB).*/\1/p' \
+            "$PROGRESS_LOG" | tail -n 1)
 
-          echo "Repository size: $SIZE ($SIZE_BYTES bytes)"
+          if [[ -z "$SIZE" ]]; then
+            echo "::error::Could not determine Git clone download size."
+            cat "$CLONE_LOG"
+            exit 1
+          fi
+
+          printf '{"schemaVersion":1,"label":"Clone Download","message":"%s","color":"blue"}\n' \
+            "$SIZE" > "$RUNNER_TEMP/clone-download.json"
+
+          echo "Clone download size: $SIZE"
 
       - name: Publish badge data
         shell: bash
@@ -66,8 +68,8 @@ jobs:
 
           git checkout --orphan badges
           git rm -rf .
-          cp "$RUNNER_TEMP/badge/repo-size.json" repo-size.json
+          cp "$RUNNER_TEMP/clone-download.json" repo-size.json
 
           git add repo-size.json
-          git commit -m "Update repository size badge"
+          git commit -m "Update clone download badge"
           git push --force origin badges
