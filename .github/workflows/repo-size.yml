@@ -1,3 +1,4 @@
+
 name: Update Repository Size Badge
 
 on:
@@ -18,13 +19,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Check out main branch
         uses: actions/checkout@v7
         with:
           ref: main
-          fetch-depth: 0
+          fetch-depth: 1
+          fetch-tags: false
 
-      - name: Calculate total repository size
+      - name: Fetch complete main history only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --unshallow origin +refs/heads/main:refs/remotes/origin/main
+
+      - name: Calculate total checkout size
         shell: bash
         run: |
           set -euo pipefail
@@ -37,12 +45,14 @@ jobs:
               printf "%.2f GiB", bytes / 1073741824
             else if (bytes >= 1048576)
               printf "%.2f MiB", bytes / 1048576
+            else if (bytes >= 1024)
+              printf "%.2f KiB", bytes / 1024
             else
-              printf "%.0f KiB", bytes / 1024
+              printf "%d bytes", bytes
           }')
 
           printf '{"schemaVersion":1,"label":"Repository Size","message":"%s","color":"blue","cacheSeconds":300}\n' "$SIZE" > "$JSON_PATH"
-          echo "Measured total repository clone size: $SIZE ($SIZE_BYTES bytes)"
+          echo "Measured total checkout size (working tree + main history): $SIZE ($SIZE_BYTES bytes)"
           cat "$JSON_PATH"
 
       - name: Publish badge data
