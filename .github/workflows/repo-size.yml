@@ -1,0 +1,65 @@
+name: Update Git History Size Badge
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: git-history-size-badge
+  cancel-in-progress: false
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main with full history
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Calculate cloneable Git history size
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BUNDLE_PATH="$RUNNER_TEMP/main-history.bundle"
+          JSON_PATH="$RUNNER_TEMP/repo-size.json"
+
+          git bundle create "$BUNDLE_PATH" refs/heads/main
+          SIZE_BYTES=$(stat -c '%s' "$BUNDLE_PATH")
+
+          SIZE=$(awk -v bytes="$SIZE_BYTES" 'BEGIN {
+            if (bytes >= 1073741824)
+              printf "%.2f GiB", bytes / 1073741824
+            else if (bytes >= 1048576)
+              printf "%.2f MiB", bytes / 1048576
+            else
+              printf "%.0f KiB", bytes / 1024
+          }')
+
+          printf '{"schemaVersion":1,"label":"Git History (main)","message":"%s","color":"blue","cacheSeconds":300}\n' "$SIZE" > "$JSON_PATH"
+          echo "Measured Git history bundle: $SIZE ($SIZE_BYTES bytes)"
+          cat "$JSON_PATH"
+
+      - name: Publish badge JSON to badges branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout --orphan badges
+          git rm -rf .
+          cp "$RUNNER_TEMP/repo-size.json" repo-size.json
+
+          git add repo-size.json
+          git commit -m "Update Git history size badge"
+          git push --force origin badges
