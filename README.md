@@ -29,7 +29,7 @@
 <a href="LICENSE"><img src="https://img.shields.io/github/license/PHNexus/Hyprland-configs?color=blue&style=flat-square" alt="License"></a>
 <a href="https://github.com/PHNexus/Hyprland-configs/commits/main"><img src="https://img.shields.io/github/last-commit/PHNexus/Hyprland-configs?style=flat-square&label=updated" alt="Last Commit"></a>
 <a href="https://github.com/PHNexus/Hyprland-configs">
-  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FPHNexus%2FHyprland-configs%2Fbadges%2Frepo-size.json%3Fv%3D5&style=flat-square&cacheSeconds=60" alt="Download Size">
+  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FPHNexus%2FHyprland-configs%2Fbadges%2Frepo-size.json%3Fv%3D5&style=flat-square&cacheSeconds=60" alt="Clone Download Size">
 </a>
 <a href="https://github.com/PHNexus/Hyprland-configs/stargazers"><img src="https://img.shields.io/github/stars/PHNexus/Hyprland-configs?style=flat-square" alt="Stars"></a>
 <a href="https://github.com/PHNexus/Hyprland-configs"><img src="https://img.shields.io/github/created-at/PHNexus/Hyprland-configs?color=blue&label=created&style=flat-square" alt="Created At"></a>
