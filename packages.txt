@@ -93,6 +93,7 @@ bluez-utils
 blueman
 networkmanager
 jq
+ncdu
 dconf
 gsettings-desktop-schemas
 udisks2
