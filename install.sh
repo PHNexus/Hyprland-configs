@@ -194,7 +194,7 @@ configure_bluetooth_module() {
             if (!general_written) {
                 print "ControllerMode = bredr"
                 print "FastConnectable = true"
-                general_written = 1
+                general_written = 1F
             }
         }
         function add_policy() {
