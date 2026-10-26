@@ -51,17 +51,17 @@ Item {
         Column {
             id: content
             width: flick.width
-            spacing: 8
+            spacing: 9
 
             Column {
                 width: parent.width
-                spacing: 3
+                spacing: 4
 
                 Text {
                     text: "SOUND"
                     color: Theme.text
                     font.family: Theme.fontFamily
-                    font.pixelSize: 19
+                    font.pixelSize: 21
                     font.weight: Font.Normal
                 }
 
@@ -69,7 +69,7 @@ Item {
                     text: "Output, input and per-application volume"
                     color: Theme.textFaint
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                 }
             }
 
@@ -83,7 +83,7 @@ Item {
                 id: outputRow
                 property bool hovered: false
                 width: parent.width
-                height: 46
+                height: 50
                 radius: 8
                 color: hovered ? Theme.alpha(Theme.accent, 0.035) : Theme.alpha(Theme.text, 0.015)
                 border.width: 1
@@ -94,13 +94,13 @@ Item {
 
                 Row {
                     anchors.fill: parent
-                    anchors.leftMargin: 9
-                    anchors.rightMargin: 9
-                    spacing: 8
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 9
 
                     Rectangle {
-                        width: 27
-                        height: 27
+                        width: 30
+                        height: 30
                         radius: 8
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.alpha(Theme.text, 0.025)
@@ -112,7 +112,7 @@ Item {
                             text: page.muted ? "\uf026" : "\uf028"
                             color: page.muted ? Theme.textFaint : Theme.text
                             font.family: Theme.iconFont
-                            font.pixelSize: 13
+                            font.pixelSize: 14
                         }
 
                         MouseArea {
@@ -126,16 +126,16 @@ Item {
                     }
 
                     Column {
-                        width: 82
+                        width: 90
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 3
+                        spacing: 4
 
                         Text {
                             width: parent.width
                             text: "Output volume"
                             color: Theme.text
                             font.family: Theme.fontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                             font.weight: Font.Medium
                             elide: Text.ElideRight
                         }
@@ -145,14 +145,14 @@ Item {
                             text: page.muted ? "Muted" : Math.round(page.volume * 100) + "%"
                             color: Theme.textFaint
                             font.family: Theme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                             elide: Text.ElideRight
                         }
                     }
 
                     Slider {
-                        width: Math.max(60, outputRow.width - 143)
-                        height: 32
+                        width: Math.max(60, outputRow.width - 158)
+                        height: 35
                         anchors.verticalCenter: parent.verticalCenter
                         label: ""
                         icon: ""
@@ -173,7 +173,7 @@ Item {
 
             Column {
                 width: parent.width
-                spacing: 4
+                spacing: 5
 
                 Repeater {
                     model: page.outputSinks
@@ -186,7 +186,7 @@ Item {
                         property bool active: page.sink?.id === output?.id
 
                         width: parent.width
-                        height: 42
+                        height: 46
                         radius: 8
                         color: active ? Theme.alpha(Theme.accent, 0.045) : (hovered ? Theme.alpha(Theme.accent, 0.03) : Theme.alpha(Theme.text, 0.015))
                         border.width: 1
@@ -197,13 +197,13 @@ Item {
 
                         Row {
                             anchors.fill: parent
-                            anchors.leftMargin: 9
-                            anchors.rightMargin: 9
-                            spacing: 8
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 9
 
                             Rectangle {
-                                width: 27
-                                height: 27
+                                width: 30
+                                height: 30
                                 radius: 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: Theme.alpha(Theme.text, 0.025)
@@ -215,21 +215,21 @@ Item {
                                     text: "\uf028"
                                     color: outputCard.active ? Theme.accent : Theme.textDim
                                     font.family: Theme.iconFont
-                                    font.pixelSize: 13
+                                    font.pixelSize: 14
                                 }
                             }
 
                             Column {
-                                width: parent.width - 35
+                                width: parent.width - 39
                                 anchors.verticalCenter: parent.verticalCenter
-                                spacing: 3
+                                spacing: 4
 
                                 Text {
                                     width: parent.width
                                     text: page.displayName(output, "Unknown output")
                                     color: Theme.text
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 12
                                     font.weight: outputCard.active ? Font.Medium : Font.Normal
                                     elide: Text.ElideRight
                                 }
@@ -239,7 +239,7 @@ Item {
                                     text: outputCard.active ? "Default output" : "Audio output"
                                     color: Theme.textFaint
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 9
+                                    font.pixelSize: 10
                                     elide: Text.ElideRight
                                 }
                             }
@@ -258,7 +258,7 @@ Item {
 
                 Rectangle {
                     width: parent.width
-                    height: 44
+                    height: 48
                     radius: 8
                     visible: page.outputSinks.length === 0
                     color: Theme.alpha(Theme.text, 0.015)
@@ -267,11 +267,11 @@ Item {
 
                     Row {
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 9
 
                         Rectangle {
-                            width: 27
-                            height: 27
+                            width: 30
+                            height: 30
                             radius: 8
                             anchors.verticalCenter: parent.verticalCenter
                             color: Theme.alpha(Theme.text, 0.025)
@@ -283,25 +283,25 @@ Item {
                                 text: "\uf028"
                                 color: Theme.textFaint
                                 font.family: Theme.iconFont
-                                font.pixelSize: 15
+                                font.pixelSize: 16
                             }
                         }
 
                         Column {
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: 3
+                            spacing: 4
                             Text {
                                 text: "No sound outputs"
                                 color: Theme.text
                                 font.family: Theme.fontFamily
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 font.weight: Font.Medium
                             }
                             Text {
                                 text: "Connect or enable an output device"
                                 color: Theme.textFaint
                                 font.family: Theme.fontFamily
-                                font.pixelSize: 9
+                                font.pixelSize: 10
                             }
                         }
                     }
@@ -324,7 +324,7 @@ Item {
                 id: inputRow
                 property bool hovered: false
                 width: parent.width
-                height: 46
+                height: 50
                 radius: 8
                 color: hovered ? Theme.alpha(Theme.accent, 0.035) : Theme.alpha(Theme.text, 0.015)
                 border.width: 1
@@ -335,13 +335,13 @@ Item {
 
                 Row {
                     anchors.fill: parent
-                    anchors.leftMargin: 9
-                    anchors.rightMargin: 9
-                    spacing: 8
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 9
 
                     Rectangle {
-                        width: 27
-                        height: 27
+                        width: 30
+                        height: 30
                         radius: 8
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.alpha(Theme.text, 0.025)
@@ -353,7 +353,7 @@ Item {
                             text: page.inputMuted ? "\uf131" : "\uf130"
                             color: page.inputMuted ? Theme.textFaint : Theme.text
                             font.family: Theme.iconFont
-                            font.pixelSize: 13
+                            font.pixelSize: 14
                         }
 
                         MouseArea {
@@ -367,16 +367,16 @@ Item {
                     }
 
                     Column {
-                        width: 82
+                        width: 90
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 3
+                        spacing: 4
 
                         Text {
                             width: parent.width
                             text: "Input volume"
                             color: Theme.text
                             font.family: Theme.fontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                             font.weight: Font.Medium
                             elide: Text.ElideRight
                         }
@@ -386,14 +386,14 @@ Item {
                             text: page.inputMuted ? "Muted" : Math.round(page.inputVolume * 100) + "%"
                             color: Theme.textFaint
                             font.family: Theme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                             elide: Text.ElideRight
                         }
                     }
 
                     Slider {
-                        width: Math.max(60, inputRow.width - 143)
-                        height: 32
+                        width: Math.max(60, inputRow.width - 158)
+                        height: 35
                         anchors.verticalCenter: parent.verticalCenter
                         label: ""
                         icon: ""
@@ -422,7 +422,7 @@ Item {
 
             Column {
                 width: parent.width
-                spacing: 4
+                spacing: 5
 
                 Repeater {
                     model: page.inputSources
@@ -435,7 +435,7 @@ Item {
                         property bool active: page.source?.id === input?.id
 
                         width: parent.width
-                        height: 42
+                        height: 46
                         radius: 8
                         color: active ? Theme.alpha(Theme.accent, 0.045) : (hovered ? Theme.alpha(Theme.accent, 0.03) : Theme.alpha(Theme.text, 0.015))
                         border.width: 1
@@ -446,13 +446,13 @@ Item {
 
                         Row {
                             anchors.fill: parent
-                            anchors.leftMargin: 9
-                            anchors.rightMargin: 9
-                            spacing: 8
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 9
 
                             Rectangle {
-                                width: 27
-                                height: 27
+                                width: 30
+                                height: 30
                                 radius: 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: Theme.alpha(Theme.text, 0.025)
@@ -464,21 +464,21 @@ Item {
                                     text: "\uf130"
                                     color: inputCard.active ? Theme.accent : Theme.textDim
                                     font.family: Theme.iconFont
-                                    font.pixelSize: 13
+                                    font.pixelSize: 14
                                 }
                             }
 
                             Column {
-                                width: parent.width - 35
+                                width: parent.width - 39
                                 anchors.verticalCenter: parent.verticalCenter
-                                spacing: 3
+                                spacing: 4
 
                                 Text {
                                     width: parent.width
                                     text: page.displayName(input, "Unknown input")
                                     color: Theme.text
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 12
                                     font.weight: inputCard.active ? Font.Medium : Font.Normal
                                     elide: Text.ElideRight
                                 }
@@ -488,7 +488,7 @@ Item {
                                     text: inputCard.active ? "Default input" : "Audio input"
                                     color: Theme.textFaint
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 9
+                                    font.pixelSize: 10
                                     elide: Text.ElideRight
                                 }
                             }
@@ -507,7 +507,7 @@ Item {
 
                 Rectangle {
                     width: parent.width
-                    height: 44
+                    height: 48
                     radius: 8
                     visible: page.inputSources.length === 0
                     color: Theme.alpha(Theme.text, 0.015)
@@ -516,11 +516,11 @@ Item {
 
                     Row {
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 9
 
                         Rectangle {
-                            width: 27
-                            height: 27
+                            width: 30
+                            height: 30
                             radius: 8
                             anchors.verticalCenter: parent.verticalCenter
                             color: Theme.alpha(Theme.text, 0.025)
@@ -532,25 +532,25 @@ Item {
                                 text: "\uf130"
                                 color: Theme.textFaint
                                 font.family: Theme.iconFont
-                                font.pixelSize: 15
+                                font.pixelSize: 16
                             }
                         }
 
                         Column {
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: 3
+                            spacing: 4
                             Text {
                                 text: "No sound inputs"
                                 color: Theme.text
                                 font.family: Theme.fontFamily
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 font.weight: Font.Medium
                             }
                             Text {
                                 text: "Connect or enable an input device"
                                 color: Theme.textFaint
                                 font.family: Theme.fontFamily
-                                font.pixelSize: 9
+                                font.pixelSize: 10
                             }
                         }
                     }
@@ -565,7 +565,7 @@ Item {
 
             Row {
                 width: parent.width
-                spacing: 8
+                spacing: 9
 
                 Text {
                     id: appVolumeLabel
@@ -573,7 +573,7 @@ Item {
                     text: "PER-APP VOLUME"
                     color: Theme.textDim
                     font.family: Theme.monoFont
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                     font.weight: Font.DemiBold
                     font.letterSpacing: 0.5
                 }
@@ -586,7 +586,7 @@ Item {
                 Rectangle {
                     id: streamCountBadge
                     width: Math.max(26, streamCountText.implicitWidth + 14)
-                    height: 22
+                    height: 24
                     radius: 6
                     color: Theme.alpha(Theme.text, 0.025)
                     border.width: 1
@@ -599,14 +599,14 @@ Item {
                         text: page.appStreams.length
                         color: Theme.textFaint
                         font.family: Theme.monoFont
-                        font.pixelSize: 9
+                        font.pixelSize: 10
                     }
                 }
             }
 
             Column {
                 width: parent.width
-                spacing: 4
+                spacing: 5
 
                 Repeater {
                     model: page.appStreams
@@ -620,7 +620,7 @@ Item {
                         property real streamVolume: stream?.audio?.volume ?? 0
 
                         width: parent.width
-                        height: 44
+                        height: 48
                         radius: 8
                         color: streamMuted ? Theme.alpha(Theme.danger, 0.025) : (hovered ? Theme.alpha(Theme.accent, 0.03) : Theme.alpha(Theme.text, 0.015))
                         border.width: 1
@@ -632,13 +632,13 @@ Item {
                         Row {
                             id: appRow
                             anchors.fill: parent
-                            anchors.leftMargin: 9
-                            anchors.rightMargin: 9
-                            spacing: 8
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 9
 
                             Rectangle {
-                                width: 27
-                                height: 27
+                                width: 30
+                                height: 30
                                 radius: 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: streamMuted ? Theme.alpha(Theme.danger, 0.055) : Theme.alpha(Theme.text, 0.025)
@@ -650,7 +650,7 @@ Item {
                                     text: streamMuted ? "\uf026" : "\uf028"
                                     color: streamMuted ? Theme.danger : Theme.text
                                     font.family: Theme.iconFont
-                                    font.pixelSize: 13
+                                    font.pixelSize: 14
                                 }
 
                                 MouseArea {
@@ -664,16 +664,16 @@ Item {
                             }
 
                             Column {
-                                width: 88
+                                width: 96
                                 anchors.verticalCenter: parent.verticalCenter
-                                spacing: 3
+                                spacing: 4
 
                                 Text {
                                     width: parent.width
                                     text: page.displayName(stream, "Unknown app")
                                     color: streamMuted ? Theme.textDim : Theme.text
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 12
                                     font.weight: Font.Medium
                                     elide: Text.ElideRight
                                 }
@@ -683,14 +683,14 @@ Item {
                                     text: streamMuted ? "Muted" : Math.round(streamVolume * 100) + "% volume"
                                     color: Theme.textFaint
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 9
+                                    font.pixelSize: 10
                                     elide: Text.ElideRight
                                 }
                             }
 
                             Slider {
-                                width: Math.max(50, appRow.width - 131)
-                                height: 32
+                                width: Math.max(50, appRow.width - 144)
+                                height: 35
                                 anchors.verticalCenter: parent.verticalCenter
                                 label: ""
                                 icon: ""
@@ -718,7 +718,7 @@ Item {
 
                 Rectangle {
                     width: parent.width
-                    height: 46
+                    height: 50
                     radius: 8
                     visible: page.appStreams.length === 0
                     color: Theme.alpha(Theme.text, 0.015)
@@ -727,11 +727,11 @@ Item {
 
                     Row {
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 9
 
                         Rectangle {
-                            width: 27
-                            height: 27
+                            width: 30
+                            height: 30
                             radius: 8
                             anchors.verticalCenter: parent.verticalCenter
                             color: Theme.alpha(Theme.text, 0.025)
@@ -743,25 +743,25 @@ Item {
                                 text: "\uf028"
                                 color: Theme.textFaint
                                 font.family: Theme.iconFont
-                                font.pixelSize: 13
+                                font.pixelSize: 14
                             }
                         }
 
                         Column {
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: 3
+                            spacing: 4
                             Text {
                                 text: "No active audio streams"
                                 color: Theme.text
                                 font.family: Theme.fontFamily
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 font.weight: Font.Medium
                             }
                             Text {
                                 text: "Applications will appear here when they play audio"
                                 color: Theme.textFaint
                                 font.family: Theme.fontFamily
-                                font.pixelSize: 9
+                                font.pixelSize: 10
                             }
                         }
                     }
