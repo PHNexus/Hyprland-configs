@@ -14,9 +14,9 @@ function M.setup()
             kb_layout = "us",
             kb_options = "grp:win_space_toggle",
             accel_profile = "flat",
-            sensitivity = 0.5,
+            sensitivity = 0,
             natural_scroll = false,
-            scroll_factor = 1.5,
+            scroll_factor = 1,
             follow_mouse = true,
             float_switch_override_focus = 0
         },
