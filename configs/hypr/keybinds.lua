@@ -27,7 +27,8 @@ function M.setup()
     -- TOGGLE WAYBAR
     -- ============================================================
     hl.bind(mainMod .. " + SHIFT + W",
-        hl.dsp.exec_cmd("sh -c 'pgrep -x waybar >/dev/null && pkill waybar || nohup waybar >/dev/null 2>&1 &'"))
+        hl.dsp.exec_cmd(
+            "sh -c 'if pgrep -x waybar >/dev/null; then pkill waybar && touch ~/.cache/no_waybar; else touch ~/.cache/no_waybar && rm -f ~/.cache/no_waybar && nohup waybar >/dev/null 2>&1 & fi'"))
 
     -- ============================================================
     -- TOGGLE DOCK-BAR
