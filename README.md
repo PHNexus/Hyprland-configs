@@ -144,7 +144,7 @@ Modifier key (`$mainMod`) is **SUPER** (Windows key).
 | `SUPER + Z` | Open local AI (`helium-browser http://localhost:8080`) |
 | `SUPER + V` | Clipboard history (`cliphist`) |
 | `SUPER + L` | Lock screen (`hyprlock`) |
-| `CTRL + SHIFT + L ` | Power menu (`wlogout`) |
+| `SUPER + SHIFT + L ` | Power menu (`wlogout`) |
 | `SUPER + N` | Toggle SwayNC control center |
 | `SUPER + SHIFT + R` | Set random wallpaper |
 | `SUPER + W` | Open wallpaper picker (`quickshell`) |
