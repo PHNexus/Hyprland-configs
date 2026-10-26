@@ -49,8 +49,8 @@ Item {
             if (escape === "\\")
                 return "\\";
 
-            if (escape === "\"")
-                return "\"";
+            if (escape === '"')
+                return '"';
 
             if (escape === "'")
                 return "'";
@@ -81,7 +81,7 @@ Item {
     }
 
     function luaEncode(s) {
-        return "\"" + s.replace(/\\/g, "\\\\").replace(/\"/g, "\\\"").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + "\"";
+        return '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + '"';
     }
 
     function parseEntries(text) {
@@ -91,11 +91,9 @@ Item {
         var re = /^\s*(--\s*)?hl\.exec_cmd\s*\(\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')\s*\)\s*$/;
         for (var i = 0; i < lines.length; i++) {
             var raw = lines[i];
-            var m = raw.match(re);
-            if (m) {
-                var literal = m[2];
-                var quote = literal.charAt(0);
-                var value = literal.slice(1, -1);
+            var match = raw.match(re);
+            if (match) {
+                var literal = match[2];
                 found.push({
                     "index": found.length,
                     "lineIndex": i,
@@ -103,9 +101,9 @@ Item {
                     "end": offset + raw.length,
                     "line": raw,
                     "indent": (raw.match(/^\s*/) || [""])[0],
-                    "command": luaDecode(value),
-                    "enabled": !m[1],
-                    "quote": quote
+                    "command": luaDecode(literal.slice(1, -1)),
+                    "enabled": !match[1],
+                    "quote": literal.charAt(0)
                 });
             }
             offset += raw.length + (i < lines.length - 1 ? 1 : 0);
@@ -118,23 +116,200 @@ Item {
         entries = parseEntries(text);
     }
 
-    function commandTitle(command) {
-        var s = command.trim();
-        if (!s)
+    function humanizeExecutable(executable) {
+        var name = String(executable || "").split("/").pop();
+        name = name.replace(/\.(desktop|appimage)$/i, "").replace(/[-_.]+/g, " ").trim();
+        if (!name)
             return "Unnamed command";
 
-        var first = s.split(/\s+/)[0];
-        var bits = first.split("/");
-        return bits[bits.length - 1] || first;
+        return name.replace(/\b[a-z]/g, function(letter) {
+            return letter.toUpperCase();
+        });
+    }
+
+    function commandTitle(command) {
+        function findKnownTitle(text) {
+            for (var i = 0; i < knownCommands.length; i++) {
+                if (knownCommands[i].pattern.test(text))
+                    return knownCommands[i].title;
+
+            }
+            return "";
+        }
+
+        var value = String(command || "").trim();
+        if (!value)
+            return "Unnamed command";
+
+        var lower = value.toLowerCase();
+        if (/pgrep[^\n]*waybar[\s\S]*pkill[^\n]*waybar|pkill[^\n]*waybar[\s\S]*waybar/.test(lower))
+            return "Toggle Waybar";
+
+        if (/dock-bar\s+autohidetoggle/.test(lower))
+            return "Toggle Dock";
+
+        if (/hyprquickpaper(?:\s+toggle)?/.test(lower))
+            return "Wallpaper picker";
+
+        if (/set-random\.sh/.test(lower))
+            return "Random Wallpaper";
+
+        var knownCommands = [{
+            "pattern": /(^|[\s/])waybar(?=[\s/]|$)/,
+            "title": "Waybar"
+        }, {
+            "pattern": /(^|[\s/])dock-bar(?=[\s/]|$)/,
+            "title": "Dock Bar"
+        }, {
+            "pattern": /(^|[\s/])swaync-client(?=[\s/]|$)|(^|[\s/])swaync(?=[\s/]|$)/,
+            "title": "SwayNC"
+        }, {
+            "pattern": /(^|[\s/])hypridle(?=[\s/]|$)/,
+            "title": "Hypridle"
+        }, {
+            "pattern": /(^|[\s/])hyprlock(?=[\s/]|$)/,
+            "title": "Hyprlock"
+        }, {
+            "pattern": /(^|[\s/])hyprpaper(?=[\s/]|$)/,
+            "title": "Hyprpaper"
+        }, {
+            "pattern": /(^|[\s/])hyprsunset(?=[\s/]|$)/,
+            "title": "Hyprsunset"
+        }, {
+            "pattern": /(^|[\s/])quickshell(?=[\s/]|$)/,
+            "title": "Quickshell"
+        }, {
+            "pattern": /(^|[\s/])nm-applet(?=[\s/]|$)/,
+            "title": "Network Manager Applet"
+        }, {
+            "pattern": /(^|[\s/])blueman-applet(?=[\s/]|$)/,
+            "title": "Bluetooth Applet"
+        }, {
+            "pattern": /(^|[\s/])udiskie(?=[\s/]|$)/,
+            "title": "Removable Drives"
+        }, {
+            "pattern": /(^|[\s/])polkit-gnome-authentication-agent-1(?=[\s/]|$)/,
+            "title": "Polkit Authentication Agent"
+        }, {
+            "pattern": /(^|[\s/])wl-paste(?=[\s/]|$)/,
+            "title": "Clipboard Monitor"
+        }, {
+            "pattern": /(^|[\s/])kdeconnect-indicator(?=[\s/]|$)/,
+            "title": "KDE Connect"
+        }, {
+            "pattern": /(^|[\s/])easyeffects(?=[\s/]|$)/,
+            "title": "Easy Effects"
+        }, {
+            "pattern": /(^|[\s/])spotify(?=[\s/]|$)/,
+            "title": "Spotify"
+        }, {
+            "pattern": /(^|[\s/])steam(?=[\s/]|$)/,
+            "title": "Steam"
+        }, {
+            "pattern": /(^|[\s/])kitty(?=[\s/]|$)/,
+            "title": "Terminal"
+        }, {
+            "pattern": /(^|[\s/])swww(?=[\s/]|$)/,
+            "title": "Swww"
+        }, {
+            "pattern": /(^|[\s/])mpvpaper(?=[\s/]|$)/,
+            "title": "Video Wallpaper"
+        }, {
+            "pattern": /(^|[\s/])wlsunset(?=[\s/]|$)/,
+            "title": "Night Light"
+        }, {
+            "pattern": /(^|[\s/])hyprquickpaper(?=[\s/]|$)/,
+            "title": "Wallpaper picker"
+        }, {
+            "pattern": /(^|[\s/])hyprshot(?=[\s/]|$)/,
+            "title": "Screenshot"
+        }, {
+            "pattern": /(^|[\s/])wf-recorder(?=[\s/]|$)/,
+            "title": "Recorder"
+        }, {
+            "pattern": /(^|[\s/])playerctl(?=[\s/]|$)/,
+            "title": "Media Controls"
+        }, {
+            "pattern": /(^|[\s/])brightnessctl(?=[\s/]|$)/,
+            "title": "Brightness"
+        }, {
+            "pattern": /(^|[\s/])cliphist(?=[\s/]|$)/,
+            "title": "Clipboard History"
+        }, {
+            "pattern": /(^|[\s/])thunar(?=[\s/]|$)/,
+            "title": "File Manager"
+        }, {
+            "pattern": /(^|[\s/])helium-browser(?=[\s/]|$)/,
+            "title": "Browser"
+        }, {
+            "pattern": /(^|[\s/])code(?=[\s/]|$)/,
+            "title": "Visual Studio Code"
+        }, {
+            "pattern": /(^|[\s/])wofi(?=[\s/]|$)/,
+            "title": "Application Launcher"
+        }, {
+            "pattern": /(^|[\s/])gsettings(?=[\s/]|$)/,
+            "title": "GNOME Settings"
+        }, {
+            "pattern": /(^|[\s/])xwaylandvideobridge(?=[\s/]|$)/,
+            "title": "XWayland Video Bridge"
+        }, {
+            "pattern": /(^|[\s/])settings(?=[\s/]|$)/,
+            "title": "Settings"
+        }];
+        var knownTitle = findKnownTitle(lower);
+        if (knownTitle)
+            return knownTitle;
+
+        var shellMatch = lower.match(/(?:^|\s)(?:sh|bash|zsh|fish)\s+-c\s+['"]([\s\S]*)['"]\s*$/);
+        if (shellMatch) {
+            var inner = shellMatch[1];
+            if (/pgrep[^\n]*waybar[\s\S]*pkill[^\n]*waybar|pkill[^\n]*waybar[\s\S]*waybar/.test(inner))
+                return "Toggle Waybar";
+
+            knownTitle = findKnownTitle(inner);
+            if (knownTitle)
+                return knownTitle;
+
+            var innerMatch = inner.match(/(?:^|[;&|]\s*|\s+)(?:exec\s+|nohup\s+|setsid\s+|env\s+)?((?:\.\.\/|\/)?[A-Za-z0-9_.-]+)(?=\s|$)/);
+            if (innerMatch)
+                return humanizeExecutable(innerMatch[1]);
+
+        }
+        var tokens = value.match(/(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s]+)/g) || [];
+        var wrappers = ["env", "nohup", "setsid", "exec", "command"];
+        var executable = "";
+        for (var tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
+            var token = tokens[tokenIndex].replace(/^["']|["']$/g, "");
+            var base = token.split("/").pop();
+            if (!base || wrappers.indexOf(base.toLowerCase()) >= 0 || /^[A-Za-z_][A-Za-z0-9_]*=/.test(base))
+                continue;
+
+            if (["sh", "bash", "zsh", "fish"].indexOf(base.toLowerCase()) >= 0 && tokenIndex + 1 < tokens.length && tokens[tokenIndex + 1] === "-c")
+                continue;
+
+            executable = base;
+            break;
+        }
+        if (!executable)
+            executable = value.split(/\s+/)[0].split("/").pop();
+
+        if (executable.toLowerCase() === "flatpak") {
+            var flatpakApp = value.match(/\bflatpak\s+run\s+(?:--[\w-]+(?:\s+[^\s]+)?\s+)*([A-Za-z0-9_.-]+\.[A-Za-z0-9_.-]+)/i);
+            if (flatpakApp)
+                executable = flatpakApp[1].split(".").pop();
+
+        }
+        return humanizeExecutable(executable);
     }
 
     function filteredEntries() {
-        var q = searchText.trim().toLowerCase();
-        if (!q)
+        var query = searchText.trim().toLowerCase();
+        if (!query)
             return entries;
 
         return entries.filter(function(entry) {
-            return entry.command.toLowerCase().indexOf(q) !== -1 || commandTitle(entry.command).toLowerCase().indexOf(q) !== -1;
+            return entry.command.toLowerCase().indexOf(query) !== -1 || commandTitle(entry.command).toLowerCase().indexOf(query) !== -1;
         });
     }
 
@@ -144,7 +319,7 @@ Item {
         if (saveInProgress) {
             queuedSave = true;
             queuedSaveText = nextText;
-            queuedSaveMessage = message || "Saving autostart.lua...";
+            queuedSaveMessage = statusMessage;
             return true;
         }
         saveInProgress = true;
@@ -154,9 +329,10 @@ Item {
 
     function addEntry(command) {
         var clean = command.trim();
-        if (!clean)
+        if (!clean) {
+            statusMessage = "Enter a command";
             return false;
-
+        }
         var startMatch = /hl\.on\s*\(\s*(["'])hyprland\.start\1\s*,\s*function\s*\(/.exec(sourceText);
         var shutdownMatch = /hl\.on\s*\(\s*(["'])hyprland\.shutdown\1\s*,\s*function\s*\(/.exec(sourceText);
         var startIndex = startMatch ? startMatch.index : -1;
@@ -166,7 +342,7 @@ Item {
             return false;
         }
         var callbackText = sourceText.slice(startIndex, shutdownIndex);
-        var closingExpression = /\bend\s*\)/g;
+        var closingExpression = /^[\t ]*end[\t ]*\)[\t ]*(?:--.*)?$/gm;
         var closingMatch;
         var closeIndex = -1;
         while ((closingMatch = closingExpression.exec(callbackText)) !== null)closeIndex = startIndex + closingMatch.index
@@ -185,9 +361,10 @@ Item {
     }
 
     function updateEntry(entry, command) {
-        if (!entry || !command.trim())
+        if (!entry || !command.trim()) {
+            statusMessage = "Enter a command";
             return false;
-
+        }
         var replacement = entry.indent + (entry.enabled ? "" : "-- ") + "hl.exec_cmd(" + luaEncode(command.trim()) + ")";
         var next = sourceText.slice(0, entry.start) + replacement + sourceText.slice(entry.end);
         return saveText(next, "Updating startup command...");
@@ -208,6 +385,15 @@ Item {
 
         var start = entry.start;
         var end = entry.end;
+        var previousLineEnd = start > 0 && sourceText.charAt(start - 1) === "\n" ? start - 1 : start;
+        var previousLineStart = sourceText.lastIndexOf("\n", previousLineEnd - 1) + 1;
+        var previousLine = sourceText.slice(previousLineStart, previousLineEnd).trim();
+        if (previousLine === "-- Added from Quickshell Settings · Autostart") {
+            start = previousLineStart;
+            if (start > 0 && sourceText.charAt(start - 1) === "\n")
+                start--;
+
+        }
         if (end < sourceText.length && sourceText.charAt(end) === "\n")
             end++;
         else if (start > 0 && sourceText.charAt(start - 1) === "\n")
@@ -420,7 +606,7 @@ Item {
                             readonly property bool twoColumns: cardsGrid.width >= 620 && entriesRepeater.count > 1
 
                             width: twoColumns ? (cardsGrid.width - cardsGrid.spacing) / 2 : cardsGrid.width
-                            height: 100
+                            height: 62
                             radius: 10
                             color: entryHover.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
                             border.width: 1
@@ -431,188 +617,172 @@ Item {
                                 id: entryHover
                             }
 
-                            ColumnLayout {
+                            RowLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
-                                spacing: 6
+                                spacing: 9
 
-                                RowLayout {
+                                Rectangle {
+                                    Layout.preferredWidth: 30
+                                    Layout.preferredHeight: 30
+                                    radius: 7
+                                    color: Theme.bgPanel
+                                    border.width: 1
+                                    border.color: Theme.border
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "󰐥"
+                                        color: entryCard.modelData.enabled ? Theme.accent : Theme.textFaint
+                                        font.family: Theme.iconFont
+                                        font.pixelSize: 15
+                                    }
+
+                                }
+
+                                ColumnLayout {
                                     Layout.fillWidth: true
-                                    spacing: 9
+                                    spacing: 3
 
-                                    Rectangle {
-                                        Layout.preferredWidth: 30
-                                        Layout.preferredHeight: 30
-                                        radius: 7
-                                        color: Theme.bgPanel
-                                        border.width: 1
-                                        border.color: Theme.border
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "󰐥"
-                                            color: modelData.enabled ? Theme.accent : Theme.textFaint
-                                            font.family: Theme.iconFont
-                                            font.pixelSize: 15
-                                        }
-
-                                    }
-
-                                    ColumnLayout {
+                                    Text {
                                         Layout.fillWidth: true
-                                        spacing: 3
-
-                                        Text {
-                                            Layout.fillWidth: true
-                                            text: page.commandTitle(modelData.command)
-                                            color: Theme.text
-                                            font.family: Theme.fontFamily
-                                            font.pixelSize: 13
-                                            font.weight: Font.Medium
-                                            elide: Text.ElideRight
-                                        }
-
-                                        Text {
-                                            text: modelData.enabled ? "Enabled" : "Disabled"
-                                            color: Theme.textFaint
-                                            font.family: Theme.monoFont
-                                            font.pixelSize: 10
-                                        }
-
+                                        text: page.commandTitle(entryCard.modelData.command)
+                                        color: Theme.text
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 13
+                                        font.weight: Font.Medium
+                                        elide: Text.ElideRight
                                     }
 
-                                    Switch {
-                                        id: entrySwitch
+                                    Text {
+                                        text: entryCard.modelData.enabled ? "Enabled" : "Disabled"
+                                        color: Theme.textFaint
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 10
+                                    }
 
-                                        checked: modelData.enabled
-                                        onToggled: page.toggleEntry(modelData)
+                                }
 
-                                        indicator: Rectangle {
-                                            implicitWidth: 38
-                                            implicitHeight: 20
-                                            radius: 7
-                                            color: entrySwitch.checked ? Theme.accent : Theme.bgPanel
-                                            border.width: 1
-                                            border.color: entrySwitch.checked ? Qt.lighter(Theme.accent, 1.15) : Theme.border
+                                Switch {
+                                    id: entrySwitch
 
-                                            Rectangle {
-                                                x: entrySwitch.checked ? parent.width - width - 2 : 2
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                width: 16
-                                                height: 16
-                                                radius: 8
-                                                color: entrySwitch.checked ? "#101116" : Theme.textFaint
+                                    checked: entryCard.modelData.enabled
+                                    onToggled: page.toggleEntry(entryCard.modelData)
 
-                                                Behavior on x {
-                                                    NumberAnimation {
-                                                        duration: 150
-                                                        easing.type: Easing.InOutQuad
-                                                    }
+                                    indicator: Rectangle {
+                                        implicitWidth: 38
+                                        implicitHeight: 20
+                                        radius: 7
+                                        color: entrySwitch.checked ? Theme.accent : Theme.bgPanel
+                                        border.width: 1
+                                        border.color: entrySwitch.checked ? Qt.lighter(Theme.accent, 1.15) : Theme.border
 
-                                                }
+                                        Rectangle {
+                                            x: entrySwitch.checked ? parent.width - width - 2 : 2
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: 16
+                                            height: 16
+                                            radius: 8
+                                            color: entrySwitch.checked ? "#101116" : Theme.textFaint
 
-                                            }
-
-                                            Behavior on color {
-                                                ColorAnimation {
+                                            Behavior on x {
+                                                NumberAnimation {
                                                     duration: 150
+                                                    easing.type: Easing.InOutQuad
                                                 }
 
                                             }
 
                                         }
 
-                                    }
-
-                                    Button {
-                                        id: editButton
-
-                                        implicitWidth: 28
-                                        implicitHeight: 28
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            page.dialogIsEdit = true;
-                                            page.editingEntry = modelData;
-                                            page.draftCommand = modelData.command;
-                                            editorDialog.open();
-                                        }
-                                        ToolTip.visible: hovered
-                                        ToolTip.text: "Edit command"
-                                        ToolTip.delay: 500
-
-                                        background: Rectangle {
-                                            radius: 7
-                                            color: editButton.hovered ? Theme.bgCard : "transparent"
-                                            border.width: 1
-                                            border.color: editButton.hovered ? Theme.accent : "transparent"
-
-                                            Behavior on color {
-                                                ColorAnimation {
-                                                    duration: 140
-                                                }
-
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: 150
                                             }
 
-                                        }
-
-                                        contentItem: Text {
-                                            text: "󰏫"
-                                            color: editButton.hovered ? Theme.accent : Theme.textFaint
-                                            font.family: Theme.iconFont
-                                            font.pixelSize: 17
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-
-                                    }
-
-                                    Button {
-                                        id: removeButton
-
-                                        implicitWidth: 28
-                                        implicitHeight: 28
-                                        hoverEnabled: true
-                                        onClicked: page.removeEntry(modelData)
-                                        ToolTip.visible: hovered
-                                        ToolTip.text: "Remove command"
-                                        ToolTip.delay: 500
-
-                                        background: Rectangle {
-                                            radius: 7
-                                            color: removeButton.hovered ? Theme.bgCard : "transparent"
-                                            border.width: 1
-                                            border.color: removeButton.hovered ? "#ff6b6b" : "transparent"
-
-                                            Behavior on color {
-                                                ColorAnimation {
-                                                    duration: 140
-                                                }
-
-                                            }
-
-                                        }
-
-                                        contentItem: Text {
-                                            text: "󰆴"
-                                            color: removeButton.hovered ? "#ff6b6b" : Theme.textFaint
-                                            font.family: Theme.iconFont
-                                            font.pixelSize: 17
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
                                         }
 
                                     }
 
                                 }
 
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: modelData.command
-                                    color: Theme.textDim
-                                    font.family: Theme.monoFont
-                                    font.pixelSize: 10
-                                    elide: Text.ElideRight
-                                    maximumLineCount: 1
+                                Button {
+                                    id: editButton
+
+                                    implicitWidth: 28
+                                    implicitHeight: 28
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        page.dialogIsEdit = true;
+                                        page.editingEntry = entryCard.modelData;
+                                        page.draftCommand = entryCard.modelData.command;
+                                        editorDialog.open();
+                                    }
+                                    ToolTip.visible: hovered
+                                    ToolTip.text: "Edit command"
+                                    ToolTip.delay: 500
+
+                                    background: Rectangle {
+                                        radius: 7
+                                        color: editButton.hovered ? Theme.bgCard : "transparent"
+                                        border.width: 1
+                                        border.color: editButton.hovered ? Theme.accent : "transparent"
+
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: 140
+                                            }
+
+                                        }
+
+                                    }
+
+                                    contentItem: Text {
+                                        text: "󰏫"
+                                        color: editButton.hovered ? Theme.accent : Theme.textFaint
+                                        font.family: Theme.iconFont
+                                        font.pixelSize: 17
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+
+                                }
+
+                                Button {
+                                    id: removeButton
+
+                                    implicitWidth: 28
+                                    implicitHeight: 28
+                                    hoverEnabled: true
+                                    onClicked: page.removeEntry(entryCard.modelData)
+                                    ToolTip.visible: hovered
+                                    ToolTip.text: "Remove command"
+                                    ToolTip.delay: 500
+
+                                    background: Rectangle {
+                                        radius: 7
+                                        color: removeButton.hovered ? Theme.bgCard : "transparent"
+                                        border.width: 1
+                                        border.color: removeButton.hovered ? "#ff6b6b" : "transparent"
+
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: 140
+                                            }
+
+                                        }
+
+                                    }
+
+                                    contentItem: Text {
+                                        text: "󰆴"
+                                        color: removeButton.hovered ? "#ff6b6b" : Theme.textFaint
+                                        font.family: Theme.iconFont
+                                        font.pixelSize: 17
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+
                                 }
 
                             }

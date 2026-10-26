@@ -2012,9 +2012,9 @@ Item {
         width: segText.implicitWidth + (icon !== "" ? 34 : 24)
         height: 30
         radius: Theme.radiusXs
-        color: selected ? Theme.alpha(Theme.accent, 0.075) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.035) : "transparent")
+        color: selected ? Theme.alpha(Theme.accent, 0.045) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.03) : "transparent")
         border.width: 1
-        border.color: selected ? Theme.alpha(Theme.accent, 0.62) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.34) : Theme.border)
+        border.color: selected ? "#5B5B5B" : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.34) : Theme.border)
         Behavior on color { ColorAnimation { duration: 120 } }
         Behavior on border.color { ColorAnimation { duration: 120 } }
 
