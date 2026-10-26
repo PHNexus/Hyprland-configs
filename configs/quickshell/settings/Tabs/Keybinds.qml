@@ -30,12 +30,14 @@ Item {
         if (ch === '"' || ch === "'") {
             var quote = ch;
             i++;
-            while (i < s.length)if (s.charAt(i) === "\\")
-                i += 2;
-            else if (s.charAt(i) === quote)
-                return i + 1;
-            else
-                i++;
+            while (i < s.length)
+                if (s.charAt(i) === "\\")
+                    i += 2;
+                else if (s.charAt(i) === quote)
+                    return i + 1;
+                else
+                    i++;
+
             return s.length;
         }
         if (ch === "[") {
@@ -125,7 +127,8 @@ Item {
             }
             var bindMatch = s.slice(i).match(/^hl\.bind\s*\(/);
             if (bindMatch) {
-                var open = i + bindMatch[0].length - 1, depth = 1, j = open + 1;
+                var open = i + bindMatch[0].length - 1;
+                var depth = 1, j = open + 1;
                 while (j < s.length && depth > 0) {
                     if (s.substr(j, 2) === "--") {
                         j = skipComment(s, j);
@@ -183,8 +186,8 @@ Item {
             if (escape === "\\")
                 return "\\";
 
-            if (escape === "\"")
-                return "\"";
+            if (escape === '"')
+                return '"';
 
             if (escape === "'")
                 return "'";
@@ -215,7 +218,7 @@ Item {
     }
 
     function encodeLuaString(s) {
-        return '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + '"';
+        return '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\\n").replace(/\r/g, "\\\r").replace(/\t/g, "\\\t") + '"';
     }
 
     function mainModifier(source) {
@@ -226,6 +229,12 @@ Item {
 
     function getKey(raw, source) {
         var value = raw.trim();
+        if (/^mainMod\s*\.\.\s*["']\s*\+\s*["']\s*\.\.\s*i$/i.test(value))
+            return mainModifier(source) + " + [1–6]";
+
+        if (/^mainMod\s*\.\.\s*["']\s*\+\s*SHIFT\s*\+\s*["']\s*\.\.\s*i$/i.test(value))
+            return mainModifier(source) + " + SHIFT + [1–6]";
+
         if (value.indexOf("mainMod") >= 0) {
             var match = value.match(/["']([^"']*)["']/);
             if (match) {
@@ -234,7 +243,7 @@ Item {
             }
             return mainModifier(source);
         }
-        var quoted = value.match(/^(['"])([\s\S]*)\1$/);
+        var quoted = value.match(/^(["'])([\s\S]*)\1$/);
         if (quoted)
             return decodeLuaString(quoted[2]);
 
@@ -274,40 +283,256 @@ Item {
         if (/wf-recorder|hyprshot|screenshot|screen.record/.test(value))
             return "Capture";
 
-        if (/workspace|tiled_layout|focus\(|layout\(|window\.move/.test(value))
+        if (/window\.move.*workspace|workspace.*window\.move|workspace|tiled_layout|hl\.workspace_rule|consume_or_expel|hl\.dsp\.layout/.test(value))
             return "Workspaces";
 
-        if (/window\.|fullscreen|float\(|center\(|resize\(|cycle_next|bring_to_top/.test(value))
+        if (/window\.|fullscreen|float\(|center\(|resize\(|cycle_next|bring_to_top|switcher/.test(value))
             return "Windows";
 
-        if (/kitty|thunar|code|helium-browser|spotify|wofi|cliphist|hyprlock|swaync/.test(value))
+        if (/kitty|thunar|\bcode\b|helium-browser|spotify|wofi|cliphist|hyprlock|swaync|wallpaper|hyprquickpaper|set-random\.sh|dock-bar|settings/.test(value))
             return "Apps";
 
         return "Other";
     }
 
-    function getTitle(key, command, raw) {
-        var cmd = command.trim().toLowerCase();
-        if (cmd === "kitty")
-            return "Terminal";
+    function humanizeExecutable(executable) {
+        var name = String(executable || "").split("/").pop();
+        name = name.replace(/\.(desktop|appimage)$/i, "").replace(/[-_.]+/g, " ").trim();
+        if (!name)
+            return "Unnamed command";
+
+        return name.replace(/\b[a-z]/g, function(letter) {
+            return letter.toUpperCase();
+        });
+    }
+
+    function commandTitle(command) {
+        function findKnownTitle(text) {
+            for (var i = 0; i < knownCommands.length; i++) {
+                if (knownCommands[i].pattern.test(text))
+                    return knownCommands[i].title;
+
+            }
+            return "";
+        }
+
+        var value = String(command || "").trim();
+        if (!value)
+            return "Unnamed command";
+
+        var lower = value.toLowerCase();
+        if (/pgrep[^\n]*waybar[\s\S]*pkill[^\n]*waybar|pkill[^\n]*waybar[\s\S]*waybar/.test(lower))
+            return "Toggle Waybar";
+
+        if (/dock-bar\s+autohidetoggle/.test(lower))
+            return "Toggle Dock";
+
+        if (/hyprquickpaper(?:\s+toggle)?/.test(lower))
+            return "Wallpaper picker";
+
+        if (/set-random\.sh/.test(lower))
+            return "Random Wallpaper";
+
+        var knownCommands = [{
+            "pattern": /(^|[\s/])waybar(?=[\s/]|$)/,
+            "title": "Waybar"
+        }, {
+            "pattern": /(^|[\s/])dock-bar(?=[\s/]|$)/,
+            "title": "Dock Bar"
+        }, {
+            "pattern": /(^|[\s/])swaync-client(?=[\s/]|$)|(^|[\s/])swaync(?=[\s/]|$)/,
+            "title": "SwayNC"
+        }, {
+            "pattern": /(^|[\s/])hypridle(?=[\s/]|$)/,
+            "title": "Hypridle"
+        }, {
+            "pattern": /(^|[\s/])hyprlock(?=[\s/]|$)/,
+            "title": "Hyprlock"
+        }, {
+            "pattern": /(^|[\s/])hyprpaper(?=[\s/]|$)/,
+            "title": "Hyprpaper"
+        }, {
+            "pattern": /(^|[\s/])hyprsunset(?=[\s/]|$)/,
+            "title": "Hyprsunset"
+        }, {
+            "pattern": /(^|[\s/])quickshell(?=[\s/]|$)/,
+            "title": "Quickshell"
+        }, {
+            "pattern": /(^|[\s/])nm-applet(?=[\s/]|$)/,
+            "title": "Network Manager Applet"
+        }, {
+            "pattern": /(^|[\s/])blueman-applet(?=[\s/]|$)/,
+            "title": "Bluetooth Applet"
+        }, {
+            "pattern": /(^|[\s/])udiskie(?=[\s/]|$)/,
+            "title": "Removable Drives"
+        }, {
+            "pattern": /(^|[\s/])polkit-gnome-authentication-agent-1(?=[\s/]|$)/,
+            "title": "Polkit Authentication Agent"
+        }, {
+            "pattern": /(^|[\s/])wl-paste(?=[\s/]|$)/,
+            "title": "Clipboard Monitor"
+        }, {
+            "pattern": /(^|[\s/])kdeconnect-indicator(?=[\s/]|$)/,
+            "title": "KDE Connect"
+        }, {
+            "pattern": /(^|[\s/])easyeffects(?=[\s/]|$)/,
+            "title": "Easy Effects"
+        }, {
+            "pattern": /(^|[\s/])spotify(?=[\s/]|$)/,
+            "title": "Spotify"
+        }, {
+            "pattern": /(^|[\s/])steam(?=[\s/]|$)/,
+            "title": "Steam"
+        }, {
+            "pattern": /(^|[\s/])kitty(?=[\s/]|$)/,
+            "title": "Terminal"
+        }, {
+            "pattern": /(^|[\s/])swww(?=[\s/]|$)/,
+            "title": "Swww"
+        }, {
+            "pattern": /(^|[\s/])mpvpaper(?=[\s/]|$)/,
+            "title": "Video Wallpaper"
+        }, {
+            "pattern": /(^|[\s/])wlsunset(?=[\s/]|$)/,
+            "title": "Night Light"
+        }, {
+            "pattern": /(^|[\s/])hyprquickpaper(?=[\s/]|$)/,
+            "title": "Wallpaper picker"
+        }, {
+            "pattern": /(^|[\s/])hyprshot(?=[\s/]|$)/,
+            "title": "Screenshot"
+        }, {
+            "pattern": /(^|[\s/])wf-recorder(?=[\s/]|$)/,
+            "title": "Recorder"
+        }, {
+            "pattern": /(^|[\s/])playerctl(?=[\s/]|$)/,
+            "title": "Media Controls"
+        }, {
+            "pattern": /(^|[\s/])brightnessctl(?=[\s/]|$)/,
+            "title": "Brightness"
+        }, {
+            "pattern": /(^|[\s/])cliphist(?=[\s/]|$)/,
+            "title": "Clipboard History"
+        }, {
+            "pattern": /(^|[\s/])thunar(?=[\s/]|$)/,
+            "title": "File Manager"
+        }, {
+            "pattern": /(^|[\s/])helium-browser(?=[\s/]|$)/,
+            "title": "Browser"
+        }, {
+            "pattern": /(^|[\s/])code(?=[\s/]|$)/,
+            "title": "Visual Studio Code"
+        }, {
+            "pattern": /(^|[\s/])wofi(?=[\s/]|$)/,
+            "title": "Application Launcher"
+        }, {
+            "pattern": /(^|[\s/])gsettings(?=[\s/]|$)/,
+            "title": "GNOME Settings"
+        }, {
+            "pattern": /(^|[\s/])xwaylandvideobridge(?=[\s/]|$)/,
+            "title": "XWayland Video Bridge"
+        }, {
+            "pattern": /(^|[\s/])settings(?=[\s/]|$)/,
+            "title": "Settings"
+        }];
+        var knownTitle = findKnownTitle(lower);
+        if (knownTitle)
+            return knownTitle;
+
+        var shellMatch = lower.match(/(?:^|\s)(?:sh|bash|zsh|fish)\s+-c\s+['"]([\s\S]*)['"]\s*$/);
+        if (shellMatch) {
+            var inner = shellMatch[1];
+            if (/pgrep[^\n]*waybar[\s\S]*pkill[^\n]*waybar|pkill[^\n]*waybar[\s\S]*waybar/.test(inner))
+                return "Toggle Waybar";
+
+            knownTitle = findKnownTitle(inner);
+            if (knownTitle)
+                return knownTitle;
+
+            var innerMatch = inner.match(/(?:^|[;&|]\s*|\s+)(?:exec\s+|nohup\s+|setsid\s+|env\s+)?((?:\.\.\/|\/)?[A-Za-z0-9_.-]+)(?=\s|$)/);
+            if (innerMatch)
+                return humanizeExecutable(innerMatch[1]);
+
+        }
+        var tokens = value.match(/(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s]+)/g) || [];
+        var wrappers = ["env", "nohup", "setsid", "exec", "command"];
+        var executable = "";
+        for (var tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
+            var token = tokens[tokenIndex].replace(/^["']|["']$/g, "");
+            var base = token.split("/").pop();
+            if (!base || wrappers.indexOf(base.toLowerCase()) >= 0 || /^[A-Za-z_][A-Za-z0-9_]*=/.test(base))
+                continue;
+
+            if (["sh", "bash", "zsh", "fish"].indexOf(base.toLowerCase()) >= 0 && tokenIndex + 1 < tokens.length && tokens[tokenIndex + 1] === "-c")
+                continue;
+
+            executable = base;
+            break;
+        }
+        if (!executable)
+            executable = value.split(/\s+/)[0].split("/").pop();
+
+        if (executable.toLowerCase() === "flatpak") {
+            var flatpakApp = value.match(/\bflatpak\s+run\s+(?:--[\w-]+(?:\s+[^\s]+)?\s+)*([A-Za-z0-9_.-]+\.[A-Za-z0-9_.-]+)/i);
+            if (flatpakApp)
+                executable = flatpakApp[1].split(".").pop();
+
+        }
+        return humanizeExecutable(executable);
+    }
+
+    function keybindTitle(key, command, raw) {
+        var cmd = String(command || "").trim().toLowerCase();
+        var action = String(raw || "").toLowerCase();
+        var lowerKey = String(key || "").toLowerCase();
+        if (lowerKey.replace(/\s+/g, "") === "super+alt+l" || action.indexOf("hl.workspace_rule") >= 0)
+            return "Change Layouts";
 
         if (cmd === "[float; center; size 1150 700] kitty")
             return "Terminal Float";
 
-        if (cmd === "helium-browser http://localhost:8080")
+        if (cmd.indexOf("helium-browser http://localhost:8080") >= 0)
             return "Local AI";
 
-        if (cmd === "thunar")
-            return "File Manager";
+        if (lowerKey.indexOf("xf86audioraisevolume") >= 0)
+            return "Volume up";
 
-        if (cmd === "code")
-            return "Visual Studio Code";
+        if (lowerKey.indexOf("xf86audiolowervolume") >= 0)
+            return "Volume down";
 
-        if (cmd === "spotify")
-            return "Spotify";
+        if (lowerKey.indexOf("xf86audiomicmute") >= 0)
+            return "Mute microphone";
 
-        if (cmd === "helium-browser")
-            return "Browser";
+        if (lowerKey.indexOf("xf86audiomute") >= 0)
+            return "Mute output";
+
+        if (lowerKey.indexOf("xf86monbrightnessup") >= 0)
+            return "Brightness up";
+
+        if (lowerKey.indexOf("xf86monbrightnessdown") >= 0)
+            return "Brightness down";
+
+        if (lowerKey.indexOf("xf86audionext") >= 0)
+            return "Next track";
+
+        if (lowerKey.indexOf("xf86audioprev") >= 0)
+            return "Previous track";
+
+        if (lowerKey.indexOf("xf86audioplay") >= 0 || lowerKey.indexOf("xf86audiopause") >= 0)
+            return "Play/pause";
+
+        if (cmd.indexOf("cliphist") >= 0 || action.indexOf("cliphist") >= 0)
+            return "Clipboard history";
+
+        if (cmd.indexOf("snappy-switcher") >= 0 || action.indexOf("snappy-switcher") >= 0)
+            return "Window switcher";
+
+        if (cmd.indexOf("hyprctl dispatch workspace m-1") >= 0)
+            return "Previous monitor";
+
+        if (cmd.indexOf("hyprctl dispatch workspace m+1") >= 0)
+            return "Next monitor";
 
         if (cmd.indexOf("hyprlock") >= 0)
             return "Lock screen";
@@ -315,8 +540,8 @@ Item {
         if (cmd.indexOf("hyprshot") >= 0)
             return "Screenshot";
 
-        if (cmd.indexOf("wf-recorder") >= 0)
-            return "Screen recorder";
+        if (cmd.indexOf("wf-recorder") >= 0 || action.indexOf("wf-recorder") >= 0)
+            return "Recorder";
 
         if (cmd.indexOf("playerctl") >= 0)
             return "Media controls";
@@ -324,14 +549,17 @@ Item {
         if (cmd.indexOf("wpctl") >= 0)
             return "Audio controls";
 
+        if (cmd.indexOf("brightnessctl") >= 0)
+            return "Brightness";
+
         if (cmd.indexOf("wofi") >= 0)
             return "Application launcher";
 
         if (cmd.indexOf("swaync") >= 0)
             return "Notifications";
 
-        if (cmd.indexOf("hyprquickpaper") >= 0)
-            return "Wallpaper";
+        if (cmd.indexOf("hyprquickpaper") >= 0 || action.indexOf("hyprquickpaper") >= 0)
+            return "Wallpaper picker";
 
         if (cmd.indexOf("waybar") >= 0)
             return "Toggle Waybar";
@@ -342,34 +570,110 @@ Item {
         if (cmd.indexOf("settings") >= 0)
             return "Settings";
 
-        if (key.indexOf("Dynamic") >= 0)
-            return "Dynamic keybinding";
+        if (action.indexOf("set-random.sh") >= 0)
+            return "Random Wallpaper";
 
-        if (command.length > 0)
-            return command.length > 42 ? command.slice(0, 39) + "..." : command;
+        if (action.indexOf("workspace.id == 6") >= 0)
+            return "Move to other monitor";
 
-        if (raw.indexOf("hl.dsp.window.close") >= 0)
-            return "Close window";
+        if (/workspace\s*=\s*i/.test(action) && action.indexOf("hl.dsp.window.move") >= 0)
+            return "Move window to workspace";
 
-        if (raw.indexOf("hl.dsp.exit") >= 0)
-            return "Exit session";
+        if (/workspace\s*=\s*i/.test(action) && action.indexOf("hl.dsp.focus") >= 0)
+            return "Switch to workspace";
 
-        if (raw.indexOf("hl.dsp.focus") >= 0)
-            return "Focus window";
+        if (/workspace\s*=\s*["']e\+1["']/.test(action))
+            return "Next workspace";
 
-        if (raw.indexOf("hl.dsp.window.fullscreen") >= 0)
-            return "Toggle fullscreen";
+        if (/workspace\s*=\s*["']e-1["']/.test(action))
+            return "Previous workspace";
 
-        if (raw.indexOf("hl.dsp.window.float") >= 0)
+        if (action.indexOf("cycle_next") >= 0)
+            return "Previous window";
+
+        if (action.indexOf("hl.dsp.window.float") >= 0)
             return "Toggle floating";
 
-        if (raw.indexOf("hl.dsp.window.move") >= 0)
-            return "Move window";
+        if (action.indexOf("hl.dsp.window.drag") >= 0)
+            return "Drag window";
 
-        if (raw.indexOf("hl.dsp.layout") >= 0)
+        if (action.indexOf("hl.dsp.window.resize") >= 0)
+            return "Resize window";
+
+        if (action.indexOf("hl.dsp.window.fullscreen") >= 0) {
+            if (action.indexOf('mode = "maximized"') >= 0)
+                return "Toggle maximize";
+
+            return "Toggle fullscreen";
+        }
+        if (action.indexOf("hl.dsp.window.center") >= 0)
+            return "Center window";
+
+        if (action.indexOf("hl.dsp.window.close") >= 0)
+            return "Close window";
+
+        var focusDirection = action.match(/hl\.dsp\.focus\s*\(\s*\{\s*direction\s*=\s*["']([lrud])["']/);
+        if (focusDirection) {
+            if (focusDirection[1] === "l")
+                return "Focus left window";
+
+            if (focusDirection[1] === "r")
+                return "Focus right window";
+
+            if (focusDirection[1] === "u")
+                return "Focus upper window";
+
+            if (focusDirection[1] === "d")
+                return "Focus lower window";
+
+        }
+        var moveDirection = action.match(/hl\.dsp\.window\.move\s*\(\s*\{\s*direction\s*=\s*["']([lr])["']/);
+        if (moveDirection) {
+            if (moveDirection[1] === "l")
+                return "Move window left";
+
+            if (moveDirection[1] === "r")
+                return "Move window right";
+
+        }
+        if (action.indexOf("move +col") >= 0)
+            return "Move column right";
+
+        if (action.indexOf("move -col") >= 0)
+            return "Move column left";
+
+        if (action.indexOf("colresize +conf") >= 0)
+            return "Increase column width";
+
+        if (action.indexOf("colresize -conf") >= 0)
+            return "Decrease column width";
+
+        if (action.indexOf("consume_or_expel prev") >= 0)
+            return "Move to previous column";
+
+        if (action.indexOf("consume_or_expel next") >= 0)
+            return "Move to next column";
+
+        if (action.indexOf("hl.dsp.exit") >= 0)
+            return "Exit session";
+
+        if (action.indexOf("hl.dsp.layout") >= 0)
             return "Layout control";
 
+        if (action.indexOf("hl.dsp.window.move") >= 0)
+            return "Move window";
+
+        if (action.indexOf("hl.dsp.focus") >= 0)
+            return "Focus window";
+
+        if (cmd)
+            return commandTitle(command);
+
         return "Custom action";
+    }
+
+    function getTitle(key, command, raw) {
+        return keybindTitle(key, command, raw);
     }
 
     function parseBindings(s, includeDisabled) {
@@ -436,9 +740,7 @@ Item {
 
             var bodyRaw = s.slice(bodyStart, bodyEnd);
             var bodyLines = bodyRaw.split("\n");
-            var restoredLines = [];
-            var sourceOffsets = [];
-            var sourceLineOffset = bodyStart;
+            var restoredLines = [], sourceOffsets = [], sourceLineOffset = bodyStart;
             for (var lineIndex = 0; lineIndex < bodyLines.length; lineIndex++) {
                 var commentedLine = bodyLines[lineIndex];
                 var prefixLength = commentedLine.indexOf("-- ") === 0 ? 3 : (commentedLine.indexOf("--") === 0 ? 2 : 0);
@@ -571,7 +873,7 @@ Item {
                 return false;
             }
         }
-        var closing = /\nend\s*\n\s*return\s+M\s*$/m.exec(sourceText);
+        var closing = /\nend\s*\n\s*return\s+M\s*$/.exec(sourceText);
         if (!closing) {
             statusMessage = "Could not find the end of M.setup(); keybinds.lua was not changed";
             return false;
@@ -607,10 +909,10 @@ Item {
         }
         if (b.commandEditable && editCommand !== b.command)
             replacements.push({
-            "start": b.actionStart,
-            "end": b.actionEnd,
-            "text": "hl.dsp.exec_cmd(" + encodeLuaString(editCommand) + ")"
-        });
+                "start": b.actionStart,
+                "end": b.actionEnd,
+                "text": "hl.dsp.exec_cmd(" + encodeLuaString(editCommand) + ")"
+            });
 
         if (!replacements.length) {
             statusMessage = "No changes to save";
@@ -648,8 +950,7 @@ Item {
 
         var updated;
         if (binding.enabled) {
-            var start = binding.lineStart;
-            var end = binding.lineEnd;
+            var start = binding.lineStart, end = binding.lineEnd;
             if (start < 0 || end <= start || end > sourceText.length) {
                 statusMessage = "Could not locate shortcut in keybinds.lua";
                 return ;
@@ -661,8 +962,7 @@ Item {
             updated = sourceText.slice(0, start) + commented + sourceText.slice(end);
             saveSource(updated, "Disabling shortcut...");
         } else {
-            var blockStart = binding.blockStart;
-            var blockEnd = binding.blockEnd;
+            var blockStart = binding.blockStart, blockEnd = binding.blockEnd;
             if (blockStart < 0 || blockEnd <= blockStart || blockEnd > sourceText.length) {
                 statusMessage = "Could not locate disabled shortcut in keybinds.lua";
                 return ;
@@ -957,7 +1257,7 @@ Item {
                             readonly property bool twoColumns: cardsGrid.width >= 620 && shortcutRepeater.count > 1
 
                             width: twoColumns ? (cardsGrid.width - cardsGrid.spacing) / 2 : cardsGrid.width
-                            height: 100
+                            height: 82
                             radius: 10
                             color: cardHover.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
                             opacity: shortcutCard.modelData.enabled ? 1 : 0.58
@@ -1190,16 +1490,6 @@ Item {
 
                                 }
 
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: shortcutCard.modelData.command.length ? shortcutCard.modelData.command : shortcutCard.modelData.rawAction
-                                    color: Theme.textDim
-                                    font.family: Theme.monoFont
-                                    font.pixelSize: 10
-                                    elide: Text.ElideRight
-                                    maximumLineCount: 1
-                                }
-
                             }
 
                             Behavior on border.color {
@@ -1410,7 +1700,7 @@ Item {
 
                     Text {
                         Layout.fillWidth: true
-                        text: page.dialogIsAdd ? "Use SUPER, SHIFT, CTRL, ALT and the key name." : "Use SUPER, SHIFT, CTRL, ALT and the key name."
+                        text: "Use SUPER, SHIFT, CTRL, ALT and the key name."
                         color: Theme.textFaint
                         font.family: Theme.fontFamily
                         font.pixelSize: 10

@@ -3386,9 +3386,18 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: 12
-            color: layoutOptionRoot.selected ? Theme.alpha(Theme.accent, 0.12) : (layoutOptionRoot.hovered ? Theme.alpha(Theme.text, 0.045) : "transparent")
+            color: layoutOptionRoot.selected ? Theme.alpha(Theme.accent, 0.045) : (layoutOptionRoot.hovered ? Theme.alpha(Theme.text, 0.045) : "transparent")
+            border.width: 1
+            border.color: layoutOptionRoot.selected ? "#5B5B5B" : (layoutOptionRoot.hovered ? Theme.alpha(Theme.accent, 0.34) : "transparent")
 
             Behavior on color {
+                ColorAnimation {
+                    duration: 130
+                }
+
+            }
+
+            Behavior on border.color {
                 ColorAnimation {
                     duration: 130
                 }
@@ -3644,9 +3653,9 @@ Item {
         width: segText.implicitWidth + (icon !== "" ? 34 : 24)
         height: 30
         radius: Theme.radiusXs
-        color: selected ? Theme.alpha(Theme.accent, 0.075) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.035) : "transparent")
+        color: selected ? Theme.alpha(Theme.accent, 0.045) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.03) : "transparent")
         border.width: 1
-        border.color: selected ? Theme.alpha(Theme.accent, 0.62) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.34) : Theme.border)
+        border.color: selected ? "#5B5B5B" : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.34) : Theme.border)
 
         Text {
             id: segText
