@@ -699,8 +699,6 @@ Item {
             spring("specialWorkspace", 4.5, "boing", "slidefadevert 65%");
             set("border", 3.4, "easeinout");
         } else if (name === "minimal") {
-            // Short, restrained motion: quicker than Balanced, but not as abrupt as Snappy.
-            // Keep movement visible while removing fade and spring effects.
             set("global", 2.8, "default");
             set("windows", 2.8, "standard");
             set("windowsIn", 2.5, "almostlinear");

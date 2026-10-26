@@ -217,7 +217,6 @@ Item {
         scrollFactor = nextScrollFactor;
         applyLive("input:sensitivity", nextSensitivity);
         applyLive("input:scroll_factor", nextScrollFactor);
-        // Keep the requested values explicit: setInputField reparses the file after each write.
         setInputField("sensitivity", nextSensitivity);
         setInputField("scroll_factor", nextScrollFactor);
         sensitivity = nextSensitivity;

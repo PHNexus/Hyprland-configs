@@ -1,16 +1,5 @@
-// Labeled 0..1 slider row: optional reset icon, label, track, and a
-// right-aligned value readout — everything a caller previously had to
-// build by hand around a bare track now lives in here.
-// `value` is normalized 0..1 and owned by the caller.
-// `moved` fires continuously while dragging — use it for cheap, local
-// state updates (e.g. live-formatting `displayText`).
-// `committed` fires once when the drag (or a reset-click) ends — use it
-// for anything with a side effect (writing a file, shelling out).
-
 import QtQuick
 
-// While dragging, a small bubble above the handle shows the position as
-// a percentage, independent of whatever `displayText` is showing.
 Item {
     id: root
 
@@ -19,9 +8,7 @@ Item {
     property real value: 0
     property color accentColor: Theme.accent
     property real rowSpacing: 4
-    // Right-aligned readout text, e.g. "+0.35" or "1.20x". Empty hides it.
     property string displayText: ""
-    // Click the icon to snap back to `resetValue` (0..1 ratio).
     property bool resettable: false
     property real resetValue: 0
     readonly property bool hasIcon: root.icon !== ""
@@ -172,7 +159,6 @@ Item {
 
             }
 
-            // Live percentage readout, shown only while dragging.
             Rectangle {
                 id: bubble
 
