@@ -284,7 +284,7 @@ Item {
         radius: 10
         color: hover.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
         border.width: 1
-        border.color: hover.hovered ? Theme.accent : Theme.border
+        border.color: cardMouseArea.containsMouse ? "#555555" : "#393939"
 
         HoverHandler {
             id: hover
@@ -293,7 +293,10 @@ Item {
         }
 
         MouseArea {
+            id: cardMouseArea
+
             anchors.fill: parent
+            hoverEnabled: true
             onClicked: page.editConfig(card.path)
         }
 
@@ -315,7 +318,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: card.icon
-                    color: hover.hovered ? Theme.accent : Theme.textFaint
+                    color: Theme.accent
                     font.family: Theme.iconFont
                     font.pixelSize: 16
                 }
@@ -351,7 +354,7 @@ Item {
             anchors.rightMargin: 14
             anchors.verticalCenter: parent.verticalCenter
             text: "󰏫"
-            color: hover.hovered ? Theme.accent : Theme.textFaint
+            color: Theme.accent
             font.family: Theme.iconFont
             font.pixelSize: 15
         }

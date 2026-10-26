@@ -119,10 +119,9 @@
 .widget-menubar .menu-button-bar .widget-menubar-container > button,
 .widget-menubar > .menu-button-bar > .widget-menubar-container > button,
 .widget-menubar > box > .menu-button-bar > .widget-menubar-container > button {
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 50px;
+  min-height: 25px;
   padding: 6px 10px;
-  margin: 0 4px;
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
