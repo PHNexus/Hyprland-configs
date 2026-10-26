@@ -51,7 +51,7 @@ Item {
         Column {
             id: content
             width: flick.width
-            spacing: 9
+            spacing: 10
 
             Column {
                 width: parent.width
@@ -61,7 +61,7 @@ Item {
                     text: "SOUND"
                     color: Theme.text
                     font.family: Theme.fontFamily
-                    font.pixelSize: 21
+                    font.pixelSize: 20
                     font.weight: Font.Normal
                 }
 
@@ -85,9 +85,9 @@ Item {
                 width: parent.width
                 height: 50
                 radius: 8
-                color: hovered ? Theme.alpha(Theme.accent, 0.035) : Theme.alpha(Theme.text, 0.015)
+                color: hovered ? Theme.alpha(Theme.text, 0.055) : Theme.alpha(Theme.text, 0.012)
                 border.width: 1
-                border.color: "#303030"
+                border.color: Theme.alpha(Theme.text, 0.12)
 
                 Behavior on color { ColorAnimation { duration: 130 } }
                 Behavior on border.color { ColorAnimation { duration: 130 } }
@@ -105,7 +105,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.alpha(Theme.text, 0.025)
                         border.width: 1
-                        border.color: "#303030"
+                        border.color: Theme.alpha(Theme.text, 0.12)
 
                         Text {
                             anchors.centerIn: parent
@@ -188,9 +188,9 @@ Item {
                         width: parent.width
                         height: 46
                         radius: 8
-                        color: active ? Theme.alpha(Theme.accent, 0.045) : (hovered ? Theme.alpha(Theme.accent, 0.03) : Theme.alpha(Theme.text, 0.015))
+                        color: active ? Theme.alpha(Theme.text, 0.055) : (hovered ? Theme.alpha(Theme.text, 0.035) : Theme.alpha(Theme.text, 0.012))
                         border.width: 1
-                        border.color: active ? "#5B5B5B" : "#303030"
+                        border.color: active ? Theme.alpha(Theme.text, 0.32) : Theme.alpha(Theme.text, 0.12)
 
                         Behavior on color { ColorAnimation { duration: 130 } }
                         Behavior on border.color { ColorAnimation { duration: 130 } }
@@ -208,7 +208,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: Theme.alpha(Theme.text, 0.025)
                                 border.width: 1
-                                border.color: "#303030"
+                                border.color: Theme.alpha(Theme.text, 0.12)
 
                                 Text {
                                     anchors.centerIn: parent
@@ -263,7 +263,7 @@ Item {
                     visible: page.outputSinks.length === 0
                     color: Theme.alpha(Theme.text, 0.015)
                     border.width: 1
-                    border.color: "#303030"
+                    border.color: Theme.alpha(Theme.text, 0.12)
 
                     Row {
                         anchors.centerIn: parent
@@ -276,7 +276,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             color: Theme.alpha(Theme.text, 0.025)
                             border.width: 1
-                            border.color: "#303030"
+                            border.color: Theme.alpha(Theme.text, 0.12)
 
                             Text {
                                 anchors.centerIn: parent
@@ -326,9 +326,9 @@ Item {
                 width: parent.width
                 height: 50
                 radius: 8
-                color: hovered ? Theme.alpha(Theme.accent, 0.035) : Theme.alpha(Theme.text, 0.015)
+                color: hovered ? Theme.alpha(Theme.text, 0.055) : Theme.alpha(Theme.text, 0.012)
                 border.width: 1
-                border.color: "#303030"
+                border.color: Theme.alpha(Theme.text, 0.12)
 
                 Behavior on color { ColorAnimation { duration: 130 } }
                 Behavior on border.color { ColorAnimation { duration: 130 } }
@@ -346,7 +346,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.alpha(Theme.text, 0.025)
                         border.width: 1
-                        border.color: "#303030"
+                        border.color: Theme.alpha(Theme.text, 0.12)
 
                         Text {
                             anchors.centerIn: parent
@@ -437,9 +437,9 @@ Item {
                         width: parent.width
                         height: 46
                         radius: 8
-                        color: active ? Theme.alpha(Theme.accent, 0.045) : (hovered ? Theme.alpha(Theme.accent, 0.03) : Theme.alpha(Theme.text, 0.015))
+                        color: active ? Theme.alpha(Theme.text, 0.055) : (hovered ? Theme.alpha(Theme.text, 0.035) : Theme.alpha(Theme.text, 0.012))
                         border.width: 1
-                        border.color: active ? "#5B5B5B" : "#303030"
+                        border.color: active ? Theme.alpha(Theme.text, 0.32) : Theme.alpha(Theme.text, 0.12)
 
                         Behavior on color { ColorAnimation { duration: 130 } }
                         Behavior on border.color { ColorAnimation { duration: 130 } }
@@ -457,7 +457,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: Theme.alpha(Theme.text, 0.025)
                                 border.width: 1
-                                border.color: "#303030"
+                                border.color: Theme.alpha(Theme.text, 0.12)
 
                                 Text {
                                     anchors.centerIn: parent
@@ -512,7 +512,7 @@ Item {
                     visible: page.inputSources.length === 0
                     color: Theme.alpha(Theme.text, 0.015)
                     border.width: 1
-                    border.color: "#303030"
+                    border.color: Theme.alpha(Theme.text, 0.12)
 
                     Row {
                         anchors.centerIn: parent
@@ -525,7 +525,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             color: Theme.alpha(Theme.text, 0.025)
                             border.width: 1
-                            border.color: "#303030"
+                            border.color: Theme.alpha(Theme.text, 0.12)
 
                             Text {
                                 anchors.centerIn: parent
@@ -590,7 +590,7 @@ Item {
                     radius: 6
                     color: Theme.alpha(Theme.text, 0.025)
                     border.width: 1
-                    border.color: "#303030"
+                    border.color: Theme.alpha(Theme.text, 0.12)
                     anchors.verticalCenter: parent.verticalCenter
 
                     Text {
@@ -622,9 +622,9 @@ Item {
                         width: parent.width
                         height: 48
                         radius: 8
-                        color: streamMuted ? Theme.alpha(Theme.danger, 0.025) : (hovered ? Theme.alpha(Theme.accent, 0.03) : Theme.alpha(Theme.text, 0.015))
+                        color: streamMuted ? Theme.alpha(Theme.danger, 0.045) : (hovered ? Theme.alpha(Theme.text, 0.035) : Theme.alpha(Theme.text, 0.012))
                         border.width: 1
-                        border.color: streamMuted ? Theme.alpha(Theme.danger, 0.3) : "#303030"
+                        border.color: streamMuted ? Theme.alpha(Theme.danger, 0.45) : Theme.alpha(Theme.text, 0.12)
 
                         Behavior on color { ColorAnimation { duration: 130 } }
                         Behavior on border.color { ColorAnimation { duration: 130 } }
@@ -643,7 +643,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: streamMuted ? Theme.alpha(Theme.danger, 0.055) : Theme.alpha(Theme.text, 0.025)
                                 border.width: 1
-                                border.color: streamMuted ? Theme.alpha(Theme.danger, 0.35) : "#303030"
+                                border.color: streamMuted ? Theme.alpha(Theme.danger, 0.35) : "#393939"
 
                                 Text {
                                     anchors.centerIn: parent
@@ -723,7 +723,7 @@ Item {
                     visible: page.appStreams.length === 0
                     color: Theme.alpha(Theme.text, 0.015)
                     border.width: 1
-                    border.color: "#303030"
+                    border.color: Theme.alpha(Theme.text, 0.12)
 
                     Row {
                         anchors.centerIn: parent
@@ -736,7 +736,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             color: Theme.alpha(Theme.text, 0.025)
                             border.width: 1
-                            border.color: "#303030"
+                            border.color: Theme.alpha(Theme.text, 0.12)
 
                             Text {
                                 anchors.centerIn: parent

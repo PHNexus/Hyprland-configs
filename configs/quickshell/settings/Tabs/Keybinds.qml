@@ -30,14 +30,12 @@ Item {
         if (ch === '"' || ch === "'") {
             var quote = ch;
             i++;
-            while (i < s.length)
-                if (s.charAt(i) === "\\")
-                    i += 2;
-                else if (s.charAt(i) === quote)
-                    return i + 1;
-                else
-                    i++;
-
+            while (i < s.length)if (s.charAt(i) === "\\")
+                i += 2;
+            else if (s.charAt(i) === quote)
+                return i + 1;
+            else
+                i++;
             return s.length;
         }
         if (ch === "[") {
@@ -218,7 +216,7 @@ Item {
     }
 
     function encodeLuaString(s) {
-        return '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\\n").replace(/\r/g, "\\\r").replace(/\t/g, "\\\t") + '"';
+        return '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\\n").replace(/\r/g, "\\\r").replace(/\t/g, "\\t") + '"';
     }
 
     function mainModifier(source) {
@@ -909,10 +907,10 @@ Item {
         }
         if (b.commandEditable && editCommand !== b.command)
             replacements.push({
-                "start": b.actionStart,
-                "end": b.actionEnd,
-                "text": "hl.dsp.exec_cmd(" + encodeLuaString(editCommand) + ")"
-            });
+            "start": b.actionStart,
+            "end": b.actionEnd,
+            "text": "hl.dsp.exec_cmd(" + encodeLuaString(editCommand) + ")"
+        });
 
         if (!replacements.length) {
             statusMessage = "No changes to save";
@@ -1097,7 +1095,7 @@ Item {
                     radius: 7
                     color: parent.hovered ? Theme.bgPanel : Theme.bgCard
                     border.width: 1
-                    border.color: parent.hovered ? "#555555" : "#393939"
+                    border.color: Theme.border
                 }
 
                 contentItem: Text {
@@ -1157,7 +1155,7 @@ Item {
                 color: Theme.alpha(Theme.text, 0.015)
                 radius: 7
                 border.width: 1
-                border.color: parent.activeFocus ? Theme.accent : Theme.border
+                border.color: parent.activeFocus ? "#555555" : Theme.border
             }
 
         }
@@ -1190,7 +1188,7 @@ Item {
                             radius: 9
                             color: page.categoryFilter === modelData ? Theme.alpha(Theme.accent, 0.15) : (parent.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.bgCard)
                             border.width: 1
-                            border.color: page.categoryFilter === modelData ? Theme.accent : Theme.border
+                            border.color: (page.categoryFilter === modelData || parent.hovered) ? "#555555" : "#393939"
 
                             Behavior on color {
                                 ColorAnimation {
@@ -1346,7 +1344,7 @@ Item {
                                             radius: 7
                                             color: bindingSwitch.checked ? Theme.accent : Theme.bgPanel
                                             border.width: 1
-                                            border.color: bindingSwitch.checked ? Qt.lighter(Theme.accent, 1.15) : "#393939"
+                                            border.color: bindingSwitch.checked ? Qt.lighter(Theme.accent, 1.15) : Theme.border
 
                                             Rectangle {
                                                 x: bindingSwitch.checked ? parent.width - width - 2 : 2
@@ -1392,7 +1390,7 @@ Item {
                                             radius: 7
                                             color: removeButton.hovered ? Theme.bgCard : "transparent"
                                             border.width: 1
-                                            border.color: removeButton.hovered ? "#ff6b6b" : "transparent"
+                                            border.color: removeButton.hovered ? "#555555" : "#393939"
 
                                             Behavior on color {
                                                 ColorAnimation {
@@ -1427,9 +1425,9 @@ Item {
 
                                         background: Rectangle {
                                             radius: 7
-                                            color: editButton.hovered ? Theme.alpha(Theme.accent, 0.05) : "transparent"
+                                            color: editButton.hovered ? Theme.bgCard : "transparent"
                                             border.width: 1
-                                            border.color: editButton.hovered ? Theme.accent : "transparent"
+                                            border.color: editButton.hovered ? "#555555" : "#393939"
 
                                             Behavior on color {
                                                 ColorAnimation {
@@ -1488,13 +1486,6 @@ Item {
                                         Layout.fillWidth: true
                                     }
 
-                                }
-
-                            }
-
-                            Behavior on border.color {
-                                ColorAnimation {
-                                    duration: 130
                                 }
 
                             }
@@ -1662,7 +1653,7 @@ Item {
                         radius: 7
                         color: "#17191f"
                         border.width: keyField.activeFocus ? 1.5 : 1
-                        border.color: keyField.activeFocus ? Theme.accent : Theme.border
+                        border.color: keyField.activeFocus ? "#555555" : Theme.border
 
                         RowLayout {
                             anchors.fill: parent
@@ -1738,7 +1729,7 @@ Item {
                         radius: 7
                         color: "#17191f"
                         border.width: commandField.activeFocus ? 1.5 : 1
-                        border.color: commandField.activeFocus ? Theme.accent : Theme.border
+                        border.color: commandField.activeFocus ? "#555555" : Theme.border
 
                         RowLayout {
                             anchors.fill: parent
@@ -1855,7 +1846,7 @@ Item {
                         radius: 10
                         color: parent.hovered ? "#2b2e36" : "#24262d"
                         border.width: 1
-                        border.color: parent.hovered ? Theme.accent : Theme.border
+                        border.color: parent.hovered ? "#555555" : Theme.border
                     }
 
                     contentItem: Text {

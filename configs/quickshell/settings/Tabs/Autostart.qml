@@ -565,7 +565,7 @@ Item {
                 color: Theme.alpha(Theme.text, 0.025)
                 radius: 7
                 border.width: 1
-                border.color: parent.activeFocus ? Theme.accent : Theme.border
+                border.color: parent.activeFocus ? "#555555" : Theme.border
             }
 
         }
@@ -726,7 +726,7 @@ Item {
                                         radius: 7
                                         color: editButton.hovered ? Theme.bgCard : "transparent"
                                         border.width: 1
-                                        border.color: editButton.hovered ? Theme.accent : "transparent"
+                                        border.color: editButton.hovered ? "#555555" : "#393939"
 
                                         Behavior on color {
                                             ColorAnimation {
@@ -763,7 +763,7 @@ Item {
                                         radius: 7
                                         color: removeButton.hovered ? Theme.bgCard : "transparent"
                                         border.width: 1
-                                        border.color: removeButton.hovered ? "#ff6b6b" : "transparent"
+                                        border.color: removeButton.hovered ? "#555555" : "#393939"
 
                                         Behavior on color {
                                             ColorAnimation {
@@ -949,7 +949,7 @@ Item {
                         radius: 7
                         color: "#17191f"
                         border.width: commandField.activeFocus ? 1.5 : 1
-                        border.color: commandField.activeFocus ? Theme.accent : Theme.border
+                        border.color: commandField.activeFocus ? "#555555" : Theme.border
 
                         RowLayout {
                             anchors.fill: parent
@@ -1057,7 +1057,7 @@ Item {
                         radius: 7
                         color: parent.hovered ? "#2b2e36" : "#24262d"
                         border.width: 1
-                        border.color: parent.hovered ? Theme.accent : Theme.border
+                        border.color: parent.hovered ? "#555555" : Theme.border
                     }
 
                     contentItem: Text {

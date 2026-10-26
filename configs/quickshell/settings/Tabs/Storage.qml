@@ -78,7 +78,7 @@ Item {
     }
 
     function usageColor(p) {
-        return p >= 90 ? "#f5f5f5" : p >= 75 ? "#dddddd" : "#c5c5c5";
+        return p >= 90 ? "#ffffff" : p >= 75 ? "#e0e0e0" : "#c0c0c0";
     }
 
     function usageWidth(p) {
@@ -172,13 +172,13 @@ Item {
                 var virtualDevice = /^(zram|loop|ram|fd)\d+$/.test(lowerName);
                 if (type === "disk" && name.length > 0 && size > 0 && !virtualDevice)
                     disks.push({
-                        "name": name,
-                        "model": String(d.model || "").trim(),
-                        "size": size,
-                        "type": String(d.type || ""),
-                        "tran": String(d.tran || ""),
-                        "deviceNames": collectDeviceNames(d, [])
-                    });
+                    "name": name,
+                    "model": String(d.model || "").trim(),
+                    "size": size,
+                    "type": String(d.type || ""),
+                    "tran": String(d.tran || ""),
+                    "deviceNames": collectDeviceNames(d, [])
+                });
 
             }
         } catch (e) {
@@ -384,31 +384,31 @@ Item {
         z: 100
         width: Math.min(parent.width - 30, 420)
         height: 200
-        radius: 10
+        radius: 12
         color: Theme.bg
         border.width: 1
-        border.color: "#555555"
+        border.color: Theme.alpha(Theme.text, 0.15)
 
         Column {
             anchors.fill: parent
-            anchors.margins: 18
-            spacing: 12
+            anchors.margins: 20
+            spacing: 14
 
             Row {
-                spacing: 10
+                spacing: 12
 
                 Rectangle {
-                    width: 32
-                    height: 32
-                    radius: 8
-                    color: "#292929"
+                    width: 36
+                    height: 36
+                    radius: 10
+                    color: Theme.alpha(Theme.text, 0.05)
                     border.width: 1
-                    border.color: "#454545"
+                    border.color: Theme.alpha(Theme.text, 0.1)
 
                     Text {
                         anchors.centerIn: parent
                         text: "󰀦"
-                        color: "#eeeeee"
+                        color: Theme.text
                         font.family: Theme.iconFont
                         font.pixelSize: 18
                     }
@@ -418,7 +418,7 @@ Item {
                 Text {
                     text: page.pendingTitle
                     color: Theme.text
-                    font.family: "Noto Sans"
+                    font.family: Theme.fontFamily
                     font.pixelSize: 15
                     font.weight: Font.DemiBold
                     anchors.verticalCenter: parent.verticalCenter
@@ -430,14 +430,14 @@ Item {
                 width: parent.width
                 text: page.pendingMessage
                 color: Theme.textDim
-                font.family: "Noto Sans"
-                font.pixelSize: 11
+                font.family: Theme.fontFamily
+                font.pixelSize: 12
                 wrapMode: Text.WordWrap
             }
 
             Item {
                 width: 1
-                height: 1
+                height: 4
             }
 
             Row {
@@ -483,26 +483,26 @@ Item {
             id: list
 
             width: flick.width
-            spacing: 10
+            spacing: 14
 
             Column {
                 width: parent.width
-                spacing: 2
+                spacing: 4
 
                 Text {
                     text: "STORAGE"
                     color: Theme.text
                     font.family: Theme.fontFamily
                     font.pixelSize: 16
-                    font.weight: Font.DemiBold
-                    font.letterSpacing: 0.4
+                    font.weight: Font.Bold
+                    font.letterSpacing: 0.5
                 }
 
                 Text {
                     text: "Disk usage and system cleanup"
                     color: Theme.textFaint
                     font.family: Theme.fontFamily
-                    font.pixelSize: 9
+                    font.pixelSize: 10
                 }
 
             }
@@ -515,7 +515,7 @@ Item {
 
             Column {
                 width: parent.width
-                spacing: 4
+                spacing: 6
 
                 Row {
                     width: parent.width
@@ -525,23 +525,23 @@ Item {
                         text: "DRIVES"
                         color: Theme.textDim
                         font.family: Theme.monoFont
-                        font.pixelSize: 9
+                        font.pixelSize: 10
                         font.weight: Font.DemiBold
-                        font.letterSpacing: 0.6
+                        font.letterSpacing: 0.8
                     }
 
                     Text {
                         text: "· " + page.drives.length
                         color: Theme.textFaint
                         font.family: Theme.monoFont
-                        font.pixelSize: 9
+                        font.pixelSize: 10
                     }
 
                 }
 
                 Column {
                     width: parent.width
-                    spacing: 4
+                    spacing: 6
 
                     Repeater {
                         model: page.drives
@@ -557,7 +557,7 @@ Item {
                         text: pDrives.running ? "SCANNING FOR DRIVES..." : "NO PHYSICAL DRIVES DETECTED"
                         color: Theme.textFaint
                         font.family: Theme.monoFont
-                        font.pixelSize: 9
+                        font.pixelSize: 10
                         leftPadding: 4
                     }
 
@@ -570,26 +570,25 @@ Item {
                 spacing: 8
 
                 Row {
-                    x: 2
-                    width: parent.width - 2
-                    height: 17
+                    width: parent.width
+                    height: 20
                     spacing: 8
 
                     Text {
                         text: "󰃢"
-                        color: "#d0d0d0"
+                        color: Theme.text
                         font.family: Theme.iconFont
-                        font.pixelSize: 13
+                        font.pixelSize: 14
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
                     Text {
                         text: "CLEANUP"
                         color: Theme.text
-                        font.family: "Noto Sans"
-                        font.pixelSize: 12
-                        font.weight: Font.DemiBold
-                        font.letterSpacing: 2
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 13
+                        font.weight: Font.Bold
+                        font.letterSpacing: 1.5
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
@@ -604,11 +603,6 @@ Item {
                 Column {
                     width: parent.width
                     spacing: 6
-
-                    Item {
-                        width: 1
-                        height: 4
-                    }
 
                     Repeater {
                         model: [{
@@ -688,22 +682,6 @@ Item {
 
         }
 
-        ScrollBar.vertical: ScrollBar {
-            policy: ScrollBar.AsNeeded
-            width: 6
-
-            background: Rectangle {
-                color: "transparent"
-                radius: width / 2
-            }
-
-            contentItem: Rectangle {
-                color: "transparent"
-                radius: width / 2
-            }
-
-        }
-
     }
 
     component DriveCard: Rectangle {
@@ -716,11 +694,11 @@ Item {
         property string driveName: String(modelData.model || "").trim().length > 0 ? String(modelData.model).trim() : String(modelData.name || "Storage drive")
         property string driveType: String(modelData.name || "").toLowerCase().indexOf("nvme") === 0 ? "NVMe" : (String(modelData.tran || "").trim().length > 0 ? String(modelData.tran).toUpperCase() : (/^sd[a-z]+$/i.test(String(modelData.name || "")) ? "SATA / SCSI" : "LOCAL DRIVE"))
 
-        height: 100
+        height: 104
         radius: 10
-        color: driveHover.hovered ? Theme.alpha(Theme.text, 0.035) : Theme.alpha(Theme.text, 0.015)
+        color: driveHover.hovered ? Theme.alpha(Theme.text, 0.04) : Theme.alpha(Theme.text, 0.015)
         border.width: 1
-        border.color: driveHover.hovered ? Theme.alpha(Theme.text, 0.24) : Theme.alpha(Theme.text, 0.1)
+        border.color: driveHover.hovered ? Theme.alpha(Theme.text, 0.22) : Theme.alpha(Theme.text, 0.1)
         clip: true
 
         HoverHandler {
@@ -729,8 +707,8 @@ Item {
 
         Column {
             anchors.fill: parent
-            anchors.margins: 7
-            spacing: 4
+            anchors.margins: 10
+            spacing: 8
 
             Row {
                 id: driveHeader
@@ -744,14 +722,14 @@ Item {
                     height: 36
                     radius: 8
                     anchors.verticalCenter: parent.verticalCenter
-                    color: Theme.alpha(Theme.text, 0.045)
+                    color: Theme.alpha(Theme.text, 0.05)
                     border.width: 1
                     border.color: Theme.alpha(Theme.text, 0.1)
 
                     Text {
                         anchors.centerIn: parent
                         text: "󰋊"
-                        color: driveRoot.hasUsage ? page.usageColor(driveRoot.usedPct) : "#bdbdbd"
+                        color: driveRoot.hasUsage ? page.usageColor(driveRoot.usedPct) : Theme.textDim
                         font.family: Theme.iconFont
                         font.pixelSize: 17
                     }
@@ -766,7 +744,7 @@ Item {
                     Text {
                         width: parent.width
                         text: driveRoot.driveName
-                        color: "#f2f2f2"
+                        color: Theme.text
                         elide: Text.ElideRight
                         font.family: Theme.fontFamily
                         font.pixelSize: 13
@@ -776,7 +754,7 @@ Item {
                     Text {
                         width: parent.width
                         text: driveRoot.driveType + "  ·  /dev/" + String(driveRoot.modelData.name || "")
-                        color: "#a0a0a0"
+                        color: Theme.textDim
                         elide: Text.ElideRight
                         font.family: Theme.monoFont
                         font.pixelSize: 10
@@ -787,14 +765,14 @@ Item {
                 Column {
                     id: driveCapacity
 
-                    width: 104
+                    width: 110
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 2
 
                     Text {
                         width: parent.width
                         text: page.formatBytes(driveRoot.modelData.size).replace(".0 ", " ")
-                        color: "#f4f4f4"
+                        color: Theme.text
                         horizontalAlignment: Text.AlignRight
                         elide: Text.ElideRight
                         font.family: Theme.fontFamily
@@ -805,10 +783,10 @@ Item {
                     Text {
                         width: parent.width
                         text: driveRoot.hasUsage ? Math.round(driveRoot.usedPct) + "% USED" : "TOTAL CAPACITY"
-                        color: "#a5a5a5"
+                        color: Theme.textDim
                         horizontalAlignment: Text.AlignRight
                         font.family: Theme.monoFont
-                        font.pixelSize: 11
+                        font.pixelSize: 10
                     }
 
                 }
@@ -821,14 +799,14 @@ Item {
                 width: parent.width
                 height: 5
                 radius: 3
-                color: Theme.alpha(Theme.text, 0.11)
+                color: Theme.alpha(Theme.text, 0.08)
                 clip: true
 
                 Rectangle {
                     width: driveRoot.hasUsage ? capacityTrack.width * page.usageWidth(driveRoot.usedPct) : 0
                     height: parent.height
                     radius: 3
-                    color: page.usageColor(driveRoot.usedPct)
+                    color: Theme.text
 
                     Behavior on width {
                         NumberAnimation {
@@ -843,39 +821,42 @@ Item {
 
             Row {
                 width: parent.width
-                height: 33
+                height: 28
                 spacing: 8
 
                 Rectangle {
                     width: (parent.width - parent.spacing) / 2
                     height: parent.height
                     radius: 6
-                    color: Theme.alpha(Theme.text, 0.018)
+                    color: Theme.alpha(Theme.text, 0.02)
                     border.width: 1
-                    border.color: Theme.alpha(Theme.text, 0.085)
+                    border.color: Theme.alpha(Theme.text, 0.08)
 
-                    Column {
-                        width: parent.width - 12
-                        anchors.centerIn: parent
-                        spacing: 1
+                    Row {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 6
 
                         Text {
-                            width: parent.width
                             text: "USED"
-                            color: "#929292"
+                            color: Theme.textFaint
                             font.family: Theme.monoFont
-                            font.pixelSize: 8
+                            font.pixelSize: 9
                             font.weight: Font.DemiBold
+                            anchors.verticalCenter: parent.verticalCenter
                         }
 
                         Text {
-                            width: parent.width
+                            width: parent.width - 45
                             text: driveRoot.hasUsage ? page.formatBytes(driveRoot.usageData).replace(".0 ", " ") : "—"
-                            color: "#f0f0f0"
+                            color: Theme.text
                             font.family: Theme.fontFamily
                             font.pixelSize: 11
                             font.weight: Font.Medium
+                            horizontalAlignment: Text.AlignRight
                             elide: Text.ElideRight
+                            anchors.verticalCenter: parent.verticalCenter
                         }
 
                     }
@@ -886,32 +867,35 @@ Item {
                     width: (parent.width - parent.spacing) / 2
                     height: parent.height
                     radius: 6
-                    color: Theme.alpha(Theme.text, 0.018)
+                    color: Theme.alpha(Theme.text, 0.02)
                     border.width: 1
-                    border.color: Theme.alpha(Theme.text, 0.085)
+                    border.color: Theme.alpha(Theme.text, 0.08)
 
-                    Column {
-                        width: parent.width - 12
-                        anchors.centerIn: parent
-                        spacing: 1
+                    Row {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 6
 
                         Text {
-                            width: parent.width
                             text: "FREE"
-                            color: "#929292"
+                            color: Theme.textFaint
                             font.family: Theme.monoFont
-                            font.pixelSize: 8
+                            font.pixelSize: 9
                             font.weight: Font.DemiBold
+                            anchors.verticalCenter: parent.verticalCenter
                         }
 
                         Text {
-                            width: parent.width
+                            width: parent.width - 45
                             text: driveRoot.hasUsage ? page.formatBytes(Math.max(0, driveRoot.modelData.size - driveRoot.usageData)).replace(".0 ", " ") : "—"
-                            color: "#f0f0f0"
+                            color: Theme.text
                             font.family: Theme.fontFamily
                             font.pixelSize: 11
                             font.weight: Font.Medium
+                            horizontalAlignment: Text.AlignRight
                             elide: Text.ElideRight
+                            anchors.verticalCenter: parent.verticalCenter
                         }
 
                     }
@@ -948,11 +932,11 @@ Item {
 
         signal clicked()
 
-        height: 50
-        radius: 9
-        color: cleanupHover.hovered ? Theme.alpha(Theme.text, 0.035) : Theme.alpha(Theme.text, 0.015)
+        height: 52
+        radius: 10
+        color: cleanupHover.hovered ? Theme.alpha(Theme.text, 0.04) : Theme.alpha(Theme.text, 0.015)
         border.width: 1
-        border.color: cleanupHover.hovered ? Theme.alpha(Theme.text, 0.24) : Theme.alpha(Theme.text, 0.1)
+        border.color: cleanupHover.hovered ? Theme.alpha(Theme.text, 0.22) : Theme.alpha(Theme.text, 0.1)
         clip: true
 
         HoverHandler {
@@ -970,26 +954,26 @@ Item {
             id: cleanupInfoRow
 
             anchors.left: parent.left
-            anchors.leftMargin: 10
+            anchors.leftMargin: 12
             anchors.right: cleanupActions.left
             anchors.rightMargin: 10
             anchors.verticalCenter: parent.verticalCenter
-            height: 34
+            height: 36
             spacing: 10
 
             Rectangle {
-                width: 32
-                height: 32
+                width: 36
+                height: 36
                 radius: 8
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.alpha(Theme.text, 0.045)
+                color: Theme.alpha(Theme.text, 0.05)
                 border.width: 1
                 border.color: Theme.alpha(Theme.text, 0.1)
 
                 Text {
                     anchors.centerIn: parent
                     text: cleanupRoot.icon
-                    color: cleanupHover.hovered ? "#f5f5f5" : "#d0d0d0"
+                    color: cleanupHover.hovered ? Theme.text : Theme.textDim
                     font.family: Theme.iconFont
                     font.pixelSize: 16
                 }
@@ -997,16 +981,16 @@ Item {
             }
 
             Column {
-                width: Math.max(40, cleanupInfoRow.width - 32 - cleanupInfoRow.spacing)
+                width: Math.max(40, cleanupInfoRow.width - 36 - cleanupInfoRow.spacing)
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 3
 
                 Text {
                     width: parent.width
                     text: cleanupRoot.label
-                    color: "#f0f0f0"
+                    color: Theme.text
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
                 }
@@ -1014,9 +998,9 @@ Item {
                 Text {
                     width: parent.width
                     text: "Available to clean"
-                    color: "#929292"
+                    color: Theme.textDim
                     font.family: Theme.fontFamily
-                    font.pixelSize: 9
+                    font.pixelSize: 10
                     elide: Text.ElideRight
                 }
 
@@ -1027,16 +1011,16 @@ Item {
         Column {
             id: cleanupActions
 
-            width: 92
+            width: 100
             anchors.right: parent.right
-            anchors.rightMargin: 10
+            anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             spacing: 2
 
             Text {
                 width: parent.width
                 text: cleanupRoot.value
-                color: "#f4f4f4"
+                color: Theme.text
                 horizontalAlignment: Text.AlignRight
                 font.family: Theme.fontFamily
                 font.pixelSize: 12
@@ -1051,16 +1035,16 @@ Item {
 
                 Text {
                     text: "󰅂"
-                    color: cleanupHover.hovered ? "#ffffff" : "#a5a5a5"
+                    color: cleanupHover.hovered ? Theme.text : Theme.textDim
                     font.family: Theme.iconFont
-                    font.pixelSize: 13
+                    font.pixelSize: 12
                 }
 
                 Text {
                     text: cleanupRoot.actionText
-                    color: cleanupHover.hovered ? "#ffffff" : "#bdbdbd"
+                    color: cleanupHover.hovered ? Theme.text : Theme.textDim
                     font.family: Theme.fontFamily
-                    font.pixelSize: 9
+                    font.pixelSize: 10
                     font.weight: Font.DemiBold
                     font.letterSpacing: 0.2
                 }
@@ -1095,9 +1079,9 @@ Item {
 
         height: 38
         radius: 8
-        color: accent ? (btnHover.hovered ? "#f5f5f5" : "#e5e5e5") : (btnHover.hovered ? "#292929" : "transparent")
+        color: accent ? (btnHover.hovered ? "#ffffff" : "#e0e0e0") : (btnHover.hovered ? Theme.alpha(Theme.text, 0.1) : "transparent")
         border.width: 1
-        border.color: accent ? "#f5f5f5" : (btnHover.hovered ? "#606060" : "#414141")
+        border.color: accent ? "#ffffff" : (btnHover.hovered ? Theme.alpha(Theme.text, 0.3) : Theme.alpha(Theme.text, 0.15))
 
         HoverHandler {
             id: btnHover
@@ -1106,8 +1090,8 @@ Item {
         Text {
             anchors.centerIn: parent
             text: btn.label
-            color: btn.accent ? "#151515" : "#d0d0d0"
-            font.family: "Noto Sans"
+            color: btn.accent ? "#151515" : Theme.text
+            font.family: Theme.fontFamily
             font.pixelSize: 11
             font.weight: Font.DemiBold
             font.letterSpacing: 0.5

@@ -14,8 +14,8 @@ function M.setup()
             allow_tearing = true,
             layout = "scrolling",
             col = {
-                active_border = "rgb(bbbbbb)",
-                inactive_border = "rgb(2a77a2)",
+                active_border = "rgb(bebebe)",
+                inactive_border = "rgb(000000)",
             },
         },
     })
@@ -26,7 +26,7 @@ function M.setup()
     -- See https://wiki.hypr.land/Configuring/Scrolling-Layout/
     hl.config({
         scrolling = {
-            column_width = 0.5,
+            column_width = 0.498,
             direction = "right",
             fullscreen_on_one_column = true,
             focus_fit_method = 1, -- 0 Opens all windows centered; 1 opens windows side-by-side, maintaining scrolling.
@@ -86,3 +86,4 @@ function M.setup()
 end
 
 return M
+-- phnexus-explicit-column-widths-default-v1

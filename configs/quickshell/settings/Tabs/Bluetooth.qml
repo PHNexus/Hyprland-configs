@@ -48,7 +48,6 @@ Item {
     function setDiscovering(on) {
         var shouldDiscover = Boolean(on) && page.visible;
         page.desiredDiscovery = shouldDiscover;
-
         if (!page.adapter || page.adapter.state !== BluetoothAdapterState.Enabled)
             return ;
 
@@ -278,6 +277,7 @@ Item {
             page.discoveryCommandPending = false;
             if (page.desiredDiscovery !== page.lastDiscoveryRequest)
                 page.setDiscovering(page.desiredDiscovery);
+
         }
     }
 
@@ -376,6 +376,7 @@ Item {
                 font.family: Theme.fontFamily
                 font.pixelSize: 10
             }
+
         }
 
         Rectangle {
@@ -386,6 +387,7 @@ Item {
 
         Rectangle {
             id: powerStatus
+
             property bool hovered: false
 
             width: parent.width
@@ -419,6 +421,7 @@ Item {
                         font.family: Theme.iconFont
                         font.pixelSize: 16
                     }
+
                 }
 
                 Column {
@@ -439,11 +442,14 @@ Item {
                         font.family: Theme.fontFamily
                         font.pixelSize: 10
                     }
+
                 }
+
             }
 
             Rectangle {
                 id: powerAction
+
                 property bool actionHovered: false
 
                 anchors.right: parent.right
@@ -474,16 +480,40 @@ Item {
                     onClicked: page.togglePower()
                 }
 
-                Behavior on color { ColorAnimation { duration: 120 } }
-                Behavior on border.color { ColorAnimation { duration: 120 } }
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 120
+                    }
+
+                }
+
+                Behavior on border.color {
+                    ColorAnimation {
+                        duration: 120
+                    }
+
+                }
+
             }
 
             HoverHandler {
                 onHoveredChanged: powerStatus.hovered = hovered
             }
 
-            Behavior on color { ColorAnimation { duration: 130 } }
-            Behavior on border.color { ColorAnimation { duration: 130 } }
+            Behavior on color {
+                ColorAnimation {
+                    duration: 130
+                }
+
+            }
+
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: 130
+                }
+
+            }
+
         }
 
         Text {
@@ -547,6 +577,7 @@ Item {
                             color: Theme.alpha(Theme.text, 0.025)
                             border.width: 1
                             border.color: "#404040"
+
                             Text {
                                 anchors.centerIn: parent
                                 text: "\uf294"
@@ -554,11 +585,13 @@ Item {
                                 font.family: Theme.iconFont
                                 font.pixelSize: 16
                             }
+
                         }
 
                         Column {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 3
+
                             Text {
                                 text: "Bluetooth is off"
                                 color: "#eeeeee"
@@ -566,14 +599,18 @@ Item {
                                 font.pixelSize: 12
                                 font.weight: Font.Medium
                             }
+
                             Text {
                                 text: "Turn on the adapter to discover devices"
                                 color: "#999999"
                                 font.family: Theme.fontFamily
                                 font.pixelSize: 10
                             }
+
                         }
+
                     }
+
                 }
 
                 Rectangle {
@@ -588,6 +625,7 @@ Item {
                     Row {
                         anchors.centerIn: parent
                         spacing: 12
+
                         Rectangle {
                             width: 34
                             height: 34
@@ -596,6 +634,7 @@ Item {
                             color: Theme.alpha(Theme.text, 0.025)
                             border.width: 1
                             border.color: "#404040"
+
                             Text {
                                 anchors.centerIn: parent
                                 text: page.scanning ? "\uf1eb" : "\uf071"
@@ -603,10 +642,13 @@ Item {
                                 font.family: Theme.iconFont
                                 font.pixelSize: 16
                             }
+
                         }
+
                         Column {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 3
+
                             Text {
                                 text: page.scanning ? "Scanning devices" : "No devices found"
                                 color: "#eeeeee"
@@ -614,20 +656,25 @@ Item {
                                 font.pixelSize: 12
                                 font.weight: Font.Medium
                             }
+
                             Text {
                                 text: page.scanning ? "Make devices discoverable and keep this page open." : "Click here to scan again."
                                 color: "#999999"
                                 font.family: Theme.fontFamily
                                 font.pixelSize: 10
                             }
+
                         }
+
                     }
+
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         enabled: !page.scanning
                         onClicked: page.setDiscovering(true)
                     }
+
                 }
 
                 Repeater {
@@ -867,7 +914,9 @@ Item {
 
                                 Rectangle {
                                     id: actionButton
+
                                     property bool hovered: false
+
                                     width: 82
                                     height: 28
                                     radius: 7
@@ -877,6 +926,7 @@ Item {
 
                                     Text {
                                         id: actionText
+
                                         anchors.fill: parent
                                         anchors.leftMargin: 4
                                         anchors.rightMargin: 4
@@ -899,12 +949,25 @@ Item {
                                         onClicked: page.deviceAction(card.modelData, card)
                                     }
 
-                                    Behavior on color { ColorAnimation { duration: 120 } }
-                                    Behavior on border.color { ColorAnimation { duration: 120 } }
+                                    Behavior on color {
+                                        ColorAnimation {
+                                            duration: 120
+                                        }
+
+                                    }
+
+                                    Behavior on border.color {
+                                        ColorAnimation {
+                                            duration: 120
+                                        }
+
+                                    }
+
                                 }
 
                                 Item {
                                     id: removeButton
+
                                     width: 26
                                     height: 28
                                     anchors.verticalCenter: parent.verticalCenter
@@ -915,8 +978,21 @@ Item {
                                         color: unpairMouseArea.containsMouse ? Theme.alpha(Theme.text, 0.06) : "transparent"
                                         border.width: 1
                                         border.color: unpairMouseArea.containsMouse ? "#555555" : "transparent"
-                                        Behavior on color { ColorAnimation { duration: 120 } }
-                                        Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: 120
+                                            }
+
+                                        }
+
+                                        Behavior on border.color {
+                                            ColorAnimation {
+                                                duration: 120
+                                            }
+
+                                        }
+
                                     }
 
                                     Text {
@@ -929,6 +1005,7 @@ Item {
 
                                     MouseArea {
                                         id: unpairMouseArea
+
                                         anchors.fill: parent
                                         cursorShape: Qt.PointingHandCursor
                                         hoverEnabled: true
@@ -942,12 +1019,14 @@ Item {
                                         parent: removeButton
                                         x: Math.round((removeButton.width - width) / 2)
                                         y: removeButton.height + 6
+
                                         background: Rectangle {
                                             color: "#202126"
                                             radius: 5
                                             border.width: 1
                                             border.color: "#414141"
                                         }
+
                                         contentItem: Text {
                                             text: "Unpair"
                                             color: "#eeeeee"
@@ -955,9 +1034,13 @@ Item {
                                             font.pixelSize: 9
                                             font.weight: Font.Medium
                                         }
+
                                     }
+
                                 }
+
                             }
+
                         }
 
                         Item {
@@ -982,6 +1065,7 @@ Item {
                                     color: Theme.alpha(Theme.text, 0.025)
                                     border.width: 1
                                     border.color: "#414141"
+
                                     Text {
                                         anchors.centerIn: parent
                                         text: "\uf294"
@@ -989,6 +1073,7 @@ Item {
                                         font.family: Theme.iconFont
                                         font.pixelSize: 15
                                     }
+
                                 }
 
                                 Column {
@@ -1010,11 +1095,18 @@ Item {
                                         width: parent.width
                                         text: {
                                             var parts = [];
-                                            if (card.isConnected) parts.push("Connected");
-                                            else if (card.modelData.paired) parts.push("Paired");
-                                            else parts.push("Available");
-                                            if (card.modelData.address) parts.push(card.modelData.address);
-                                            if (card.modelData.batteryAvailable) parts.push(Math.round(card.modelData.battery * 100) + "% battery");
+                                            if (card.isConnected)
+                                                parts.push("Connected");
+                                            else if (card.modelData.paired)
+                                                parts.push("Paired");
+                                            else
+                                                parts.push("Available");
+                                            if (card.modelData.address)
+                                                parts.push(card.modelData.address);
+
+                                            if (card.modelData.batteryAvailable)
+                                                parts.push(Math.round(card.modelData.battery * 100) + "% battery");
+
                                             return parts.join(" · ");
                                         }
                                         color: "#999999"
@@ -1022,8 +1114,11 @@ Item {
                                         font.pixelSize: 9
                                         elide: Text.ElideRight
                                     }
+
                                 }
+
                             }
+
                         }
 
                     }

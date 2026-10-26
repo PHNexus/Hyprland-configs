@@ -42,9 +42,9 @@ Item {
     property string queuedSaveText: ""
     property bool dirty: false
     property bool applyAfterSave: false
-    property string pendingLiveExpression: ""
-    property string pendingLivePath: ""
+    property var pendingLiveQueue: []
     property string activeLivePath: ""
+    property bool pendingReload: false
     property int gapsIn: 5
     property int gapsOut: 10
     property int borderSize: 0
@@ -57,7 +57,7 @@ Item {
     property real columnWidth: 0.5
     property bool followFocus: true
     property bool fullscreenOnOneColumn: true
-    property string explicitColumnWidths: ""
+    property string explicitColumnWidths: "0.333,0.5,0.667,1"
     property bool preserveSplit: true
     property string masterStatus: "master"
     property int rounding: 16
@@ -234,23 +234,41 @@ Item {
         return "hl.config({ " + luaField(category) + " = { " + body + " } })";
     }
 
-    function startLiveApply() {
-        if (liveApplyProcess.running || pendingLiveExpression === "")
+    function queueLiveExpression(path, expression) {
+        if (!expression)
             return ;
 
-        const expression = pendingLiveExpression;
-        activeLivePath = pendingLivePath;
-        pendingLiveExpression = "";
-        pendingLivePath = "";
-        liveApplyProcess.command = ["hyprctl", "eval", expression];
+        const queue = pendingLiveQueue.slice();
+        const existing = queue.findIndex(function(item) {
+            return item.path === path;
+        });
+        const entry = {
+            "path": path,
+            "expression": expression
+        };
+        if (existing >= 0)
+            queue[existing] = entry;
+        else
+            queue.push(entry);
+        pendingLiveQueue = queue;
+        liveApplyTimer.restart();
+    }
+
+    function startLiveApply() {
+        if (liveApplyProcess.running || pendingLiveQueue.length === 0)
+            return ;
+
+        const queue = pendingLiveQueue.slice();
+        const next = queue.shift();
+        pendingLiveQueue = queue;
+        activeLivePath = next.path;
+        liveApplyProcess.command = ["hyprctl", "eval", next.expression];
         liveApplyProcess.running = true;
     }
 
     function applyLive(path, value) {
         try {
-            pendingLiveExpression = buildConfigExpression(path, value);
-            pendingLivePath = path;
-            liveApplyTimer.restart();
+            queueLiveExpression(path, buildConfigExpression(path, value));
         } catch (e) {
             statusMessage = "Could not prepare setting: " + path;
             console.warn("Settings: could not prepare live apply for " + path + ": " + e);
@@ -699,6 +717,8 @@ Item {
             spring("specialWorkspace", 4.5, "boing", "slidefadevert 65%");
             set("border", 3.4, "easeinout");
         } else if (name === "minimal") {
+            // Short, restrained motion: quicker than Balanced, but not as abrupt as Snappy.
+            // Keep movement visible while removing fade and spring effects.
             set("global", 2.8, "default");
             set("windows", 2.8, "standard");
             set("windowsIn", 2.5, "almostlinear");
@@ -721,6 +741,108 @@ Item {
             return null;
         }
         return values;
+    }
+
+    function animationPresetCurveValues(name) {
+        if (name !== "balanced")
+            return [];
+
+        return [{
+            "name": "specialworkswitch",
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1
+        }, {
+            "name": "emphasizedaccel",
+            "type": "bezier",
+            "x1": 0.3,
+            "y1": 0,
+            "x2": 0.8,
+            "y2": 1
+        }, {
+            "name": "emphasizeddeccel",
+            "type": "bezier",
+            "x1": 0.05,
+            "y1": 0.7,
+            "x2": 0.1,
+            "y2": 1
+        }, {
+            "name": "standard",
+            "type": "bezier",
+            "x1": 0.2,
+            "y1": 0,
+            "x2": 0,
+            "y2": 1
+        }, {
+            "name": "easeoutquint",
+            "type": "bezier",
+            "x1": 0.23,
+            "y1": 1,
+            "x2": 0.32,
+            "y2": 1
+        }, {
+            "name": "easeinout",
+            "type": "bezier",
+            "x1": 0.65,
+            "y1": 0.05,
+            "x2": 0.36,
+            "y2": 1
+        }, {
+            "name": "almostlinear",
+            "type": "bezier",
+            "x1": 0.25,
+            "y1": 0.25,
+            "x2": 0.75,
+            "y2": 0.75
+        }, {
+            "name": "workspaceslide",
+            "type": "bezier",
+            "x1": 0.25,
+            "y1": 0.4,
+            "x2": 0.95,
+            "y2": 1
+        }, {
+            "name": "boing",
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 120,
+            "dampening": 16
+        }, {
+            "name": "stiffboing",
+            "type": "spring",
+            "mass": 1,
+            "stiffness": 125,
+            "dampening": 15
+        }];
+    }
+
+    function animationPresetCurvesMatch(name) {
+        const expected = animationPresetCurveValues(name);
+        if (expected.length === 0)
+            return true;
+
+        const currentByName = ({
+        });
+        curveEntries.forEach(function(entry) {
+            currentByName[entry.name] = entry;
+        });
+        for (let i = 0; i < expected.length; i++) {
+            const target = expected[i];
+            const current = currentByName[target.name];
+            if (!current || current.type !== target.type)
+                return false;
+
+            if (target.type === "spring") {
+                if (Math.abs(Number(current.mass) - target.mass) > 0.001 || Math.abs(Number(current.stiffness) - target.stiffness) > 0.001 || Math.abs(Number(current.dampening) - target.dampening) > 0.001)
+                    return false;
+
+            } else if (Math.abs(Number(current.x1) - target.x1) > 0.001 || Math.abs(Number(current.y1) - target.y1) > 0.001 || Math.abs(Number(current.x2) - target.x2) > 0.001 || Math.abs(Number(current.y2) - target.y2) > 0.001) {
+                return false;
+            }
+        }
+        return true;
     }
 
     function animationPresetMatches(name) {
@@ -748,7 +870,7 @@ Item {
                 return false;
 
         }
-        return true;
+        return name === "balanced" ? animationPresetCurvesMatch(name) : true;
     }
 
     function detectAnimationPreset() {
@@ -782,6 +904,40 @@ Item {
             }, target));
             updatedText = updatedText.slice(0, calls[i].start) + replacement + updatedText.slice(calls[i].end);
         }
+        const presetCurves = animationPresetCurveValues(name);
+        if (presetCurves.length > 0) {
+            const curveCalls = findLuaCalls(updatedText, "hl.curve");
+            const existingCurves = ({
+            });
+            for (let i = curveCalls.length - 1; i >= 0; i--) {
+                const nameMatch = curveCalls[i].text.match(/^hl\.curve\s*\(\s*([\"'])([^\"']+)\1/);
+                if (!nameMatch)
+                    continue;
+
+                const target = presetCurves.find(function(entry) {
+                    return entry.name === nameMatch[2];
+                });
+                if (!target)
+                    continue;
+
+                existingCurves[target.name] = true;
+                const replacement = curveCallText(target);
+                updatedText = updatedText.slice(0, curveCalls[i].start) + replacement + updatedText.slice(curveCalls[i].end);
+            }
+            const missingCurves = presetCurves.filter(function(entry) {
+                return !existingCurves[entry.name];
+            });
+            if (missingCurves.length > 0) {
+                const firstAnimation = findLuaCalls(updatedText, "hl.animation")[0];
+                const insertion = missingCurves.map(function(entry) {
+                    return curveCallText(entry);
+                }).join("\n    ") + "\n    \n";
+                const insertAt = firstAnimation ? firstAnimation.start : updatedText.lastIndexOf("return M");
+                if (insertAt >= 0)
+                    updatedText = updatedText.slice(0, insertAt) + insertion + updatedText.slice(insertAt);
+
+            }
+        }
         const code = luaMask(updatedText, true);
         const enabledPattern = /\banimations\s*=\s*\{\s*\benabled\s*=\s*(true|false)/;
         const enabledMatch = enabledPattern.exec(code);
@@ -793,6 +949,9 @@ Item {
         const enabledStart = enabledMatch.index + enabledMatch[0].lastIndexOf(enabledValue);
         updatedText = updatedText.slice(0, enabledStart) + "true" + updatedText.slice(enabledStart + enabledValue.length);
         const liveCalls = ["hl.config({ animations = { enabled = true } })"];
+        presetCurves.forEach(function(entry) {
+            liveCalls.push(curveCallText(entry));
+        });
         animationEntries.forEach(function(entry) {
             const target = values[entry.leaf];
             if (target)
@@ -821,11 +980,9 @@ Item {
         readAnimationValues(animationSourceText);
         animationDirty = true;
         scheduleAnimationSave();
-        if (expression) {
-            pendingLiveExpression = expression;
-            pendingLivePath = "animation: " + label;
-            liveApplyTimer.restart();
-        }
+        if (expression)
+            queueLiveExpression("animation: " + label, expression);
+
     }
 
     function setAnimationMasterEnabled(enabled) {
@@ -846,7 +1003,7 @@ Item {
     }
 
     function setAnimationField(leaf, key, value, isBool, isStr, isInt) {
-        if (!animationFileReady)
+        if (!animationFileReady || animationPreset === "balanced")
             return ;
 
         const calls = findLuaCalls(animationSourceText, "hl.animation");
@@ -875,18 +1032,16 @@ Item {
             const updatedEntry = animationEntries.find(function(entry) {
                 return entry.leaf === leaf;
             });
-            if (updatedEntry) {
-                pendingLiveExpression = animationCallText(updatedEntry);
-                pendingLivePath = "animation: " + leaf;
-                liveApplyTimer.restart();
-            }
+            if (updatedEntry)
+                queueLiveExpression("animation: " + leaf, animationCallText(updatedEntry));
+
             return ;
         }
         animationStatusMessage = "Could not find animation: " + leaf;
     }
 
     function setAnimationCurve(leaf, curveName) {
-        if (!animationFileReady)
+        if (!animationFileReady || animationPreset === "balanced")
             return ;
 
         const entry = animationEntries.find(function(item) {
@@ -1129,7 +1284,8 @@ Item {
             rendered = String(Math.round(Number(value)));
         else
             rendered = Number(value).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
-        const block = findBlockIn(sourceText, blockName);
+        let updatedText = sourceText;
+        const block = findBlockIn(updatedText, blockName);
         if (!block) {
             let configEntry;
             if (blockName === "col")
@@ -1138,14 +1294,17 @@ Item {
                 configEntry = "decoration = {\n        " + blockName + " = {\n            " + key + " = " + rendered + ",\n        },\n    },";
             else
                 configEntry = blockName + " = {\n        " + key + " = " + rendered + ",\n    },";
-            sourceText += (sourceText.endsWith("\n") ? "\n" : "\n\n") + "hl.config({\n    " + configEntry + "\n})\n";
+            updatedText += (updatedText.endsWith("\n") ? "\n" : "\n\n") + "hl.config({\n    " + configEntry + "\n})\n";
         } else {
             const newBody = replaceInBlock(block.body, key, rendered, isBool, isStr, isInt);
-            sourceText = sourceText.slice(0, block.bodyStart) + newBody + sourceText.slice(block.closeIdx);
+            updatedText = updatedText.slice(0, block.bodyStart) + newBody + updatedText.slice(block.closeIdx);
         }
-        readValues(sourceText);
+        readValues(updatedText);
+        if (updatedText === sourceText)
+            return ;
+
+        sourceText = updatedText;
         dirty = true;
-        applyAfterSave = true;
         scheduleSave();
     }
 
@@ -1155,60 +1314,233 @@ Item {
     }
 
     function applyGapPreset(gapIn, gapOut) {
-        gapsIn = gapIn;
-        gapsOut = gapOut;
-        setBlockField("general", "gaps_in", gapIn, false, false, true);
-        setBlockField("general", "gaps_out", gapOut, false, false, true);
+        if (!fileReady)
+            return ;
+
+        const nextIn = Math.max(0, Math.round(Number(gapIn) || 0));
+        const nextOut = Math.max(0, Math.round(Number(gapOut) || 0));
+        const block = findBlockIn(sourceText, "general");
+        let updatedText = sourceText;
+        if (block) {
+            let body = block.body;
+            body = replaceInBlock(body, "gaps_in", String(nextIn), false, false, true);
+            body = replaceInBlock(body, "gaps_out", String(nextOut), false, false, true);
+            updatedText = sourceText.slice(0, block.bodyStart) + body + sourceText.slice(block.closeIdx);
+        } else {
+            const configEntry = "general = {\n        gaps_in = " + nextIn + ",\n        gaps_out = " + nextOut + ",\n    },";
+            updatedText += (updatedText.endsWith("\n") ? "\n" : "\n\n") + "hl.config({\n    " + configEntry + "\n})\n";
+        }
+        gapsIn = nextIn;
+        gapsOut = nextOut;
+        applyLive("general:gaps_in", nextIn);
+        applyLive("general:gaps_out", nextOut);
+        if (updatedText === sourceText)
+            return ;
+
+        sourceText = updatedText;
+        readValues(updatedText);
+        dirty = true;
+        scheduleSave();
+    }
+
+    function findPresetBlockRanges(text, name) {
+        const code = luaMask(text, true);
+        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const expression = new RegExp("\\b" + escapedName + "\\s*=\\s*\\{", "g");
+        const ranges = [];
+        let match;
+        while ((match = expression.exec(code)) !== null) {
+            const openIdx = match.index + match[0].length - 1;
+            let depth = 0;
+            let closeIdx = -1;
+            for (let i = openIdx; i < code.length; i++) {
+                const ch = code.charAt(i);
+                if (ch === "{") {
+                    depth++;
+                } else if (ch === "}") {
+                    depth--;
+                    if (depth === 0) {
+                        closeIdx = i;
+                        break;
+                    }
+                }
+            }
+            if (closeIdx < 0)
+                break;
+
+            ranges.push({
+                "start": match.index,
+                "bodyStart": openIdx + 1,
+                "closeIdx": closeIdx,
+                "body": text.slice(openIdx + 1, closeIdx)
+            });
+            expression.lastIndex = closeIdx + 1;
+        }
+        return ranges;
+    }
+
+    function setPresetFieldInText(text, blockName, key, value, isBool, isStr, isInt) {
+        let rendered;
+        if (isBool)
+            rendered = String(value);
+        else if (isStr)
+            rendered = '"' + String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+        else if (isInt)
+            rendered = String(Math.round(Number(value)));
+        else
+            rendered = Number(value).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+        const blocks = findPresetBlockRanges(text, blockName);
+        if (blocks.length === 0) {
+            let configEntry;
+            if (blockName === "blur" || blockName === "shadow")
+                configEntry = "decoration = {\n        " + blockName + " = {\n            " + key + " = " + rendered + ",\n        },\n    },";
+            else
+                configEntry = blockName + " = {\n        " + key + " = " + rendered + ",\n    },";
+            return text + (text.endsWith("\n") ? "\n" : "\n\n") + "hl.config({\n    " + configEntry + "\n})\n";
+        }
+        let updatedText = text;
+        for (let i = blocks.length - 1; i >= 0; i--) {
+            const block = blocks[i];
+            const newBody = replaceInBlock(block.body, key, rendered, isBool, isStr, isInt);
+            updatedText = updatedText.slice(0, block.bodyStart) + newBody + updatedText.slice(block.closeIdx);
+        }
+        return updatedText;
+    }
+
+    function visualPresetValues(preset) {
+        if (preset === "midnight")
+            return {
+                "rounding": 10,
+                "activeOpacity": 0.97,
+                "inactiveOpacity": 0.88,
+                "blurEnabled": true,
+                "blurSize": 6,
+                "blurPasses": 3,
+                "shadowEnabled": true,
+                "shadowRange": 14,
+                "shadowRenderPower": 3
+            };
+
+        if (preset === "balanced")
+            return {
+                "rounding": 16,
+                "activeOpacity": 0.9,
+                "inactiveOpacity": 0.9,
+                "blurEnabled": true,
+                "blurSize": 6,
+                "blurPasses": 4,
+                "shadowEnabled": true,
+                "shadowRange": 16,
+                "shadowRenderPower": 6
+            };
+
+        if (preset === "monolith")
+            return {
+                "rounding": 2,
+                "activeOpacity": 1,
+                "inactiveOpacity": 0.96,
+                "blurEnabled": false,
+                "blurSize": 4,
+                "blurPasses": 2,
+                "shadowEnabled": false,
+                "shadowRange": 12,
+                "shadowRenderPower": 3
+            };
+
+        return null;
+    }
+
+    function visualPresetMatches(preset) {
+        const target = visualPresetValues(preset);
+        if (!target)
+            return false;
+
+        return rounding === target.rounding && Math.abs(activeOpacity - target.activeOpacity) < 0.001 && Math.abs(inactiveOpacity - target.inactiveOpacity) < 0.001 && blurEnabled === target.blurEnabled && blurSize === target.blurSize && blurPasses === target.blurPasses && shadowEnabled === target.shadowEnabled && shadowRange === target.shadowRange && shadowRenderPower === target.shadowRenderPower;
     }
 
     function applyVisualPreset(preset) {
-        const target = preset === "soft" ? {
-            "rounding": 20,
-            "activeOpacity": 0.94,
-            "inactiveOpacity": 0.86,
-            "blurEnabled": true,
-            "blurSize": 8,
-            "blurPasses": 3,
-            "shadowEnabled": true,
-            "shadowRange": 18,
-            "shadowRenderPower": 4
-        } : preset === "sharp" ? {
-            "rounding": 6,
-            "activeOpacity": 1,
-            "inactiveOpacity": 0.9,
-            "blurEnabled": false,
-            "blurSize": 4,
-            "blurPasses": 2,
-            "shadowEnabled": false,
-            "shadowRange": 12,
-            "shadowRenderPower": 3
-        } : {
-            "rounding": 16,
-            "activeOpacity": 0.9,
-            "inactiveOpacity": 0.9,
-            "blurEnabled": true,
-            "blurSize": 6,
-            "blurPasses": 4,
-            "shadowEnabled": true,
-            "shadowRange": 16,
-            "shadowRenderPower": 6
-        };
-        setBlockField("decoration", "rounding", target.rounding, false, false, true);
-        setBlockField("decoration", "active_opacity", target.activeOpacity, false, false, false);
-        setBlockField("decoration", "inactive_opacity", target.inactiveOpacity, false, false, false);
-        setBlockField("blur", "enabled", target.blurEnabled, true);
-        setBlockField("blur", "size", target.blurSize, false, false, true);
-        setBlockField("blur", "passes", target.blurPasses, false, false, true);
-        setBlockField("shadow", "enabled", target.shadowEnabled, true);
-        setBlockField("shadow", "range", target.shadowRange, false, false, true);
-        setBlockField("shadow", "render_power", target.shadowRenderPower, false, false, true);
+        const target = visualPresetValues(preset);
+        if (!target || !fileReady)
+            return ;
+
+        const changes = [{
+            "blockName": "decoration",
+            "key": "rounding",
+            "value": target.rounding,
+            "isInt": true
+        }, {
+            "blockName": "decoration",
+            "key": "active_opacity",
+            "value": target.activeOpacity
+        }, {
+            "blockName": "decoration",
+            "key": "inactive_opacity",
+            "value": target.inactiveOpacity
+        }, {
+            "blockName": "blur",
+            "key": "enabled",
+            "value": target.blurEnabled,
+            "isBool": true
+        }, {
+            "blockName": "blur",
+            "key": "size",
+            "value": target.blurSize,
+            "isInt": true
+        }, {
+            "blockName": "blur",
+            "key": "passes",
+            "value": target.blurPasses,
+            "isInt": true
+        }, {
+            "blockName": "shadow",
+            "key": "enabled",
+            "value": target.shadowEnabled,
+            "isBool": true
+        }, {
+            "blockName": "shadow",
+            "key": "range",
+            "value": target.shadowRange,
+            "isInt": true
+        }, {
+            "blockName": "shadow",
+            "key": "render_power",
+            "value": target.shadowRenderPower,
+            "isInt": true
+        }];
+        let updatedText = sourceText;
+        for (let i = 0; i < changes.length; i++) {
+            const change = changes[i];
+            updatedText = setPresetFieldInText(updatedText, change.blockName, change.key, change.value, !!change.isBool, !!change.isStr, !!change.isInt);
+        }
+        for (let i = 0; i < changes.length; i++) {
+            const change = changes[i];
+            const livePath = change.blockName === "blur" || change.blockName === "shadow" ? "decoration:" + change.blockName + ":" + change.key : change.blockName + ":" + change.key;
+            applyLive(livePath, change.value);
+        }
+        if (updatedText === sourceText) {
+            readValues(sourceText);
+            statusMessage = "Visual preset already active";
+            return ;
+        }
+        sourceText = updatedText;
         readValues(sourceText);
+        dirty = true;
+        scheduleSave();
     }
 
-    function runApply() {
+    function maybeStartReload() {
+        if (!pendingReload || liveApplyProcess.running || pendingLiveQueue.length > 0 || reloadProcess.running)
+            return ;
+
+        pendingReload = false;
         reloadProcess.command = ["hyprctl", "reload"];
         reloadProcess.running = true;
         statusMessage = "Reloading Hyprland...";
+    }
+
+    function runApply() {
+        pendingReload = true;
+        maybeStartReload();
     }
 
     function maybeRunDeferredApply() {
@@ -1275,16 +1607,22 @@ Item {
         interval: 250
         repeat: false
         onTriggered: {
-            if (!dirty)
+            if (!dirty || saveInProgress)
                 return ;
 
-            if (saveInProgress) {
-                queuedSave = true;
-                queuedSaveText = sourceText;
+            const pendingText = sourceText;
+            if (generalFile.text() === pendingText) {
+                dirty = false;
+                queuedSave = false;
+                queuedSaveText = "";
+                statusMessage = "Saved";
+                if (applyAfterSave || animationApplyAfterSave)
+                    maybeRunDeferredApply();
+
                 return ;
             }
             saveInProgress = true;
-            generalFile.setText(sourceText);
+            generalFile.setText(pendingText);
         }
     }
 
@@ -1294,16 +1632,22 @@ Item {
         interval: 250
         repeat: false
         onTriggered: {
-            if (!page.animationDirty)
+            if (!page.animationDirty || page.animationSaveInProgress)
                 return ;
 
-            if (page.animationSaveInProgress) {
-                page.animationQueuedSave = true;
-                page.animationQueuedSaveText = page.animationSourceText;
+            const pendingText = page.animationSourceText;
+            if (animationFile.text() === pendingText) {
+                page.animationDirty = false;
+                page.animationQueuedSave = false;
+                page.animationQueuedSaveText = "";
+                page.animationStatusMessage = "Saved animations.lua";
+                if (page.applyAfterSave || page.animationApplyAfterSave)
+                    page.maybeRunDeferredApply();
+
                 return ;
             }
             page.animationSaveInProgress = true;
-            animationFile.setText(page.animationSourceText);
+            animationFile.setText(pendingText);
         }
     }
 
@@ -1326,9 +1670,10 @@ Item {
                     page.statusMessage = "Live apply failed: " + page.activeLivePath;
                 console.warn("Settings: hyprctl eval exited with " + code + " for " + page.activeLivePath);
             }
-            if (page.pendingLiveExpression !== "")
-                page.startLiveApply();
-
+            if (page.pendingLiveQueue.length > 0)
+                liveApplyTimer.restart();
+            else
+                page.maybeStartReload();
         }
 
         stdout: StdioCollector {
@@ -1372,6 +1717,16 @@ Item {
                 page.readValues(page.sourceText);
                 page.fileReady = true;
                 page.statusMessage = "general.lua loaded";
+                const widthMigrationMarker = "-- phnexus-explicit-column-widths-default-v1";
+                if (page.sourceText.indexOf(widthMigrationMarker) < 0) {
+                    page.setBlockField("scrolling", "explicit_column_widths", "0.333,0.5,0.667,1", false, true);
+                    if (!page.sourceText.endsWith("\n"))
+                        page.sourceText += "\n";
+
+                    page.sourceText += widthMigrationMarker + "\n";
+                    page.dirty = true;
+                    page.scheduleSave();
+                }
             } catch (e) {
                 page.fileReady = false;
                 page.statusMessage = "Error: " + e.message;
@@ -1384,16 +1739,16 @@ Item {
         }
         onSaved: {
             page.saveInProgress = false;
-            if (page.queuedSave) {
-                const next = page.queuedSaveText;
-                page.queuedSave = false;
-                page.queuedSaveText = "";
-                page.saveInProgress = true;
-                generalFile.setText(next);
+            page.queuedSave = false;
+            page.queuedSaveText = "";
+            const savedText = generalFile.text();
+            if (page.sourceText !== savedText) {
+                page.dirty = true;
+                page.scheduleSave();
                 return ;
             }
             page.dirty = false;
-            page.sourceText = generalFile.text();
+            page.sourceText = savedText;
             try {
                 page.readValues(page.sourceText);
             } catch (e) {
@@ -1409,8 +1764,8 @@ Item {
         }
         onSaveFailed: (error) => {
             page.saveInProgress = false;
-            page.applyAfterSave = false;
-            page.animationApplyAfterSave = false;
+            page.queuedSave = false;
+            page.queuedSaveText = "";
             page.statusMessage = "Could not save general.lua: " + error;
             console.warn("General: could not save " + page.filePath + ": " + error);
         }
@@ -1441,16 +1796,15 @@ Item {
         }
         onSaved: {
             page.animationSaveInProgress = false;
-            if (page.animationQueuedSave) {
-                const next = page.animationQueuedSaveText;
-                page.animationQueuedSave = false;
-                page.animationQueuedSaveText = "";
-                page.animationSaveInProgress = true;
-                animationFile.setText(next);
+            page.animationQueuedSave = false;
+            page.animationQueuedSaveText = "";
+            const savedText = animationFile.text();
+            if (page.animationSourceText !== savedText) {
+                page.animationDirty = true;
+                animationSaveTimer.restart();
                 return ;
             }
             page.animationDirty = false;
-            page.animationSourceText = animationFile.text();
             try {
                 page.readAnimationValues(page.animationSourceText);
                 page.animationStatusMessage = "Animations saved · " + page.animationEntries.length + " animations · " + page.curveEntries.length + " curves";
@@ -1473,6 +1827,7 @@ Item {
 
         onExited: (code) => {
             page.statusMessage = code === 0 ? "Applied" : "hyprctl reload failed";
+            page.maybeStartReload();
         }
     }
 
@@ -1548,7 +1903,7 @@ Item {
                         radius: 7
                         color: parent.hovered ? Theme.bgPanel : Theme.bgCard
                         border.width: 1
-                        border.color: Theme.border
+                        border.color: "#393939"
                     }
 
                     contentItem: Text {
@@ -1573,7 +1928,7 @@ Item {
                         radius: 9
                         color: parent.hovered ? Qt.lighter(Theme.accent, 1.08) : Theme.accent
                         border.width: 1
-                        border.color: Qt.lighter(Theme.accent, 1.12)
+                        border.color: "#393939"
                     }
 
                     contentItem: Text {
@@ -1588,149 +1943,6 @@ Item {
 
                 }
 
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: "#383838"
-            }
-
-            Text {
-                text: "GAPS"
-                color: Theme.text
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                font.letterSpacing: 0.8
-                topPadding: 4
-            }
-
-            Text {
-                text: "SPACING PRESETS"
-                color: Theme.textDim
-                font.family: Theme.monoFont
-                font.pixelSize: 10
-                font.letterSpacing: 1.1
-            }
-
-            Flow {
-                width: parent.width
-                spacing: 7
-
-                Repeater {
-                    model: [{
-                        "label": "COMPACT",
-                        "gapIn": 2,
-                        "gapOut": 6,
-                        "icon": "\uf066"
-                    }, {
-                        "label": "BALANCED",
-                        "gapIn": 5,
-                        "gapOut": 10,
-                        "icon": "\uf0c8"
-                    }, {
-                        "label": "SPACIOUS",
-                        "gapIn": 8,
-                        "gapOut": 16,
-                        "icon": "\uf065"
-                    }]
-
-                    delegate: Segment {
-                        required property var modelData
-
-                        icon: modelData.icon
-                        label: modelData.label
-                        selected: page.gapsIn === modelData.gapIn && page.gapsOut === modelData.gapOut
-                        onClicked: page.applyGapPreset(modelData.gapIn, modelData.gapOut)
-                    }
-
-                }
-
-            }
-
-            SliderRow {
-                icon: "\uf0c8"
-                label: "GAPS IN"
-                value: Math.min(1, page.gapsIn / 40)
-                displayText: page.gapsIn + "px"
-                resettable: true
-                resetValue: 5 / 40
-                onMoved: (v) => {
-                    page.gapsIn = Math.round(v * 40);
-                    page.applyLive("general:gaps_in", page.gapsIn);
-                    page.setBlockField("general", "gaps_in", page.gapsIn, false, false, true);
-                }
-                onCommitted: (v) => {
-                    page.gapsIn = Math.round(v * 40);
-                    page.setBlockField("general", "gaps_in", page.gapsIn, false, false, true);
-                }
-            }
-
-            SliderRow {
-                icon: "\uf0c8"
-                label: "GAPS OUT"
-                value: Math.min(1, page.gapsOut / 80)
-                displayText: page.gapsOut + "px"
-                resettable: true
-                resetValue: 10 / 80
-                onMoved: (v) => {
-                    page.gapsOut = Math.round(v * 80);
-                    page.applyLive("general:gaps_out", page.gapsOut);
-                    page.setBlockField("general", "gaps_out", page.gapsOut, false, false, true);
-                }
-                onCommitted: (v) => {
-                    page.gapsOut = Math.round(v * 80);
-                    page.setBlockField("general", "gaps_out", page.gapsOut, false, false, true);
-                }
-            }
-
-            SliderRow {
-                icon: "\uf0c8"
-                label: "BORDER SIZE"
-                value: Math.min(1, page.borderSize / 10)
-                displayText: page.borderSize + "px"
-                resettable: true
-                resetValue: 0
-                onMoved: (v) => {
-                    page.borderSize = Math.round(v * 10);
-                    page.applyLive("general:border_size", page.borderSize);
-                    page.setBlockField("general", "border_size", page.borderSize, false, false, true);
-                }
-                onCommitted: (v) => {
-                    page.borderSize = Math.round(v * 10);
-                    page.setBlockField("general", "border_size", page.borderSize, false, false, true);
-                }
-            }
-
-            ToggleRow {
-                label: "RESIZE ON BORDER"
-                checked: page.resizeOnBorder
-                onToggled: (c) => {
-                    page.applyLive("general:resize_on_border", c);
-                    page.setBlockField("general", "resize_on_border", c, true);
-                }
-            }
-
-            ToggleRow {
-                label: "ALLOW TEARING"
-                checked: page.allowTearing
-                onToggled: (c) => {
-                    page.applyLive("general:allow_tearing", c);
-                    page.setBlockField("general", "allow_tearing", c, true);
-                }
-            }
-
-            ColorRow {
-                label: "ACTIVE BORDER"
-                colorValue: page.colActive
-                onClicked: colorPopup.openFor("active")
-            }
-
-            ColorRow {
-                label: "INACTIVE BORDER"
-                colorValue: page.colInactive
-                onClicked: colorPopup.openFor("inactive")
             }
 
             Rectangle {
@@ -1808,6 +2020,534 @@ Item {
                 wrapMode: Text.WordWrap
             }
 
+            Rectangle {
+                id: tilingTopologyPreview
+
+                width: parent.width
+                height: 211
+                radius: 14
+                color: Theme.bgPanel
+                border.width: 1
+                border.color: "#393939"
+
+                Column {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 9
+
+                    Row {
+                        width: parent.width
+                        height: 27
+                        spacing: 8
+
+                        Column {
+                            spacing: 1
+
+                            Text {
+                                text: "TILING MAP"
+                                color: Theme.text
+                                font.family: Theme.monoFont
+                                font.pixelSize: 11
+                                font.weight: Font.DemiBold
+                                font.letterSpacing: 0.8
+                            }
+
+                            Text {
+                                text: "WORKSPACE / STRUCTURE"
+                                color: Theme.textDim
+                                font.family: Theme.monoFont
+                                font.pixelSize: 8
+                                font.letterSpacing: 0.65
+                            }
+
+                        }
+
+                        Item {
+                            width: Math.max(1, parent.width - 180)
+                            height: 1
+                        }
+
+                        Text {
+                            text: page.layout.toUpperCase()
+                            color: Theme.accent
+                            font.family: Theme.monoFont
+                            font.pixelSize: 9
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: 125
+                        radius: 9
+                        color: Theme.bgCard
+                        border.width: 1
+                        border.color: "#393939"
+
+                        Row {
+                            id: scrollingTopology
+
+                            property real focusRatio: Math.min(0.58, Math.max(0.34, page.columnWidth))
+
+                            visible: page.layout === "scrolling"
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 6
+
+                            Rectangle {
+                                width: (parent.width - parent.spacing * 2) * (1 - scrollingTopology.focusRatio) / 2
+                                height: parent.height
+                                radius: 5
+                                color: Theme.alpha(Theme.text, 0.055)
+                                border.width: 1
+                                border.color: "#393939"
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 7
+                                    spacing: 5
+
+                                    Text {
+                                        text: "01"
+                                        color: Theme.textDim
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 9
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.72
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.text, 0.16)
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.48
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.text, 0.12)
+                                    }
+
+                                    Item {
+                                        width: 1
+                                        height: Math.max(1, parent.height - 48)
+                                    }
+
+                                    Text {
+                                        text: "TERM"
+                                        color: Theme.textDim
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 8
+                                    }
+
+                                }
+
+                            }
+
+                            Rectangle {
+                                width: (parent.width - parent.spacing * 2) * scrollingTopology.focusRatio
+                                height: parent.height
+                                radius: 5
+                                color: Theme.alpha(Theme.accent, 0.15)
+                                border.width: 1
+                                border.color: "#393939"
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 5
+
+                                    Row {
+                                        spacing: 5
+
+                                        Text {
+                                            text: "02"
+                                            color: Theme.accent
+                                            font.family: Theme.monoFont
+                                            font.pixelSize: 9
+                                        }
+
+                                        Text {
+                                            text: "FOCUSED"
+                                            color: Theme.accent
+                                            font.family: Theme.monoFont
+                                            font.pixelSize: 8
+                                            font.weight: Font.DemiBold
+                                        }
+
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.86
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.accent
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.68
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.accent, 0.58)
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.53
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.accent, 0.45)
+                                    }
+
+                                    Item {
+                                        width: 1
+                                        height: Math.max(1, parent.height - 57)
+                                    }
+
+                                    Text {
+                                        text: "EDITOR"
+                                        color: Theme.text
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 8
+                                    }
+
+                                }
+
+                            }
+
+                            Rectangle {
+                                width: (parent.width - parent.spacing * 2) * (1 - scrollingTopology.focusRatio) / 2
+                                height: parent.height
+                                radius: 5
+                                color: Theme.alpha(Theme.text, 0.055)
+                                border.width: 1
+                                border.color: "#393939"
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 7
+                                    spacing: 5
+
+                                    Text {
+                                        text: "03"
+                                        color: Theme.textDim
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 9
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.72
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.text, 0.16)
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.54
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.text, 0.12)
+                                    }
+
+                                    Item {
+                                        width: 1
+                                        height: Math.max(1, parent.height - 48)
+                                    }
+
+                                    Text {
+                                        text: "WEB"
+                                        color: Theme.textDim
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 8
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                        Row {
+                            visible: page.layout === "dwindle"
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 6
+
+                            Column {
+                                width: (parent.width - parent.spacing) * 0.46
+                                height: parent.height
+                                spacing: 6
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: (parent.height - parent.spacing) * 0.56
+                                    radius: 5
+                                    color: Theme.alpha(Theme.accent, 0.15)
+                                    border.width: 1
+                                    border.color: "#393939"
+
+                                    Column {
+                                        anchors.fill: parent
+                                        anchors.margins: 7
+                                        spacing: 5
+
+                                        Text {
+                                            text: "01 / FOCUSED"
+                                            color: Theme.accent
+                                            font.family: Theme.monoFont
+                                            font.pixelSize: 8
+                                        }
+
+                                        Rectangle {
+                                            width: parent.width * 0.78
+                                            height: 4
+                                            radius: 2
+                                            color: Theme.accent
+                                        }
+
+                                        Rectangle {
+                                            width: parent.width * 0.55
+                                            height: 4
+                                            radius: 2
+                                            color: Theme.alpha(Theme.accent, 0.58)
+                                        }
+
+                                    }
+
+                                }
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: (parent.height - parent.spacing) * 0.44
+                                    radius: 5
+                                    color: Theme.alpha(Theme.text, 0.055)
+                                    border.width: 1
+                                    border.color: "#393939"
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.top: parent.top
+                                        anchors.margins: 7
+                                        text: "02"
+                                        color: Theme.textSoft
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 9
+                                    }
+
+                                }
+
+                            }
+
+                            Column {
+                                width: parent.width - (parent.width - parent.spacing) * 0.46 - parent.spacing
+                                height: parent.height
+                                spacing: 6
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: (parent.height - parent.spacing) * 0.36
+                                    radius: 5
+                                    color: Theme.alpha(Theme.text, 0.075)
+                                    border.width: 1
+                                    border.color: "#393939"
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.top: parent.top
+                                        anchors.margins: 7
+                                        text: "03"
+                                        color: Theme.textSoft
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 9
+                                    }
+
+                                }
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: (parent.height - parent.spacing) * 0.64
+                                    radius: 5
+                                    color: Theme.alpha(Theme.text, 0.045)
+                                    border.width: 1
+                                    border.color: "#393939"
+
+                                    Column {
+                                        anchors.fill: parent
+                                        anchors.margins: 7
+                                        spacing: 5
+
+                                        Text {
+                                            text: "04 / SPLIT"
+                                            color: Theme.textDim
+                                            font.family: Theme.monoFont
+                                            font.pixelSize: 8
+                                        }
+
+                                        Rectangle {
+                                            width: parent.width * 0.72
+                                            height: 4
+                                            radius: 2
+                                            color: Theme.alpha(Theme.text, 0.2)
+                                        }
+
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                        Row {
+                            visible: page.layout === "master"
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 6
+
+                            Rectangle {
+                                width: (parent.width - parent.spacing) * 0.59
+                                height: parent.height
+                                radius: 5
+                                color: Theme.alpha(Theme.accent, 0.15)
+                                border.width: 1
+                                border.color: "#393939"
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 5
+
+                                    Text {
+                                        text: "MASTER"
+                                        color: Theme.accent
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 9
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.8
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.accent
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.57
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.accent, 0.58)
+                                    }
+
+                                    Item {
+                                        width: 1
+                                        height: Math.max(1, parent.height - 49)
+                                    }
+
+                                    Text {
+                                        text: page.masterStatus.toUpperCase()
+                                        color: Theme.text
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 8
+                                    }
+
+                                }
+
+                            }
+
+                            Column {
+                                width: parent.width - (parent.width - parent.spacing) * 0.59 - parent.spacing
+                                height: parent.height
+                                spacing: 6
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: (parent.height - parent.spacing) / 2
+                                    radius: 5
+                                    color: Theme.alpha(Theme.text, 0.075)
+                                    border.width: 1
+                                    border.color: "#393939"
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.top: parent.top
+                                        anchors.margins: 7
+                                        text: "STACK 01"
+                                        color: Theme.textSoft
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 8
+                                    }
+
+                                }
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: (parent.height - parent.spacing) / 2
+                                    radius: 5
+                                    color: Theme.alpha(Theme.text, 0.055)
+                                    border.width: 1
+                                    border.color: "#393939"
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.top: parent.top
+                                        anchors.margins: 7
+                                        text: "STACK 02"
+                                        color: Theme.textDim
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 8
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: 8
+                        height: 22
+
+                        Rectangle {
+                            width: (parent.width - 8) / 2
+                            height: 22
+                            radius: 6
+                            color: Theme.alpha(Theme.text, 0.045)
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "DIRECTION  ·  " + page.scrollDirection.toUpperCase()
+                                color: Theme.accent
+                                font.family: Theme.monoFont
+                                font.pixelSize: 8
+                            }
+
+                        }
+
+                        Rectangle {
+                            width: (parent.width - 8) / 2
+                            height: 22
+                            radius: 6
+                            color: Theme.alpha(Theme.text, 0.045)
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "COLUMN  ·  " + Math.round(page.columnWidth * 100) + "%"
+                                color: Theme.accent
+                                font.family: Theme.monoFont
+                                font.pixelSize: 8
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
             Text {
                 text: "SCROLL DIRECTION"
                 color: Theme.textDim
@@ -1852,7 +2592,6 @@ Item {
                 onMoved: (v) => {
                     page.columnWidth = v;
                     page.applyLive("scrolling:column_width", v);
-                    page.setBlockField("scrolling", "column_width", v);
                 }
                 onCommitted: (v) => {
                     page.columnWidth = v;
@@ -1920,7 +2659,7 @@ Item {
                 radius: 9
                 color: Theme.alpha(Theme.text, 0.018)
                 border.width: 1
-                border.color: Theme.border
+                border.color: "#393939"
 
                 Flow {
                     id: generalSelector3
@@ -1962,6 +2701,395 @@ Item {
             }
 
             Text {
+                text: "GAPS"
+                color: Theme.text
+                font.family: Theme.fontFamily
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.8
+                topPadding: 4
+            }
+
+            Text {
+                text: "SPACING PRESETS"
+                color: Theme.textDim
+                font.family: Theme.monoFont
+                font.pixelSize: 10
+                font.letterSpacing: 1.1
+            }
+
+            Flow {
+                width: parent.width
+                spacing: 7
+
+                Repeater {
+                    model: [{
+                        "label": "COMPACT",
+                        "gapIn": 2,
+                        "gapOut": 6,
+                        "icon": "\uf066"
+                    }, {
+                        "label": "BALANCED",
+                        "gapIn": 5,
+                        "gapOut": 10,
+                        "icon": "\uf0c8"
+                    }, {
+                        "label": "SPACIOUS",
+                        "gapIn": 8,
+                        "gapOut": 16,
+                        "icon": "\uf065"
+                    }]
+
+                    delegate: Segment {
+                        required property var modelData
+
+                        icon: modelData.icon
+                        label: modelData.label
+                        selected: page.gapsIn === modelData.gapIn && page.gapsOut === modelData.gapOut
+                        onClicked: page.applyGapPreset(modelData.gapIn, modelData.gapOut)
+                    }
+
+                }
+
+            }
+
+            Rectangle {
+                id: gapFieldPreview
+
+                width: parent.width
+                height: 222
+                radius: 14
+                color: Theme.bgPanel
+                border.width: 1
+                border.color: "#393939"
+
+                Column {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+
+                    Row {
+                        width: parent.width
+                        height: 24
+                        spacing: 8
+
+                        Column {
+                            spacing: 1
+
+                            Text {
+                                text: "GAP FIELD"
+                                color: Theme.text
+                                font.family: Theme.monoFont
+                                font.pixelSize: 11
+                                font.weight: Font.DemiBold
+                                font.letterSpacing: 0.8
+                            }
+
+                            Text {
+                                text: "SPATIAL GEOMETRY / LIVE"
+                                color: Theme.textDim
+                                font.family: Theme.monoFont
+                                font.pixelSize: 8
+                                font.letterSpacing: 0.65
+                            }
+
+                        }
+
+                        Item {
+                            width: Math.max(1, parent.width - 180)
+                            height: 1
+                        }
+
+                        Text {
+                            text: "OUT " + page.gapsOut + "px"
+                            color: Theme.accent
+                            font.family: Theme.monoFont
+                            font.pixelSize: 9
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: 126
+                        radius: 9
+                        color: Theme.bgCard
+                        border.width: 1
+                        border.color: "#393939"
+
+                        Rectangle {
+                            id: gapWorkspaceBoundary
+
+                            anchors.fill: parent
+                            anchors.margins: Math.min(20, Math.max(4, 4 + page.gapsOut * 0.58))
+                            radius: 5
+                            color: "transparent"
+                            border.width: 1
+                            border.color: "#393939"
+
+                            Column {
+                                id: gapTilesColumn
+
+                                property real innerGap: Math.min(18, Math.max(2, 2 + page.gapsIn * 0.72))
+
+                                anchors.fill: parent
+                                spacing: innerGap
+                                anchors.margins: 0
+
+                                Row {
+                                    width: parent.width
+                                    height: Math.max(18, (parent.height - parent.spacing) / 2)
+                                    spacing: gapTilesColumn.innerGap
+
+                                    Rectangle {
+                                        width: (parent.width - parent.spacing) / 2
+                                        height: parent.height
+                                        radius: 4
+                                        color: Theme.alpha(Theme.text, 0.2)
+                                        border.width: 1
+                                        border.color: "#393939"
+
+                                        Text {
+                                            anchors.left: parent.left
+                                            anchors.bottom: parent.bottom
+                                            anchors.margins: 5
+                                            text: "01"
+                                            color: Theme.text
+                                            font.family: Theme.monoFont
+                                            font.pixelSize: 9
+                                        }
+
+                                    }
+
+                                    Rectangle {
+                                        width: (parent.width - parent.spacing) / 2
+                                        height: parent.height
+                                        radius: 4
+                                        color: Theme.alpha(Theme.text, 0.075)
+                                        border.width: 1
+                                        border.color: "#393939"
+
+                                        Text {
+                                            anchors.left: parent.left
+                                            anchors.bottom: parent.bottom
+                                            anchors.margins: 5
+                                            text: "02"
+                                            color: Theme.textSoft
+                                            font.family: Theme.monoFont
+                                            font.pixelSize: 9
+                                        }
+
+                                    }
+
+                                }
+
+                                Row {
+                                    width: parent.width
+                                    height: Math.max(18, (parent.height - parent.spacing) / 2)
+                                    spacing: gapTilesColumn.innerGap
+
+                                    Rectangle {
+                                        width: (parent.width - parent.spacing) / 2
+                                        height: parent.height
+                                        radius: 4
+                                        color: Theme.alpha(Theme.text, 0.075)
+                                        border.width: 1
+                                        border.color: "#393939"
+
+                                        Text {
+                                            anchors.left: parent.left
+                                            anchors.bottom: parent.bottom
+                                            anchors.margins: 5
+                                            text: "03"
+                                            color: Theme.textSoft
+                                            font.family: Theme.monoFont
+                                            font.pixelSize: 9
+                                        }
+
+                                    }
+
+                                    Rectangle {
+                                        width: (parent.width - parent.spacing) / 2
+                                        height: parent.height
+                                        radius: 4
+                                        color: Theme.alpha(Theme.text, 0.075)
+                                        border.width: 1
+                                        border.color: "#393939"
+
+                                        Text {
+                                            anchors.left: parent.left
+                                            anchors.bottom: parent.bottom
+                                            anchors.margins: 5
+                                            text: "04"
+                                            color: Theme.textSoft
+                                            font.family: Theme.monoFont
+                                            font.pixelSize: 9
+                                        }
+
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: 8
+                        height: 23
+
+                        Rectangle {
+                            radius: 6
+                            color: Theme.alpha(Theme.text, 0.045)
+                            height: 23
+                            width: (parent.width - 8) / 2
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 5
+
+                                Text {
+                                    text: "↔"
+                                    color: Theme.accent
+                                    font.pixelSize: 11
+                                }
+
+                                Text {
+                                    text: "INNER  " + page.gapsIn + "px"
+                                    color: "#dce2ee"
+                                    font.family: Theme.monoFont
+                                    font.pixelSize: 9
+                                }
+
+                            }
+
+                        }
+
+                        Rectangle {
+                            radius: 6
+                            color: Theme.alpha(Theme.text, 0.045)
+                            height: 23
+                            width: (parent.width - 8) / 2
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 5
+
+                                Text {
+                                    text: "□"
+                                    color: Theme.accent
+                                    font.pixelSize: 10
+                                }
+
+                                Text {
+                                    text: "OUTER  " + page.gapsOut + "px"
+                                    color: "#dce2ee"
+                                    font.family: Theme.monoFont
+                                    font.pixelSize: 9
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+            SliderRow {
+                icon: "\uf0c8"
+                label: "GAPS IN"
+                value: Math.min(1, page.gapsIn / 40)
+                displayText: page.gapsIn + "px"
+                resettable: true
+                resetValue: 5 / 40
+                onMoved: (v) => {
+                    page.gapsIn = Math.round(v * 40);
+                    page.applyLive("general:gaps_in", page.gapsIn);
+                }
+                onCommitted: (v) => {
+                    page.gapsIn = Math.round(v * 40);
+                    page.setBlockField("general", "gaps_in", page.gapsIn, false, false, true);
+                }
+            }
+
+            SliderRow {
+                icon: "\uf0c8"
+                label: "GAPS OUT"
+                value: Math.min(1, page.gapsOut / 80)
+                displayText: page.gapsOut + "px"
+                resettable: true
+                resetValue: 10 / 80
+                onMoved: (v) => {
+                    page.gapsOut = Math.round(v * 80);
+                    page.applyLive("general:gaps_out", page.gapsOut);
+                }
+                onCommitted: (v) => {
+                    page.gapsOut = Math.round(v * 80);
+                    page.setBlockField("general", "gaps_out", page.gapsOut, false, false, true);
+                }
+            }
+
+            SliderRow {
+                icon: "\uf0c8"
+                label: "BORDER SIZE"
+                value: Math.min(1, page.borderSize / 10)
+                displayText: page.borderSize + "px"
+                resettable: true
+                resetValue: 0
+                onMoved: (v) => {
+                    page.borderSize = Math.round(v * 10);
+                    page.applyLive("general:border_size", page.borderSize);
+                }
+                onCommitted: (v) => {
+                    page.borderSize = Math.round(v * 10);
+                    page.setBlockField("general", "border_size", page.borderSize, false, false, true);
+                }
+            }
+
+            ToggleRow {
+                label: "RESIZE ON BORDER"
+                checked: page.resizeOnBorder
+                onToggled: (c) => {
+                    page.applyLive("general:resize_on_border", c);
+                    page.setBlockField("general", "resize_on_border", c, true);
+                }
+            }
+
+            ToggleRow {
+                label: "ALLOW TEARING"
+                checked: page.allowTearing
+                onToggled: (c) => {
+                    page.applyLive("general:allow_tearing", c);
+                    page.setBlockField("general", "allow_tearing", c, true);
+                }
+            }
+
+            ColorRow {
+                label: "ACTIVE BORDER"
+                colorValue: page.colActive
+                onClicked: colorPopup.openFor("active")
+            }
+
+            ColorRow {
+                label: "INACTIVE BORDER"
+                colorValue: page.colInactive
+                onClicked: colorPopup.openFor("inactive")
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Theme.bgCard
+            }
+
+            Text {
                 text: "DECORATION"
                 color: Theme.text
                 font.family: Theme.fontFamily
@@ -1985,17 +3113,17 @@ Item {
 
                 Repeater {
                     model: [{
-                        "label": "SOFT",
-                        "value": "soft",
-                        "icon": "\uf2d0"
+                        "label": "MIDNIGHT",
+                        "value": "midnight",
+                        "icon": "\uf186"
                     }, {
                         "label": "BALANCED",
                         "value": "balanced",
                         "icon": "\uf0c8"
                     }, {
-                        "label": "SHARP",
-                        "value": "sharp",
-                        "icon": "\uf0c1"
+                        "label": "MONOLITH",
+                        "value": "monolith",
+                        "icon": "\uf096"
                     }]
 
                     delegate: Segment {
@@ -2003,8 +3131,355 @@ Item {
 
                         icon: modelData.icon
                         label: modelData.label
-                        selected: modelData.value === "balanced" ? (page.rounding === 16 && Math.abs(page.activeOpacity - 0.9) < 0.001 && Math.abs(page.inactiveOpacity - 0.9) < 0.001 && page.blurEnabled && page.blurSize === 6 && page.blurPasses === 4 && page.shadowEnabled && page.shadowRange === 16 && page.shadowRenderPower === 6) : (modelData.value === "soft" ? (page.rounding === 20 && page.blurSize === 8 && page.shadowRange === 18) : (page.rounding === 6 && !page.blurEnabled && !page.shadowEnabled))
+                        selected: page.visualPresetMatches(modelData.value)
                         onClicked: page.applyVisualPreset(modelData.value)
+                    }
+
+                }
+
+            }
+
+            Rectangle {
+                id: decorationSurfaceLab
+
+                width: parent.width
+                height: 251
+                radius: 14
+                color: Theme.bgPanel
+                border.width: 1
+                border.color: "#393939"
+
+                Column {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+
+                    Row {
+                        width: parent.width
+                        height: 25
+                        spacing: 8
+
+                        Column {
+                            spacing: 1
+
+                            Text {
+                                text: "SURFACE LAB"
+                                color: Theme.text
+                                font.family: Theme.monoFont
+                                font.pixelSize: 11
+                                font.weight: Font.DemiBold
+                                font.letterSpacing: 0.8
+                            }
+
+                            Text {
+                                text: "COMPOSITOR / RENDERING"
+                                color: Theme.textDim
+                                font.family: Theme.monoFont
+                                font.pixelSize: 8
+                                font.letterSpacing: 0.65
+                            }
+
+                        }
+
+                        Item {
+                            width: Math.max(1, parent.width - 70)
+                            height: 1
+                        }
+
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            radius: 5
+                            color: Theme.alpha(Theme.accent, 0.12)
+                            height: 22
+                            width: 54
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 4
+
+                                Rectangle {
+                                    width: 5
+                                    height: 5
+                                    radius: 3
+                                    color: Theme.accent
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                Text {
+                                    text: "LIVE"
+                                    color: Theme.accent
+                                    font.family: Theme.monoFont
+                                    font.pixelSize: 8
+                                    font.weight: Font.DemiBold
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: 110
+                        radius: 9
+                        color: Theme.bgCard
+                        border.width: 1
+                        border.color: "#393939"
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 7
+
+                            Rectangle {
+                                width: (parent.width - parent.spacing) / 2
+                                height: parent.height
+                                radius: Math.min(24, Math.max(0, page.rounding))
+                                color: Theme.alpha(Theme.accent, 0.12)
+                                opacity: page.activeOpacity
+                                border.width: Math.max(1, Math.min(3, page.borderSize))
+                                border.color: "#393939"
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 7
+                                    spacing: 6
+
+                                    Row {
+                                        spacing: 3
+
+                                        Rectangle {
+                                            width: 5
+                                            height: 5
+                                            radius: 3
+                                            color: Theme.danger
+                                        }
+
+                                        Rectangle {
+                                            width: 5
+                                            height: 5
+                                            radius: 3
+                                            color: Theme.accent
+                                        }
+
+                                        Rectangle {
+                                            width: 5
+                                            height: 5
+                                            radius: 3
+                                            color: Theme.accent
+                                        }
+
+                                        Item {
+                                            width: Math.max(1, parent.width - 70)
+                                            height: 1
+                                        }
+
+                                        Text {
+                                            text: "ACTIVE"
+                                            color: Theme.text
+                                            font.family: Theme.monoFont
+                                            font.pixelSize: 7
+                                            font.weight: Font.DemiBold
+                                        }
+
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.78
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.accent
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.57
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.accent, 0.62)
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.68
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.accent, 0.4)
+                                    }
+
+                                    Item {
+                                        width: 1
+                                        height: Math.max(1, parent.height - 60)
+                                    }
+
+                                    Text {
+                                        text: "EDITOR"
+                                        color: Theme.text
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 8
+                                    }
+
+                                }
+
+                            }
+
+                            Rectangle {
+                                width: (parent.width - parent.spacing) / 2
+                                height: parent.height
+                                radius: Math.min(24, Math.max(0, page.rounding))
+                                color: page.blurEnabled ? Theme.alpha(Theme.accent, 0.09) : Theme.bgCard
+                                opacity: page.inactiveOpacity
+                                border.width: 1
+                                border.color: "#393939"
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 7
+                                    spacing: 6
+
+                                    Text {
+                                        text: "INACTIVE"
+                                        color: Theme.textDim
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 7
+                                        font.weight: Font.DemiBold
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.78
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.textDim
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.53
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.text, 0.18)
+                                    }
+
+                                    Rectangle {
+                                        width: parent.width * 0.65
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.text, 0.14)
+                                    }
+
+                                    Item {
+                                        width: 1
+                                        height: Math.max(1, parent.height - 60)
+                                    }
+
+                                    Text {
+                                        text: "TERMINAL"
+                                        color: Theme.textSoft
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 8
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: 6
+                        height: 40
+
+                        Rectangle {
+                            width: (parent.width - 12) / 3
+                            height: 40
+                            radius: 6
+                            color: Theme.bgCard
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 3
+
+                                Text {
+                                    text: "RADIUS"
+                                    color: Theme.textDim
+                                    font.family: Theme.monoFont
+                                    font.pixelSize: 7
+                                    font.letterSpacing: 0.5
+                                }
+
+                                Text {
+                                    text: page.rounding + " px"
+                                    color: Theme.text
+                                    font.family: Theme.monoFont
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                }
+
+                            }
+
+                        }
+
+                        Rectangle {
+                            width: (parent.width - 12) / 3
+                            height: 40
+                            radius: 6
+                            color: Theme.bgCard
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 3
+
+                                Text {
+                                    text: "BLUR"
+                                    color: Theme.textDim
+                                    font.family: Theme.monoFont
+                                    font.pixelSize: 7
+                                    font.letterSpacing: 0.5
+                                }
+
+                                Text {
+                                    text: page.blurEnabled ? page.blurSize + " px / " + page.blurPasses + "P" : "OFF"
+                                    color: page.blurEnabled ? Theme.accent : Theme.textFaint
+                                    font.family: Theme.monoFont
+                                    font.pixelSize: 10
+                                    font.weight: Font.DemiBold
+                                }
+
+                            }
+
+                        }
+
+                        Rectangle {
+                            width: (parent.width - 12) / 3
+                            height: 40
+                            radius: 6
+                            color: Theme.bgCard
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 3
+
+                                Text {
+                                    text: "SHADOW"
+                                    color: Theme.textDim
+                                    font.family: Theme.monoFont
+                                    font.pixelSize: 7
+                                    font.letterSpacing: 0.5
+                                }
+
+                                Text {
+                                    text: page.shadowEnabled ? "ON / " + page.shadowRange : "OFF"
+                                    color: page.shadowEnabled ? Theme.accent : Theme.textFaint
+                                    font.family: Theme.monoFont
+                                    font.pixelSize: 10
+                                    font.weight: Font.DemiBold
+                                }
+
+                            }
+
+                        }
+
                     }
 
                 }
@@ -2021,7 +3496,6 @@ Item {
                 onMoved: (v) => {
                     page.rounding = Math.round(v * 30);
                     page.applyLive("decoration:rounding", page.rounding);
-                    page.setBlockField("decoration", "rounding", page.rounding, false, false, true);
                 }
                 onCommitted: (v) => {
                     page.rounding = Math.round(v * 30);
@@ -2039,7 +3513,6 @@ Item {
                 onMoved: (v) => {
                     page.activeOpacity = v;
                     page.applyLive("decoration:active_opacity", v);
-                    page.setBlockField("decoration", "active_opacity", v);
                 }
                 onCommitted: (v) => {
                     page.activeOpacity = v;
@@ -2057,12 +3530,17 @@ Item {
                 onMoved: (v) => {
                     page.inactiveOpacity = v;
                     page.applyLive("decoration:inactive_opacity", v);
-                    page.setBlockField("decoration", "inactive_opacity", v);
                 }
                 onCommitted: (v) => {
                     page.inactiveOpacity = v;
                     page.setBlockField("decoration", "inactive_opacity", v);
                 }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Theme.bgCard
             }
 
             Text {
@@ -2093,7 +3571,6 @@ Item {
                 onMoved: (v) => {
                     page.blurSize = Math.round(v * 20);
                     page.applyLive("decoration:blur:size", page.blurSize);
-                    page.setBlockField("blur", "size", page.blurSize, false, false, true);
                 }
                 onCommitted: (v) => {
                     page.blurSize = Math.round(v * 20);
@@ -2111,12 +3588,17 @@ Item {
                 onMoved: (v) => {
                     page.blurPasses = Math.round(v * 10);
                     page.applyLive("decoration:blur:passes", page.blurPasses);
-                    page.setBlockField("blur", "passes", page.blurPasses, false, false, true);
                 }
                 onCommitted: (v) => {
                     page.blurPasses = Math.round(v * 10);
                     page.setBlockField("blur", "passes", page.blurPasses, false, false, true);
                 }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Theme.bgCard
             }
 
             Text {
@@ -2147,7 +3629,6 @@ Item {
                 onMoved: (v) => {
                     page.shadowRange = Math.round(v * 40);
                     page.applyLive("decoration:shadow:range", page.shadowRange);
-                    page.setBlockField("shadow", "range", page.shadowRange, false, false, true);
                 }
                 onCommitted: (v) => {
                     page.shadowRange = Math.round(v * 40);
@@ -2165,7 +3646,6 @@ Item {
                 onMoved: (v) => {
                     page.shadowRenderPower = Math.round(v * 10);
                     page.applyLive("decoration:shadow:render_power", page.shadowRenderPower);
-                    page.setBlockField("shadow", "render_power", page.shadowRenderPower, false, false, true);
                 }
                 onCommitted: (v) => {
                     page.shadowRenderPower = Math.round(v * 10);
@@ -2176,41 +3656,7 @@ Item {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: "#383838"
-            }
-
-            Text {
-                text: "MISC / XWAYLAND"
-                color: Theme.text
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                font.letterSpacing: 0.8
-                topPadding: 4
-            }
-
-            ToggleRow {
-                label: "DISABLE HYPRLAND LOGO"
-                checked: page.disableLogo
-                onToggled: (c) => {
-                    page.applyLive("misc:disable_hyprland_logo", c);
-                    page.setBlockField("misc", "disable_hyprland_logo", c, true);
-                }
-            }
-
-            ToggleRow {
-                label: "XWAYLAND FORCE ZERO SCALING"
-                checked: page.forceZeroScaling
-                onToggled: (c) => {
-                    page.applyLive("xwayland:force_zero_scaling", c);
-                    page.setBlockField("xwayland", "force_zero_scaling", c, true);
-                }
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: "#383838"
+                color: Theme.bgCard
             }
 
             Text {
@@ -2229,55 +3675,6 @@ Item {
                 font.family: Theme.fontFamily
                 font.pixelSize: 10
                 wrapMode: Text.WordWrap
-            }
-
-            Row {
-                width: parent.width
-                height: 28
-                spacing: 8
-
-                Rectangle {
-                    width: 7
-                    height: 7
-                    radius: 4
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: page.animationFileReady ? (page.animationDirty ? "#e5b567" : Theme.ok) : Theme.danger
-                }
-
-                Text {
-                    width: Math.max(30, parent.width - 100)
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: page.animationStatusMessage
-                    color: Theme.textFaint
-                    font.family: Theme.monoFont
-                    font.pixelSize: 9
-                    elide: Text.ElideRight
-                }
-
-                Text {
-                    text: page.animationFileReady ? "RELOAD" : ""
-                    color: reloadAnimationsMouse.containsMouse ? Theme.accent : Theme.textDim
-                    anchors.verticalCenter: parent.verticalCenter
-                    font.family: Theme.monoFont
-                    font.pixelSize: 9
-
-                    MouseArea {
-                        id: reloadAnimationsMouse
-
-                        anchors.fill: parent
-                        anchors.margins: -5
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (!page.animationDirty && !page.animationSaveInProgress && !animationSaveTimer.running) {
-                                animationFile.reload();
-                                page.animationStatusMessage = "Reloading animations.lua...";
-                            }
-                        }
-                    }
-
-                }
-
             }
 
             ToggleRow {
@@ -2379,7 +3776,7 @@ Item {
                 radius: 12
                 color: Theme.alpha(Theme.text, 0.018)
                 border.width: 1
-                border.color: Theme.border
+                border.color: "#393939"
 
                 Column {
                     anchors.fill: parent
@@ -2429,10 +3826,10 @@ Item {
                         onPaint: {
                             const ctx = getContext("2d");
                             ctx.clearRect(0, 0, width, height);
-                            const left = 24;
-                            const right = 8;
-                            const top = 8;
-                            const bottom = 19;
+                            const left = 31;
+                            const right = 12;
+                            const top = 12;
+                            const bottom = 24;
                             const plotWidth = Math.max(1, width - left - right);
                             const plotHeight = Math.max(1, height - top - bottom);
                             const yMin = -0.2;
@@ -2443,19 +3840,19 @@ Item {
                             const py = function py(y) {
                                 return top + (yMax - y) / (yMax - yMin) * plotHeight;
                             };
-                            ctx.lineWidth = 1;
-                            ctx.strokeStyle = Theme.alpha(Theme.border, 0.7);
-                            ctx.fillStyle = Theme.textFaint;
                             ctx.font = "9px monospace";
-                            ctx.textAlign = "right";
                             ctx.textBaseline = "middle";
+                            ctx.textAlign = "right";
+                            ctx.fillStyle = Theme.textFaint;
                             [0, 0.5, 1].forEach(function(value) {
                                 const y = py(value);
                                 ctx.beginPath();
                                 ctx.moveTo(left, y);
                                 ctx.lineTo(left + plotWidth, y);
+                                ctx.lineWidth = value === 0 ? 1.2 : 1;
+                                ctx.strokeStyle = "#393939";
                                 ctx.stroke();
-                                ctx.fillText(value.toFixed(1), left - 5, y);
+                                ctx.fillText(value.toFixed(1), left - 7, y);
                             });
                             ctx.textAlign = "center";
                             ctx.textBaseline = "top";
@@ -2464,20 +3861,26 @@ Item {
                                 ctx.beginPath();
                                 ctx.moveTo(x, top);
                                 ctx.lineTo(x, top + plotHeight);
+                                ctx.lineWidth = 1;
+                                ctx.strokeStyle = "#393939";
                                 ctx.stroke();
-                                ctx.fillText(value === 0 || value === 1 ? value.toFixed(0) : value.toFixed(2), x, top + plotHeight + 4);
+                                ctx.fillStyle = Theme.textFaint;
+                                ctx.fillText(value === 0 || value === 1 ? value.toFixed(0) : value.toFixed(2), x, top + plotHeight + 7);
                             });
                             ctx.save();
                             ctx.beginPath();
                             ctx.rect(left, top, plotWidth, plotHeight);
                             ctx.clip();
+                            const selected = page.curveEntries.find(function(entry) {
+                                return entry.name === page.selectedCurveName;
+                            });
                             const drawCurve = function drawCurve(entry, color, lineWidth) {
                                 if (!entry)
                                     return ;
 
                                 ctx.beginPath();
-                                for (let i = 0; i <= 100; i++) {
-                                    const point = page.curveGraphPoint(entry, i / 100);
+                                for (let i = 0; i <= 120; i++) {
+                                    const point = page.curveGraphPoint(entry, i / 120);
                                     const x = px(point.x);
                                     const y = py(point.y);
                                     if (i === 0)
@@ -2487,29 +3890,67 @@ Item {
                                 }
                                 ctx.strokeStyle = color;
                                 ctx.lineWidth = lineWidth;
+                                ctx.lineCap = "round";
+                                ctx.lineJoin = "round";
                                 ctx.stroke();
                             };
+                            if (selected) {
+                                const area = ctx.createLinearGradient(0, top, 0, top + plotHeight);
+                                area.addColorStop(0, Theme.alpha(Theme.accent, 0.2));
+                                area.addColorStop(1, Theme.alpha(Theme.accent, 0.015));
+                                ctx.beginPath();
+                                for (let i = 0; i <= 120; i++) {
+                                    const point = page.curveGraphPoint(selected, i / 120);
+                                    if (i === 0)
+                                        ctx.moveTo(px(point.x), py(point.y));
+                                    else
+                                        ctx.lineTo(px(point.x), py(point.y));
+                                }
+                                ctx.lineTo(px(1), py(0));
+                                ctx.lineTo(px(0), py(0));
+                                ctx.closePath();
+                                ctx.fillStyle = area;
+                                ctx.fill();
+                            }
                             page.curveEntries.forEach(function(entry) {
                                 if (entry.name !== page.selectedCurveName)
-                                    drawCurve(entry, Theme.alpha(Theme.text, 0.16), 1.1);
+                                    drawCurve(entry, Theme.alpha(Theme.text, 0.2), 1.15);
 
                             });
-                            const selected = page.curveEntries.find(function(entry) {
-                                return entry.name === page.selectedCurveName;
-                            });
                             if (selected) {
-                                drawCurve(selected, Theme.alpha(Theme.accent, 0.95), 2.4);
+                                drawCurve(selected, Theme.alpha(Theme.accent, 0.2), 6);
+                                drawCurve(selected, Theme.alpha(Theme.accent, 0.98), 2.3);
+                                const startPoint = page.curveGraphPoint(selected, 0);
+                                const endPoint = page.curveGraphPoint(selected, 1);
+                                [startPoint, endPoint].forEach(function(point) {
+                                    ctx.beginPath();
+                                    ctx.arc(px(point.x), py(point.y), 3.2, 0, Math.PI * 2);
+                                    ctx.fillStyle = Theme.background;
+                                    ctx.fill();
+                                    ctx.lineWidth = 1.5;
+                                    ctx.strokeStyle = "#393939";
+                                    ctx.stroke();
+                                });
                                 const point = page.curveGraphPoint(selected, page.curvePreviewProgress);
                                 const cx = px(point.x);
                                 const cy = py(point.y);
                                 ctx.beginPath();
-                                ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-                                ctx.fillStyle = Theme.alpha(Theme.accent, 0.2);
+                                ctx.moveTo(cx, top + plotHeight);
+                                ctx.lineTo(cx, cy);
+                                ctx.lineWidth = 1;
+                                ctx.strokeStyle = "#393939";
+                                ctx.stroke();
+                                ctx.beginPath();
+                                ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+                                ctx.fillStyle = Theme.alpha(Theme.accent, 0.18);
                                 ctx.fill();
                                 ctx.beginPath();
-                                ctx.arc(cx, cy, 3.2, 0, Math.PI * 2);
+                                ctx.arc(cx, cy, 3.4, 0, Math.PI * 2);
                                 ctx.fillStyle = Theme.accent;
                                 ctx.fill();
+                                ctx.lineWidth = 1.2;
+                                ctx.strokeStyle = Theme.background;
+                                ctx.stroke();
                             }
                             ctx.restore();
                         }
@@ -2529,13 +3970,44 @@ Item {
 
             }
 
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#393939"
+            }
+
             Text {
-                visible: !page.animationFileReady
-                text: page.animationStatusMessage
-                color: Theme.textFaint
-                font.family: Theme.monoFont
-                font.pixelSize: 10
-                wrapMode: Text.WordWrap
+                text: "MISC / XWAYLAND"
+                color: Theme.text
+                font.family: Theme.fontFamily
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.8
+                topPadding: 4
+            }
+
+            ToggleRow {
+                label: "DISABLE HYPRLAND LOGO"
+                checked: page.disableLogo
+                onToggled: (c) => {
+                    page.applyLive("misc:disable_hyprland_logo", c);
+                    page.setBlockField("misc", "disable_hyprland_logo", c, true);
+                }
+            }
+
+            ToggleRow {
+                label: "XWAYLAND FORCE ZERO SCALING"
+                checked: page.forceZeroScaling
+                onToggled: (c) => {
+                    page.applyLive("xwayland:force_zero_scaling", c);
+                    page.setBlockField("xwayland", "force_zero_scaling", c, true);
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#393939"
             }
 
         }
@@ -2606,7 +4078,7 @@ Item {
             color: Qt.rgba(0, 0, 0, 0.8)
             radius: 18
             border.width: 1
-            border.color: Theme.border
+            border.color: "#393939"
         }
 
         contentItem: Column {
@@ -2624,7 +4096,7 @@ Item {
                     radius: 10
                     color: colorPopup.previewColor
                     border.width: 1
-                    border.color: Theme.border
+                    border.color: "#393939"
                 }
 
                 Column {
@@ -2683,7 +4155,7 @@ Item {
                         height: parent.height + 4
                         radius: 2
                         color: "white"
-                        border.color: "black"
+                        border.color: "#393939"
                         border.width: 1
                     }
 
@@ -2769,7 +4241,7 @@ Item {
                         height: parent.height + 4
                         radius: 2
                         color: "white"
-                        border.color: "black"
+                        border.color: "#393939"
                         border.width: 1
                     }
 
@@ -2830,7 +4302,7 @@ Item {
                         height: parent.height + 4
                         radius: 2
                         color: "white"
-                        border.color: "black"
+                        border.color: "#393939"
                         border.width: 1
                     }
 
@@ -2883,7 +4355,7 @@ Item {
                     radius: 9
                     color: applyClick.containsMouse ? Qt.lighter(Theme.accent, 1.08) : Theme.accent
                     border.width: 1
-                    border.color: Qt.lighter(Theme.accent, 1.12)
+                    border.color: "#393939"
 
                     Text {
                         anchors.centerIn: parent
@@ -2923,7 +4395,7 @@ Item {
                     radius: 9
                     color: cancelClick.containsMouse ? "#2b2e36" : "#24262d"
                     border.width: 1
-                    border.color: Theme.border
+                    border.color: "#393939"
 
                     Text {
                         anchors.centerIn: parent
@@ -3047,7 +4519,7 @@ Item {
             radius: 7
             color: Theme.alpha(Theme.text, 0.025)
             border.width: 1
-            border.color: rowHover.containsMouse ? Theme.accent : Theme.border
+            border.color: rowHover.containsMouse ? "#555555" : "#393939"
 
             HoverHandler {
                 id: rowHover
@@ -3251,7 +4723,7 @@ Item {
                                 anchors.leftMargin: 10
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: {
-                                    var n = Number(chip.modelData).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+                                    var n = Number(chip.modelData).toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
                                     return n === "" ? "0" : n;
                                 }
                                 color: Theme.text
@@ -3307,7 +4779,7 @@ Item {
 
                                 anchors.fill: parent
                                 anchors.margins: 3
-                                text: String(chip.modelData)
+                                text: Number(chip.modelData).toFixed(2).replace(/0+$/, "").replace(/\.$/, "")
                                 color: Theme.text
                                 font.family: Theme.monoFont
                                 font.pixelSize: 11
@@ -3365,6 +4837,138 @@ Item {
 
             }
 
+            Text {
+                text: "WIDTH PREVIEW"
+                color: Theme.textDim
+                font.family: Theme.monoFont
+                font.pixelSize: 9
+                font.letterSpacing: 1.1
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 178
+                radius: 14
+                color: Theme.bgPanel
+                border.width: 1
+                border.color: "#393939"
+
+                Column {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 8
+
+                    Row {
+                        width: parent.width
+                        height: 20
+                        spacing: 8
+
+                        Text {
+                            id: widthLabel
+
+                            text: "COLUMN WIDTHS"
+                            color: Theme.text
+                            font.family: Theme.monoFont
+                            font.pixelSize: 10
+                            font.weight: Font.DemiBold
+                            font.letterSpacing: 0.7
+                        }
+
+                        Item {
+                            width: Math.max(1, parent.width - widthLabel.implicitWidth - widthState.implicitWidth - 16)
+                            height: 1
+                        }
+
+                        Text {
+                            id: widthState
+
+                            text: chipsRoot.widths.length ? chipsRoot.widths.length + " PRESETS" : "DEFAULT"
+                            color: Theme.accent
+                            font.family: Theme.monoFont
+                            font.pixelSize: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                    }
+
+                    Flow {
+                        width: parent.width
+                        spacing: 7
+
+                        Repeater {
+                            model: chipsRoot.widths.length ? chipsRoot.widths.slice(0, 6) : [0.5]
+
+                            delegate: Rectangle {
+                                required property real modelData
+                                required property int index
+
+                                width: Math.max(100, Math.min(176, (parent.width - 14) / 3))
+                                height: 118
+                                radius: 8
+                                color: Theme.bgCard
+                                border.width: 1
+                                border.color: "#393939"
+                                clip: true
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 7
+                                    spacing: 6
+
+                                    Text {
+                                        text: "0" + (index + 1)
+                                        color: Theme.textDim
+                                        font.family: Theme.monoFont
+                                        font.pixelSize: 9
+                                    }
+
+                                    Item {
+                                        width: parent.width
+                                        height: 72
+
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            radius: 4
+                                            color: Theme.alpha(Theme.text, 0.025)
+                                            border.width: 1
+                                            border.color: "#393939"
+                                        }
+
+                                        Rectangle {
+                                            anchors.left: parent.left
+                                            anchors.top: parent.top
+                                            anchors.bottom: parent.bottom
+                                            width: Math.max(8, (parent.width - 2) * Math.max(0.1, Math.min(1, Number(modelData) || 0.5)))
+                                            radius: 4
+                                            color: Theme.alpha(Theme.accent, 0.13)
+                                            border.width: 1
+                                            border.color: "#393939"
+
+                                            Rectangle {
+                                                anchors.left: parent.left
+                                                anchors.right: parent.right
+                                                anchors.top: parent.top
+                                                height: 5
+                                                radius: 3
+                                                color: Theme.alpha(Theme.accent, 0.28)
+                                            }
+
+                                        }
+
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
         }
 
     }
@@ -3386,18 +4990,11 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: 12
-            color: layoutOptionRoot.selected ? Theme.alpha(Theme.accent, 0.045) : (layoutOptionRoot.hovered ? Theme.alpha(Theme.text, 0.045) : "transparent")
+            color: layoutOptionRoot.selected ? Theme.alpha(Theme.accent, 0.12) : (layoutOptionRoot.hovered ? Theme.alpha(Theme.text, 0.045) : "transparent")
             border.width: 1
-            border.color: layoutOptionRoot.selected ? "#5B5B5B" : (layoutOptionRoot.hovered ? Theme.alpha(Theme.accent, 0.34) : "transparent")
+            border.color: layoutOptionRoot.hovered ? "#555555" : "#393939"
 
             Behavior on color {
-                ColorAnimation {
-                    duration: 130
-                }
-
-            }
-
-            Behavior on border.color {
                 ColorAnimation {
                     duration: 130
                 }
@@ -3514,7 +5111,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             color: Theme.bgPanel
             border.width: 1
-            border.color: Theme.border
+            border.color: "#393939"
 
             Text {
                 anchors.centerIn: parent
@@ -3542,6 +5139,8 @@ Item {
         }
 
         Slider {
+            id: sliderControl
+
             anchors.left: labelText.right
             anchors.leftMargin: 8
             anchors.right: parent.right
@@ -3559,6 +5158,16 @@ Item {
             onCommitted: (v) => {
                 return sliderRoot.committed(v);
             }
+        }
+
+        Connections {
+            function onValueChanged() {
+                if (Math.abs(sliderControl.value - sliderRoot.value) > 1e-06)
+                    sliderControl.value = sliderRoot.value;
+
+            }
+
+            target: sliderRoot
         }
 
     }
@@ -3653,9 +5262,9 @@ Item {
         width: segText.implicitWidth + (icon !== "" ? 34 : 24)
         height: 30
         radius: Theme.radiusXs
-        color: selected ? Theme.alpha(Theme.accent, 0.045) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.03) : "transparent")
+        color: selected ? Theme.alpha(Theme.accent, 0.075) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.035) : "transparent")
         border.width: 1
-        border.color: selected ? "#5B5B5B" : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.34) : Theme.border)
+        border.color: segMouse.containsMouse ? "#555555" : "#393939"
 
         Text {
             id: segText
