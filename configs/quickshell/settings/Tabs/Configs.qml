@@ -11,8 +11,7 @@ Item {
     property real marginRight: 55
     property real marginTop: 0
     property real marginBottom: 0
-    property real sliderMarginRight: 10
-    property real sectionSpacing: 6
+    property real sectionSpacing: 8
 
     function editConfig(path) {
         var resolvedPath = path.replace(/^~/, Quickshell.env("HOME"));
@@ -118,28 +117,27 @@ Item {
             id: content
 
             width: flick.width
-            spacing: 14
+            spacing: 16
 
-            Text {
-                text: "CONFIGS"
-                color: Theme.text
-                font.family: "Noto Sans"
-                font.pixelSize: 19
-                font.letterSpacing: 3
-            }
-
-            Rectangle {
+            Column {
                 width: parent.width
-                height: 1
-                color: Theme.border
-            }
+                spacing: 4
 
-            Text {
-                text: "HYPRLAND"
-                color: Theme.text
-                font.family: "Noto Sans"
-                font.pixelSize: 16
-                font.letterSpacing: 3
+                Text {
+                    text: "CONFIGS"
+                    color: Theme.text
+                    font.family: "Noto Sans"
+                    font.pixelSize: 19
+                    font.weight: Font.Normal
+                }
+
+                Text {
+                    text: "Edit your Hyprland & Wofi configuration files"
+                    color: Theme.textFaint
+                    font.family: "Noto Sans"
+                    font.pixelSize: 10
+                }
+
             }
 
             Rectangle {
@@ -150,56 +148,118 @@ Item {
 
             Column {
                 width: parent.width
-                spacing: page.sectionSpacing
+                spacing: 8
 
-                ConfigButton {
-                    label: "RULES"
-                    path: "~/.config/hypr/window_rules.lua"
+                Row {
+                    spacing: 8
+                    leftPadding: 2
+                    bottomPadding: 2
+
+                    Text {
+                        text: "󰧨"
+                        color: Theme.accent
+                        font.family: Theme.iconFont
+                        font.pixelSize: 13
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "HYPRLAND"
+                        color: Theme.text
+                        font.family: "Noto Sans"
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        font.letterSpacing: 2
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                 }
 
-                ConfigButton {
-                    label: "ENVIRONMENT"
-                    path: "~/.config/hypr/environment.lua"
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Theme.border
                 }
 
-                ConfigButton {
-                    label: "ANIMATIONS"
-                    path: "~/.config/hypr/animations.lua"
+                Column {
+                    width: parent.width
+                    spacing: page.sectionSpacing
+                    topPadding: 4
+
+                    ConfigButton {
+                        label: "RULES"
+                        path: "~/.config/hypr/window_rules.lua"
+                        icon: "󰖲"
+                    }
+
+                    ConfigButton {
+                        label: "ENVIRONMENT"
+                        path: "~/.config/hypr/environment.lua"
+                        icon: "󰖟"
+                    }
+
+                    ConfigButton {
+                        label: "LOCK SCREEN"
+                        path: "~/.config/hypr/hyprlock.conf"
+                        icon: "󰌾"
+                    }
+
                 }
 
-                ConfigButton {
-                    label: "LOCK SCREEN"
-                    path: "~/.config/hypr/hyprlock.conf"
-                }
-
-            }
-
-            Text {
-                text: "WOFI"
-                color: Theme.text
-                font.family: "Noto Sans"
-                font.pixelSize: 16
-                font.letterSpacing: 3
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: Theme.border
             }
 
             Column {
                 width: parent.width
-                spacing: page.sectionSpacing
+                spacing: 8
 
-                ConfigButton {
-                    label: "CONFIG"
-                    path: "~/.config/wofi/config"
+                Row {
+                    spacing: 8
+                    leftPadding: 2
+                    bottomPadding: 2
+
+                    Text {
+                        text: "󰍉"
+                        color: Theme.accent
+                        font.family: Theme.iconFont
+                        font.pixelSize: 13
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "WOFI"
+                        color: Theme.text
+                        font.family: "Noto Sans"
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        font.letterSpacing: 2
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                 }
 
-                ConfigButton {
-                    label: "STYLE"
-                    path: "~/.config/wofi/style.css"
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Theme.border
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: page.sectionSpacing
+                    topPadding: 4
+
+                    ConfigButton {
+                        label: "CONFIG"
+                        path: "~/.config/wofi/config"
+                        icon: "󰒓"
+                    }
+
+                    ConfigButton {
+                        label: "STYLE"
+                        path: "~/.config/wofi/style.css"
+                        icon: "󰏘"
+                    }
+
                 }
 
             }
@@ -213,66 +273,101 @@ Item {
     }
 
     component ConfigButton: Rectangle {
+        id: card
+
         required property string label
         required property string path
+        required property string icon
 
         width: parent.width
-        height: 42
-        radius: Theme.radius
-        color: "#00000000"
+        height: 52
+        radius: 10
+        color: hover.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
         border.width: 1
-        border.color: Theme.border
+        border.color: hover.hovered ? Theme.accent : Theme.border
 
-        Text {
-            anchors.left: parent.left
-            anchors.leftMargin: 14
-            anchors.verticalCenter: parent.verticalCenter
-            text: label
-            color: Theme.textDim
-            font.family: "Noto Sans"
-            font.pixelSize: 13
-            font.bold: true
-            font.letterSpacing: 2
-        }
+        HoverHandler {
+            id: hover
 
-        Row {
-            anchors.right: parent.right
-            anchors.rightMargin: 14
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 8
-
-            Text {
-                text: "\uf120"
-                color: Theme.textDim
-                font.family: Theme.iconFont
-                font.pixelSize: 13
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Text {
-                text: "EDIT " + path.split("/").pop().toUpperCase()
-                color: Theme.textDim
-                font.family: "Noto Sans"
-                font.pixelSize: 12
-                font.bold: true
-                font.letterSpacing: 1
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
+            cursorShape: Qt.PointingHandCursor
         }
 
         MouseArea {
             anchors.fill: parent
-            hoverEnabled: true
-            onEntered: {
-                parent.color = Theme.alpha(Theme.accent, 0.08);
-                parent.border.color = Theme.accent;
+            onClicked: page.editConfig(card.path)
+        }
+
+        Row {
+            anchors.left: parent.left
+            anchors.leftMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 12
+
+            Rectangle {
+                width: 32
+                height: 32
+                radius: 8
+                color: Theme.bgPanel
+                border.width: 1
+                border.color: Theme.border
+                anchors.verticalCenter: parent.verticalCenter
+
+                Text {
+                    anchors.centerIn: parent
+                    text: card.icon
+                    color: hover.hovered ? Theme.accent : Theme.textFaint
+                    font.family: Theme.iconFont
+                    font.pixelSize: 16
+                }
+
             }
-            onExited: {
-                parent.color = "#00000000";
-                parent.border.color = Theme.border;
+
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 2
+
+                Text {
+                    text: card.label
+                    color: Theme.text
+                    font.family: "Noto Sans"
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 1
+                }
+
+                Text {
+                    text: card.path.split("/").pop()
+                    color: Theme.textFaint
+                    font.family: Theme.monoFont
+                    font.pixelSize: 10
+                }
+
             }
-            onClicked: page.editConfig(path)
+
+        }
+
+        Text {
+            anchors.right: parent.right
+            anchors.rightMargin: 14
+            anchors.verticalCenter: parent.verticalCenter
+            text: "󰏫"
+            color: hover.hovered ? Theme.accent : Theme.textFaint
+            font.family: Theme.iconFont
+            font.pixelSize: 15
+        }
+
+        Behavior on color {
+            ColorAnimation {
+                duration: 140
+            }
+
+        }
+
+        Behavior on border.color {
+            ColorAnimation {
+                duration: 140
+            }
+
         }
 
     }

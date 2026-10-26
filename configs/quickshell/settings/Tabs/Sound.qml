@@ -2,432 +2,656 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell.Services.Pipewire
 import "../"
-
 Item {
     id: page
-
     property real marginLeft: 0
-    property real marginRight: 45
+    property real marginRight: 55
     property real marginTop: 0
     property real marginBottom: 0
     property real sliderMarginRight: 10
-    property real sectionSpacing: 6
-
+    property real sectionSpacing: 4
     PwObjectTracker {
         objects: Pipewire.nodes.values
     }
-
     property var sink: Pipewire.defaultAudioSink
     property real volume: sink?.audio?.volume ?? 0
     property bool muted: sink?.audio?.muted ?? false
-
     property var source: Pipewire.defaultAudioSource
     property real inputVolume: source?.audio?.volume ?? 0
     property bool inputMuted: source?.audio?.muted ?? false
-
     property var outputSinks: Pipewire.nodes.values.filter(n => n.isSink && !n.isStream && n.audio)
     property var inputSources: Pipewire.nodes.values.filter(n => !n.isSink && !n.isStream && n.audio)
     property var appStreams: Pipewire.nodes.values.filter(n => n.isStream && n.isSink && n.audio)
-
     function displayName(node, fallback) {
         return node?.description || node?.nickname || node?.name || fallback
     }
-
     function setDefaultOutput(output) {
         if (output)
             Pipewire.preferredDefaultAudioSink = output
     }
-
     function setDefaultInput(input) {
         if (input)
             Pipewire.preferredDefaultAudioSource = input
     }
-
     Flickable {
         id: flick
-
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-
         anchors.leftMargin: page.marginLeft
         anchors.rightMargin: page.marginRight
         anchors.topMargin: page.marginTop
         anchors.bottomMargin: page.marginBottom
-
         contentWidth: width
         contentHeight: content.implicitHeight
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
-        ScrollBar.vertical: ScrollBar {
-            id: scrollBar
-            policy: ScrollBar.AsNeeded
-            width: 6
-
-            background: Rectangle {
-                color: "transparent"
-                radius: width / 2
-            }
-
-            contentItem: Rectangle {
-                color: "transparent"
-                radius: width / 2
-            }
-        }
-
         Column {
             id: content
             width: flick.width
-            spacing: 14
+            spacing: 8
 
-            Text {
-                text: "SOUND"
-                color: Theme.text
-                font.family: "Noto Sans"
-                font.pixelSize: 19
-                font.letterSpacing: 3
+            Column {
+                width: parent.width
+                spacing: 3
+
+                Text {
+                    text: "SOUND"
+                    color: Theme.text
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 19
+                    font.weight: Font.Normal
+                }
+
+                Text {
+                    text: "Output, input and per-application volume"
+                    color: Theme.textFaint
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 10
+                }
             }
 
             Rectangle {
                 width: parent.width
                 height: 1
-                color: Theme.border
+                color: "#303030"
             }
 
-            Row {
+            Rectangle {
                 id: outputRow
-
+                property bool hovered: false
                 width: parent.width
-                spacing: 6
+                height: 46
+                radius: 8
+                color: hovered ? Theme.alpha(Theme.accent, 0.035) : Theme.alpha(Theme.text, 0.015)
+                border.width: 1
+                border.color: "#303030"
 
-                Rectangle {
-                    width: 28
-                    height: 28
-                    radius: Theme.radius
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: page.muted ? Theme.alpha(Theme.danger, 0.15) : Theme.alpha(Theme.accent, 0.10)
-                    border.width: 1
-                    border.color: page.muted ? Theme.danger : Theme.border
+                Behavior on color { ColorAnimation { duration: 130 } }
+                Behavior on border.color { ColorAnimation { duration: 130 } }
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: page.muted ? "\uf026" : "\uf028"
-                        color: page.muted ? Theme.danger : Theme.accent
-                        font.family: Theme.iconFont
-                        font.pixelSize: 12
+                Row {
+                    anchors.fill: parent
+                    anchors.leftMargin: 9
+                    anchors.rightMargin: 9
+                    spacing: 8
+
+                    Rectangle {
+                        width: 27
+                        height: 27
+                        radius: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Theme.alpha(Theme.text, 0.025)
+                        border.width: 1
+                        border.color: "#303030"
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: page.muted ? "\uf026" : "\uf028"
+                            color: page.muted ? Theme.textFaint : Theme.text
+                            font.family: Theme.iconFont
+                            font.pixelSize: 13
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (page.sink?.audio)
+                                    page.sink.audio.muted = !page.sink.audio.muted
+                            }
+                        }
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (page.sink?.audio)
-                                page.sink.audio.muted = !page.sink.audio.muted
+                    Column {
+                        width: 82
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 3
+
+                        Text {
+                            width: parent.width
+                            text: "Output volume"
+                            color: Theme.text
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: page.muted ? "Muted" : Math.round(page.volume * 100) + "%"
+                            color: Theme.textFaint
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 9
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    Slider {
+                        width: Math.max(60, outputRow.width - 143)
+                        height: 32
+                        anchors.verticalCenter: parent.verticalCenter
+                        label: ""
+                        icon: ""
+                        value: page.muted ? 0 : page.volume
+                        onMoved: v => {
+                            if (page.sink?.audio) {
+                                page.sink.audio.muted = false
+                                page.sink.audio.volume = v
+                            }
                         }
                     }
                 }
 
-                Text {
-                    width: 76
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "OUTPUT"
-                    color: Theme.text
-                    font.family: "Noto Sans"
-                    font.pixelSize: 15
-                    font.letterSpacing: 2
-                }
-
-                Slider {
-                    width: outputRow.width - 28 - 100 - outputRow.spacing * 2
-                    height: 72
-                    anchors.verticalCenter: parent.verticalCenter
-                    label: ""
-                    icon: ""
-                    value: page.muted ? 0 : page.volume
-
-                    onMoved: v => {
-                        if (page.sink?.audio) {
-                            page.sink.audio.muted = false
-                            page.sink.audio.volume = v
-                        }
-                    }
+                HoverHandler {
+                    onHoveredChanged: outputRow.hovered = hovered
                 }
             }
 
             Column {
                 width: parent.width
-                spacing: page.sectionSpacing
+                spacing: 4
 
                 Repeater {
                     model: page.outputSinks
 
                     delegate: Rectangle {
+                        id: outputCard
+                        property bool hovered: false
                         required property var modelData
                         property var output: modelData
                         property bool active: page.sink?.id === output?.id
 
                         width: parent.width
-                        height: 40
-                        radius: Theme.radius
-                        color: active ? Theme.alpha(Theme.accent, 0.10) : "transparent"
+                        height: 42
+                        radius: 8
+                        color: active ? Theme.alpha(Theme.accent, 0.045) : (hovered ? Theme.alpha(Theme.accent, 0.03) : Theme.alpha(Theme.text, 0.015))
                         border.width: 1
-                        border.color: active ? Theme.accent : Theme.border
+                        border.color: active ? "#5B5B5B" : "#303030"
+
+                        Behavior on color { ColorAnimation { duration: 130 } }
+                        Behavior on border.color { ColorAnimation { duration: 130 } }
 
                         Row {
                             anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 10
+                            anchors.leftMargin: 9
+                            anchors.rightMargin: 9
                             spacing: 8
 
-                            Text {
-                                width: 20
+                            Rectangle {
+                                width: 27
+                                height: 27
+                                radius: 8
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: active ? "\uf192" : "\uf10c"
-                                color: active ? Theme.accent : Theme.textFaint
-                                font.family: Theme.iconFont
-                                font.pixelSize: 11
+                                color: Theme.alpha(Theme.text, 0.025)
+                                border.width: 1
+                                border.color: "#303030"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\uf028"
+                                    color: outputCard.active ? Theme.accent : Theme.textDim
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: 13
+                                }
                             }
 
-                            Text {
-                                width: parent.width - 28
+                            Column {
+                                width: parent.width - 35
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: page.displayName(output, "Unknown output").toUpperCase()
-                                color: active ? Theme.accent : Theme.text
-                                font.family: "Noto Sans"
-                                font.pixelSize: 10
-                                elide: Text.ElideRight
+                                spacing: 3
+
+                                Text {
+                                    width: parent.width
+                                    text: page.displayName(output, "Unknown output")
+                                    color: Theme.text
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 11
+                                    font.weight: outputCard.active ? Font.Medium : Font.Normal
+                                    elide: Text.ElideRight
+                                }
+
+                                Text {
+                                    width: parent.width
+                                    text: outputCard.active ? "Default output" : "Audio output"
+                                    color: Theme.textFaint
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 9
+                                    elide: Text.ElideRight
+                                }
                             }
                         }
 
                         MouseArea {
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            onEntered: outputCard.hovered = true
+                            onExited: outputCard.hovered = false
                             onClicked: page.setDefaultOutput(output)
                         }
                     }
                 }
 
-                Text {
-                    visible: page.outputSinks.length === 0
-                    text: "NO SOUND OUTPUTS"
-                    color: Theme.textFaint
-                    leftPadding: 4
-                    font.family: "Noto Sans"
-                    font.pixelSize: 10
-                    font.letterSpacing: 1.5
-                }
-            }
-
-            Row {
-                id: inputRow
-
-                width: parent.width
-                spacing: 6
-
                 Rectangle {
-                    width: 28
-                    height: 28
-                    radius: Theme.radius
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: page.inputMuted ? Theme.alpha(Theme.danger, 0.15) : Theme.alpha(Theme.accent, 0.10)
+                    width: parent.width
+                    height: 44
+                    radius: 8
+                    visible: page.outputSinks.length === 0
+                    color: Theme.alpha(Theme.text, 0.015)
                     border.width: 1
-                    border.color: page.inputMuted ? Theme.danger : Theme.border
+                    border.color: "#303030"
 
-                    Text {
+                    Row {
                         anchors.centerIn: parent
-                        text: page.inputMuted ? "\uf131" : "\uf130"
-                        color: page.inputMuted ? Theme.danger : Theme.accent
-                        font.family: Theme.iconFont
-                        font.pixelSize: 12
-                    }
+                        spacing: 8
 
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (page.source?.audio)
-                                page.source.audio.muted = !page.source.audio.muted
+                        Rectangle {
+                            width: 27
+                            height: 27
+                            radius: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Theme.alpha(Theme.text, 0.025)
+                            border.width: 1
+                            border.color: "#303030"
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf028"
+                                color: Theme.textFaint
+                                font.family: Theme.iconFont
+                                font.pixelSize: 15
+                            }
+                        }
+
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 3
+                            Text {
+                                text: "No sound outputs"
+                                color: Theme.text
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                            }
+                            Text {
+                                text: "Connect or enable an output device"
+                                color: Theme.textFaint
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 9
+                            }
                         }
                     }
                 }
+            }
 
-                Text {
-                    width: 76
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "INPUT"
-                    color: Theme.text
-                    font.family: "Noto Sans"
-                    font.pixelSize: 15
-                    font.letterSpacing: 2
-                }
+            Item {
+                width: parent.width
+                height: 14
 
-                Slider {
-                    width: inputRow.width - 28 + - 100 - inputRow.spacing * 2
-                    height: 72
-                    anchors.verticalCenter: parent.verticalCenter
-                    label: ""
-                    icon: ""
-                    value: page.inputMuted ? 0 : page.inputVolume
-
-                    onMoved: v => {
-                        const audio = page.source?.audio
-                        if (!audio)
-                            return
-
-                        audio.muted = false
-                        audio.volume = v
-                    }
-
-                    onCommitted: v => {
-                        const audio = page.source?.audio
-                        if (!audio)
-                            return
-
-                        audio.muted = false
-                        audio.volume = v
-                    }
+                Rectangle {
+                    width: 34
+                    height: 1
+                    radius: 1
+                    color: "#303030"
+                    anchors.centerIn: parent
                 }
             }
 
-            Column {
+            Rectangle {
+                id: inputRow
+                property bool hovered: false
                 width: parent.width
-                spacing: page.sectionSpacing
+                height: 46
+                radius: 8
+                color: hovered ? Theme.alpha(Theme.accent, 0.035) : Theme.alpha(Theme.text, 0.015)
+                border.width: 1
+                border.color: "#303030"
 
-                Repeater {
-                    model: page.inputSources
+                Behavior on color { ColorAnimation { duration: 130 } }
+                Behavior on border.color { ColorAnimation { duration: 130 } }
 
-                    delegate: Rectangle {
-                        required property var modelData
-                        property var input: modelData
-                        property bool active: page.source?.id === input?.id
+                Row {
+                    anchors.fill: parent
+                    anchors.leftMargin: 9
+                    anchors.rightMargin: 9
+                    spacing: 8
 
-                        width: parent.width
-                        height: 40
-                        radius: Theme.radius
-                        color: active ? Theme.alpha(Theme.accent, 0.10) : "transparent"
+                    Rectangle {
+                        width: 27
+                        height: 27
+                        radius: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Theme.alpha(Theme.text, 0.025)
                         border.width: 1
-                        border.color: active ? Theme.accent : Theme.border
+                        border.color: "#303030"
 
-                        Row {
-                            anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 10
-                            spacing: 8
-
-                            Text {
-                                width: 20
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: active ? "\uf192" : "\uf10c"
-                                color: active ? Theme.accent : Theme.textFaint
-                                font.family: Theme.iconFont
-                                font.pixelSize: 11
-                            }
-
-                            Text {
-                                width: parent.width - 28
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: page.displayName(input, "Unknown input").toUpperCase()
-                                color: active ? Theme.accent : Theme.text
-                                font.family: "Noto Sans"
-                                font.pixelSize: 10
-                                elide: Text.ElideRight
-                            }
+                        Text {
+                            anchors.centerIn: parent
+                            text: page.inputMuted ? "\uf131" : "\uf130"
+                            color: page.inputMuted ? Theme.textFaint : Theme.text
+                            font.family: Theme.iconFont
+                            font.pixelSize: 13
                         }
 
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (page.source?.audio)
+                                    page.source.audio.muted = !page.source.audio.muted
+                            }
+                        }
+                    }
+
+                    Column {
+                        width: 82
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 3
+
+                        Text {
+                            width: parent.width
+                            text: "Input volume"
+                            color: Theme.text
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: page.inputMuted ? "Muted" : Math.round(page.inputVolume * 100) + "%"
+                            color: Theme.textFaint
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 9
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    Slider {
+                        width: Math.max(60, inputRow.width - 143)
+                        height: 32
+                        anchors.verticalCenter: parent.verticalCenter
+                        label: ""
+                        icon: ""
+                        value: page.inputMuted ? 0 : page.inputVolume
+                        onMoved: v => {
+                            const audio = page.source?.audio
+                            if (!audio)
+                                return
+                            audio.muted = false
+                            audio.volume = v
+                        }
+                        onCommitted: v => {
+                            const audio = page.source?.audio
+                            if (!audio)
+                                return
+                            audio.muted = false
+                            audio.volume = v
+                        }
+                    }
+                }
+
+                HoverHandler {
+                    onHoveredChanged: inputRow.hovered = hovered
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: 4
+
+                Repeater {
+                    model: page.inputSources
+
+                    delegate: Rectangle {
+                        id: inputCard
+                        property bool hovered: false
+                        required property var modelData
+                        property var input: modelData
+                        property bool active: page.source?.id === input?.id
+
+                        width: parent.width
+                        height: 42
+                        radius: 8
+                        color: active ? Theme.alpha(Theme.accent, 0.045) : (hovered ? Theme.alpha(Theme.accent, 0.03) : Theme.alpha(Theme.text, 0.015))
+                        border.width: 1
+                        border.color: active ? "#5B5B5B" : "#303030"
+
+                        Behavior on color { ColorAnimation { duration: 130 } }
+                        Behavior on border.color { ColorAnimation { duration: 130 } }
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.leftMargin: 9
+                            anchors.rightMargin: 9
+                            spacing: 8
+
+                            Rectangle {
+                                width: 27
+                                height: 27
+                                radius: 8
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: Theme.alpha(Theme.text, 0.025)
+                                border.width: 1
+                                border.color: "#303030"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\uf130"
+                                    color: inputCard.active ? Theme.accent : Theme.textDim
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: 13
+                                }
+                            }
+
+                            Column {
+                                width: parent.width - 35
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 3
+
+                                Text {
+                                    width: parent.width
+                                    text: page.displayName(input, "Unknown input")
+                                    color: Theme.text
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 11
+                                    font.weight: inputCard.active ? Font.Medium : Font.Normal
+                                    elide: Text.ElideRight
+                                }
+
+                                Text {
+                                    width: parent.width
+                                    text: inputCard.active ? "Default input" : "Audio input"
+                                    color: Theme.textFaint
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 9
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onEntered: inputCard.hovered = true
+                            onExited: inputCard.hovered = false
                             onClicked: page.setDefaultInput(input)
                         }
                     }
                 }
 
-                Text {
+                Rectangle {
+                    width: parent.width
+                    height: 44
+                    radius: 8
                     visible: page.inputSources.length === 0
-                    text: "NO SOUND INPUTS"
-                    color: Theme.textFaint
-                    leftPadding: 4
-                    font.family: "Noto Sans"
-                    font.pixelSize: 10
-                    font.letterSpacing: 1.5
+                    color: Theme.alpha(Theme.text, 0.015)
+                    border.width: 1
+                    border.color: "#303030"
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        Rectangle {
+                            width: 27
+                            height: 27
+                            radius: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Theme.alpha(Theme.text, 0.025)
+                            border.width: 1
+                            border.color: "#303030"
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf130"
+                                color: Theme.textFaint
+                                font.family: Theme.iconFont
+                                font.pixelSize: 15
+                            }
+                        }
+
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 3
+                            Text {
+                                text: "No sound inputs"
+                                color: Theme.text
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                            }
+                            Text {
+                                text: "Connect or enable an input device"
+                                color: Theme.textFaint
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 9
+                            }
+                        }
+                    }
                 }
             }
 
             Rectangle {
                 width: parent.width
                 height: 1
-                color: Theme.border
+                color: "#303030"
             }
 
             Row {
                 width: parent.width
-                spacing: 10
+                spacing: 8
 
                 Text {
+                    id: appVolumeLabel
                     anchors.verticalCenter: parent.verticalCenter
                     text: "PER-APP VOLUME"
-                    color: Theme.text
-                    font.family: "Noto Sans"
-                    font.pixelSize: 14
-                    font.letterSpacing: 2
+                    color: Theme.textDim
+                    font.family: Theme.monoFont
+                    font.pixelSize: 10
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.5
                 }
 
-                Text {
+                Item {
+                    width: Math.max(0, parent.width - appVolumeLabel.implicitWidth - streamCountBadge.width - 16)
+                    height: 1
+                }
+
+                Rectangle {
+                    id: streamCountBadge
+                    width: Math.max(26, streamCountText.implicitWidth + 14)
+                    height: 22
+                    radius: 6
+                    color: Theme.alpha(Theme.text, 0.025)
+                    border.width: 1
+                    border.color: "#303030"
                     anchors.verticalCenter: parent.verticalCenter
-                    text: page.appStreams.length
-                    color: Theme.textFaint
-                    font.family: "Noto Sans"
-                    font.pixelSize: 10
+
+                    Text {
+                        id: streamCountText
+                        anchors.centerIn: parent
+                        text: page.appStreams.length
+                        color: Theme.textFaint
+                        font.family: Theme.monoFont
+                        font.pixelSize: 9
+                    }
                 }
             }
 
             Column {
                 width: parent.width
-                spacing: page.sectionSpacing
+                spacing: 4
 
                 Repeater {
                     model: page.appStreams
 
                     delegate: Rectangle {
                         id: appCard
-
                         required property var modelData
                         property var stream: modelData
+                        property bool hovered: false
                         property bool streamMuted: stream?.audio?.muted ?? false
                         property real streamVolume: stream?.audio?.volume ?? 0
 
                         width: parent.width
-                        height: 48
-                        radius: Theme.radius
-                        color: streamMuted ? Theme.alpha(Theme.danger, 0.06) : "transparent"
+                        height: 44
+                        radius: 8
+                        color: streamMuted ? Theme.alpha(Theme.danger, 0.025) : (hovered ? Theme.alpha(Theme.accent, 0.03) : Theme.alpha(Theme.text, 0.015))
                         border.width: 1
-                        border.color: streamMuted ? Theme.alpha(Theme.danger, 0.5) : Theme.border
+                        border.color: streamMuted ? Theme.alpha(Theme.danger, 0.3) : "#303030"
+
+                        Behavior on color { ColorAnimation { duration: 130 } }
+                        Behavior on border.color { ColorAnimation { duration: 130 } }
 
                         Row {
                             id: appRow
-
                             anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 14
-                            spacing: 6
+                            anchors.leftMargin: 9
+                            anchors.rightMargin: 9
+                            spacing: 8
 
                             Rectangle {
-                                width: 28
-                                height: 28
-                                radius: Theme.radius
+                                width: 27
+                                height: 27
+                                radius: 8
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: streamMuted ? Theme.alpha(Theme.danger, 0.15) : Theme.alpha(Theme.accent, 0.10)
+                                color: streamMuted ? Theme.alpha(Theme.danger, 0.055) : Theme.alpha(Theme.text, 0.025)
                                 border.width: 1
-                                border.color: streamMuted ? Theme.danger : Theme.border
+                                border.color: streamMuted ? Theme.alpha(Theme.danger, 0.35) : "#303030"
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: streamMuted ? "\uf026" : "\uf028"
-                                    color: streamMuted ? Theme.danger : Theme.accent
+                                    color: streamMuted ? Theme.danger : Theme.text
                                     font.family: Theme.iconFont
-                                    font.pixelSize: 12
+                                    font.pixelSize: 13
                                 }
 
                                 MouseArea {
@@ -440,31 +664,44 @@ Item {
                                 }
                             }
 
-                            Text {
-                                width: 82
+                            Column {
+                                width: 88
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: page.displayName(stream, "Unknown app").toUpperCase()
-                                color: streamMuted ? Theme.textDim : Theme.text
-                                font.family: "Noto Sans"
-                                font.pixelSize: 11
-                                elide: Text.ElideRight
+                                spacing: 3
+
+                                Text {
+                                    width: parent.width
+                                    text: page.displayName(stream, "Unknown app")
+                                    color: streamMuted ? Theme.textDim : Theme.text
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 11
+                                    font.weight: Font.Medium
+                                    elide: Text.ElideRight
+                                }
+
+                                Text {
+                                    width: parent.width
+                                    text: streamMuted ? "Muted" : Math.round(streamVolume * 100) + "% volume"
+                                    color: Theme.textFaint
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: 9
+                                    elide: Text.ElideRight
+                                }
                             }
 
                             Slider {
-                                width: appRow.width - 28 - 100 - appRow.spacing * 2
-                                height: 72
+                                width: Math.max(50, appRow.width - 131)
+                                height: 32
                                 anchors.verticalCenter: parent.verticalCenter
                                 label: ""
                                 icon: ""
                                 value: streamMuted ? 0 : streamVolume
-
                                 onMoved: v => {
                                     if (stream?.audio) {
                                         stream.audio.muted = false
                                         stream.audio.volume = v
                                     }
                                 }
-
                                 onCommitted: v => {
                                     if (stream?.audio) {
                                         stream.audio.muted = false
@@ -473,17 +710,62 @@ Item {
                                 }
                             }
                         }
+
+                        HoverHandler {
+                            onHoveredChanged: appCard.hovered = hovered
+                        }
                     }
                 }
 
-                Text {
+                Rectangle {
+                    width: parent.width
+                    height: 46
+                    radius: 8
                     visible: page.appStreams.length === 0
-                    text: "NO ACTIVE SOUND STREAMS"
-                    color: Theme.textDim
-                    leftPadding: 4
-                    font.family: "Noto Sans"
-                    font.pixelSize: 10
-                    font.letterSpacing: 1.5
+                    color: Theme.alpha(Theme.text, 0.015)
+                    border.width: 1
+                    border.color: "#303030"
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        Rectangle {
+                            width: 27
+                            height: 27
+                            radius: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Theme.alpha(Theme.text, 0.025)
+                            border.width: 1
+                            border.color: "#303030"
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf028"
+                                color: Theme.textFaint
+                                font.family: Theme.iconFont
+                                font.pixelSize: 13
+                            }
+                        }
+
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 3
+                            Text {
+                                text: "No active audio streams"
+                                color: Theme.text
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                            }
+                            Text {
+                                text: "Applications will appear here when they play audio"
+                                color: Theme.textFaint
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 9
+                            }
+                        }
+                    }
                 }
             }
         }

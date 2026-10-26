@@ -77,7 +77,8 @@ Item {
         if (page.availableProfiles.indexOf(governor) === -1)
             return ;
 
-        profileSet.command = ["sudo", "-n", "/usr/bin/cpupower", "frequency-set", "-g", governor];
+        profileSet.errorOutput = "";
+        profileSet.command = ["/usr/bin/pkexec", "/usr/bin/cpupower", "frequency-set", "-g", governor];
         profileSet.running = true;
     }
 
@@ -143,12 +144,28 @@ Item {
     Process {
         id: profileSet
 
-        onExited: (exitCode) => {
-            if (exitCode !== 0)
-                Quickshell.execDetached(["notify-send", "CPU governor", "Failed to change governor. Check cpupower and sudo permissions."]);
+        property string errorOutput: ""
 
+        onExited: (exitCode) => {
+            if (exitCode !== 0) {
+                let message = profileSet.errorOutput;
+                if (message.length === 0)
+                    message = exitCode === 126 || exitCode === 127 ? "Authorization was denied or pkexec is unavailable." : "Could not change the CPU governor. Check cpupower and the active CPU frequency driver.";
+
+                Quickshell.execDetached(["notify-send", "CPU governor", message.slice(0, 400)]);
+            }
             refreshTimer.restart();
         }
+
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const message = text.trim();
+                if (message.length > 0)
+                    profileSet.errorOutput = message;
+
+            }
+        }
+
     }
 
     Process {
@@ -214,12 +231,25 @@ Item {
             width: flick.width
             spacing: 14
 
-            Text {
-                text: "POWER"
-                color: Theme.text
-                font.family: "Noto Sans"
-                font.pixelSize: 19
-                font.letterSpacing: 3
+            Column {
+                width: parent.width
+                spacing: 4
+
+                Text {
+                    text: "POWER"
+                    color: Theme.text
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 19
+                    font.weight: Font.Normal
+                }
+
+                Text {
+                    text: "CPU performance and battery"
+                    color: Theme.textFaint
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 10
+                }
+
             }
 
             Rectangle {
@@ -235,21 +265,22 @@ Item {
                 Text {
                     text: "CPU GOVERNOR"
                     color: Theme.text
-                    font.family: "Noto Sans"
+                    font.family: Theme.fontFamily
                     font.pixelSize: 15
-                    font.bold: true
-                    font.letterSpacing: 2
+                    font.weight: Font.DemiBold
                 }
 
                 Text {
                     width: parent.width
                     text: page.currentProfile.length > 0 ? "CURRENT: " + page.currentProfile.toUpperCase() : "CURRENT: DETECTING..."
                     color: Theme.textDim
-                    font.family: "Noto Sans"
+                    font.family: Theme.monoFont
                     font.pixelSize: 11
                 }
 
                 Row {
+                    id: profileOptions
+
                     width: parent.width
                     spacing: 10
 
@@ -263,52 +294,58 @@ Item {
                             readonly property bool selected: page.currentProfile === modelData
                             property bool hovered: false
 
-                            width: (parent.width - parent.spacing * (page.availableProfiles.length - 1)) / Math.max(1, page.availableProfiles.length)
+                            width: (profileOptions.width - profileOptions.spacing * (page.availableProfiles.length - 1)) / Math.max(1, page.availableProfiles.length)
                             height: 100
-                            radius: Theme.radius
-                            color: selected ? Theme.alpha(Theme.accent, 0.1) : hovered ? Theme.alpha(Theme.accent, 0.08) : "#00000000"
+                            radius: 10
+                            color: selected ? Theme.alpha(Theme.accent, 0.07) : hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
                             border.width: 1
-                            border.color: (selected || hovered) ? Theme.accent : Theme.border
+                            border.color: selected || hovered ? Theme.accent : Theme.border
 
                             Column {
                                 anchors.centerIn: parent
-                                spacing: 8
+                                width: parent.width - 8
+                                spacing: 7
 
                                 Rectangle {
-                                    width: 28
-                                    height: 28
-                                    radius: Theme.radius
+                                    width: 30
+                                    height: 30
+                                    radius: 8
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    color: card.selected ? Theme.alpha(Theme.accent, 0.1) : Theme.alpha("#A0A0A0", 0.15)
+                                    color: card.selected ? Theme.alpha(Theme.accent, 0.09) : Theme.bgPanel
                                     border.width: 1
-                                    border.color: card.selected ? Theme.accent : Theme.border
+                                    border.color: card.selected ? Theme.alpha(Theme.accent, 0.45) : Theme.border
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: page.profileIcon(card.modelData)
-                                        color: card.selected ? Theme.accent : "#A0A0A0"
+                                        color: card.selected ? Theme.accent : Theme.textDim
                                         font.family: Theme.iconFont
-                                        font.pixelSize: 12
+                                        font.pixelSize: 14
                                     }
 
                                 }
 
                                 Text {
+                                    width: parent.width
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: page.profileLabel(card.modelData)
                                     color: Theme.text
-                                    font.family: "Noto Sans"
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: 11
-                                    font.bold: true
-                                    font.letterSpacing: 1
+                                    font.weight: Font.DemiBold
+                                    horizontalAlignment: Text.AlignHCenter
+                                    elide: Text.ElideRight
                                 }
 
                                 Text {
+                                    width: parent.width
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: page.profileDescription(card.modelData)
-                                    color: Theme.textDim
-                                    font.family: "Noto Sans"
+                                    color: Theme.textFaint
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: 9
+                                    horizontalAlignment: Text.AlignHCenter
+                                    elide: Text.ElideRight
                                 }
 
                                 Text {
@@ -316,9 +353,9 @@ Item {
                                     visible: card.selected
                                     text: "ACTIVE"
                                     color: Theme.accent
-                                    font.family: "Noto Sans"
+                                    font.family: Theme.monoFont
                                     font.pixelSize: 9
-                                    font.bold: true
+                                    font.weight: Font.DemiBold
                                 }
 
                             }
@@ -337,6 +374,20 @@ Item {
                                 }
                             }
 
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 140
+                                }
+
+                            }
+
+                            Behavior on border.color {
+                                ColorAnimation {
+                                    duration: 140
+                                }
+
+                            }
+
                         }
 
                     }
@@ -348,7 +399,7 @@ Item {
                     width: parent.width
                     text: "No CPU governors detected. Check the cpufreq driver."
                     color: Theme.textDim
-                    font.family: "Noto Sans"
+                    font.family: Theme.fontFamily
                     font.pixelSize: 11
                     wrapMode: Text.WordWrap
                 }
@@ -356,8 +407,8 @@ Item {
                 Text {
                     width: parent.width
                     text: "Available governors are detected directly from the kernel."
-                    color: Theme.textDim
-                    font.family: "Noto Sans"
+                    color: Theme.textFaint
+                    font.family: Theme.fontFamily
                     font.pixelSize: 10
                     wrapMode: Text.WordWrap
                 }
@@ -368,64 +419,83 @@ Item {
                 visible: page.hasBattery
                 width: parent.width
                 height: 100
-                radius: Theme.radius
-                color: "#00000000"
+                radius: 10
+                color: Theme.alpha(Theme.text, 0.015)
                 border.width: 1
                 border.color: Theme.border
 
                 Column {
                     anchors.fill: parent
-                    anchors.margins: 14
+                    anchors.margins: 12
                     spacing: 8
 
-                    Row {
-                        spacing: 10
+                    Item {
+                        width: parent.width
+                        height: 30
 
-                        Text {
-                            text: "BATTERY"
-                            color: Theme.text
-                            font.family: "Noto Sans"
-                            font.pixelSize: 14
-                            font.bold: true
+                        Rectangle {
+                            x: 0
+                            width: 30
+                            height: 30
+                            radius: 8
+                            color: Theme.alpha(Theme.accent2, 0.08)
+                            border.width: 1
+                            border.color: Theme.alpha(Theme.accent2, 0.25)
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf240"
+                                color: Theme.accent2
+                                font.family: Theme.iconFont
+                                font.pixelSize: 14
+                            }
+
                         }
 
-                        Text {
-                            text: page.batteryStatus.toUpperCase()
-                            color: Theme.textDim
-                            font.family: "Noto Sans"
-                            font.pixelSize: 12
-                        }
+                        Column {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 40
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 2
 
-                        Text {
-                            visible: page.batteryStatus === "Charging"
-                            text: "CHARGING"
-                            color: Theme.accent2
-                            font.family: "Noto Sans"
-                            font.pixelSize: 10
+                            Text {
+                                text: "BATTERY"
+                                color: Theme.text
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 14
+                                font.weight: Font.DemiBold
+                            }
+
+                            Text {
+                                text: page.batteryStatus.toUpperCase()
+                                color: page.batteryStatus === "Charging" ? Theme.accent2 : Theme.textFaint
+                                font.family: Theme.monoFont
+                                font.pixelSize: 9
+                            }
+
                         }
 
                     }
 
                     Item {
                         width: parent.width
-                        height: levelLabel.implicitHeight
+                        height: 12
 
                         Text {
-                            id: levelLabel
-
                             anchors.left: parent.left
-                            text: "LEVEL"
-                            color: Theme.textDim
-                            font.family: "Noto Sans"
-                            font.pixelSize: 11
+                            text: "BATTERY LEVEL"
+                            color: Theme.textFaint
+                            font.family: Theme.monoFont
+                            font.pixelSize: 9
                         }
 
                         Text {
                             anchors.right: parent.right
                             text: page.batteryPercent + "%"
-                            color: Theme.text
-                            font.family: "Noto Sans"
+                            color: page.batteryPercent <= 15 ? Theme.danger : Theme.text
+                            font.family: Theme.monoFont
                             font.pixelSize: 11
+                            font.weight: Font.DemiBold
                         }
 
                     }
@@ -434,13 +504,13 @@ Item {
                         width: parent.width
                         height: 6
                         radius: 3
-                        color: Theme.alpha("#A0A0A0", 0.15)
+                        color: Theme.alpha(Theme.text, 0.08)
 
                         Rectangle {
                             width: parent.width * Math.max(0, Math.min(1, page.batteryPercent / 100))
                             height: parent.height
                             radius: 3
-                            color: page.batteryPercent <= 15 ? "#E05555" : Theme.accent2
+                            color: page.batteryPercent <= 15 ? Theme.danger : Theme.accent2
 
                             Behavior on width {
                                 NumberAnimation {
@@ -468,7 +538,7 @@ Item {
             }
 
             contentItem: Rectangle {
-                color: Theme.accent
+                color: Theme.alpha(Theme.accent, 0.75)
                 radius: width / 2
             }
 
