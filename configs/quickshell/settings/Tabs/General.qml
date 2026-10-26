@@ -1592,6 +1592,12 @@ Item {
 
             }
 
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#383838"
+            }
+
             Text {
                 text: "GAPS"
                 color: Theme.text
@@ -1727,6 +1733,12 @@ Item {
                 label: "INACTIVE BORDER"
                 colorValue: page.colInactive
                 onClicked: colorPopup.openFor("inactive")
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#383838"
             }
 
             Text {
@@ -1945,6 +1957,12 @@ Item {
 
             }
 
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#383838"
+            }
+
             Text {
                 text: "DECORATION"
                 color: Theme.text
@@ -2157,6 +2175,12 @@ Item {
                 }
             }
 
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#383838"
+            }
+
             Text {
                 text: "MISC / XWAYLAND"
                 color: Theme.text
@@ -2188,7 +2212,7 @@ Item {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: Theme.alpha(Theme.border, 0.55)
+                color: "#383838"
             }
 
             Text {

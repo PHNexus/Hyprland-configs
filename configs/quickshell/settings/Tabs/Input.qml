@@ -1050,6 +1050,12 @@ Item {
 
             }
 
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#383838"
+            }
+
             Text {
                 text: "POINTER"
                 color: Theme.text
@@ -1193,6 +1199,12 @@ Item {
                         }
                     }
                 }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#383838"
             }
 
             Text {
@@ -1422,6 +1434,12 @@ Item {
                 width: parent.width
                 spacing: 8
                 visible: page.detectedPointerDevices.length > 0 || page.deviceOverrides.length > 0
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: "#383838"
+                }
 
                 Column {
                     width: parent.width
