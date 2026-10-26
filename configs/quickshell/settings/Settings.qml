@@ -210,6 +210,16 @@ FloatingWindow {
             root.show();
         }
 
+        function general() {
+            root.selectedIndex = 6;
+            root.show();
+        }
+
+        function input() {
+            root.selectedIndex = 7;
+            root.show();
+        }
+
         function keybinds() {
             root.selectedIndex = 8;
             root.show();
