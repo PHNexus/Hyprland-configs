@@ -293,6 +293,12 @@ Item {
         if (cmd === "kitty")
             return "Terminal";
 
+        if (cmd === "[float; center; size 1150 700] kitty")
+            return "Terminal Float";
+
+        if (cmd === "helium-browser http://localhost:8080")
+            return "Local AI";
+
         if (cmd === "thunar")
             return "File Manager";
 
