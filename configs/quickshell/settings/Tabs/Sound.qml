@@ -76,7 +76,7 @@ Item {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: "#303030"
+                color: "#383838"
             }
 
             Rectangle {
@@ -313,10 +313,9 @@ Item {
                 height: 14
 
                 Rectangle {
-                    width: 34
+                    width: parent.width
                     height: 1
-                    radius: 1
-                    color: "#303030"
+                    color: "#383838"
                     anchors.centerIn: parent
                 }
             }
@@ -561,7 +560,7 @@ Item {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: "#303030"
+                color: "#383838"
             }
 
             Row {
