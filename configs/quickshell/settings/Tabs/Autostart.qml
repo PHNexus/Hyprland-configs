@@ -157,9 +157,6 @@ Item {
         if (!clean)
             return false;
 
-        // Keep new commands inside the existing hyprland.start callback.
-        // Appending after `return M` would place them outside setup.
-        // Accept Lua's single/double quotes and harmless spacing variations.
         var startMatch = /hl\.on\s*\(\s*(["'])hyprland\.start\1\s*,\s*function\s*\(/.exec(sourceText);
         var shutdownMatch = /hl\.on\s*\(\s*(["'])hyprland\.shutdown\1\s*,\s*function\s*\(/.exec(sourceText);
         var startIndex = startMatch ? startMatch.index : -1;
@@ -388,34 +385,42 @@ Item {
         }
 
         Rectangle {
+            id: cardsContainer
+
             Layout.fillWidth: true
             Layout.fillHeight: true
             color: "transparent"
             clip: true
 
             ScrollView {
+                id: cardsScroll
+
                 anchors.fill: parent
                 clip: true
+                contentWidth: width
+                contentHeight: cardsGrid.height
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-                GridLayout {
+                Flow {
                     id: cardsGrid
 
-                    width: parent.width
-                    columns: width >= 620 ? 2 : 1
-                    columnSpacing: 10
-                    rowSpacing: 10
+                    width: cardsContainer.width
+                    height: childrenRect.height
+                    spacing: 10
 
                     Repeater {
+                        id: entriesRepeater
+
                         model: page.filteredEntries()
 
                         delegate: Rectangle {
                             id: entryCard
 
                             required property var modelData
+                            readonly property bool twoColumns: cardsGrid.width >= 620 && entriesRepeater.count > 1
 
-                            Layout.fillWidth: true
-                            Layout.preferredWidth: (cardsGrid.width - cardsGrid.columnSpacing) / 2
-                            Layout.preferredHeight: 100
+                            width: twoColumns ? (cardsGrid.width - cardsGrid.spacing) / 2 : cardsGrid.width
+                            height: 100
                             radius: 10
                             color: entryHover.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
                             border.width: 1
@@ -608,13 +613,6 @@ Item {
                                     font.pixelSize: 10
                                     elide: Text.ElideRight
                                     maximumLineCount: 1
-                                }
-
-                            }
-
-                            Behavior on border.color {
-                                ColorAnimation {
-                                    duration: 130
                                 }
 
                             }
