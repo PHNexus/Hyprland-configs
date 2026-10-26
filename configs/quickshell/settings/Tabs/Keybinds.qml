@@ -123,7 +123,6 @@ Item {
                 i = next;
                 continue;
             }
-            // Allow valid Lua whitespace between the function name and `(`.
             var bindMatch = s.slice(i).match(/^hl\.bind\s*\(/);
             if (bindMatch) {
                 var open = i + bindMatch[0].length - 1, depth = 1, j = open + 1;
@@ -227,7 +226,6 @@ Item {
 
     function getKey(raw, source) {
         var value = raw.trim();
-        // Support format: mainMod .. " + B"
         if (value.indexOf("mainMod") >= 0) {
             var match = value.match(/["']([^"']*)["']/);
             if (match) {
@@ -416,8 +414,6 @@ Item {
         if (includeDisabled === false)
             return parsed;
 
-        // Disabled bindings are stored in reversible comment blocks so multiline Lua calls
-        // can be toggled without losing their original formatting or comments.
         var markerPattern = /(^|\n)-- KEYBIND_DISABLED_BEGIN\r?\n([\s\S]*?)\r?\n-- KEYBIND_DISABLED_END/g;
         var markerMatch;
         while ((markerMatch = markerPattern.exec(s)) !== null) {
@@ -926,34 +922,42 @@ Item {
         }
 
         Rectangle {
+            id: cardsContainer
+
             Layout.fillWidth: true
             Layout.fillHeight: true
             color: "transparent"
             clip: true
 
             ScrollView {
+                id: cardsScroll
+
                 anchors.fill: parent
                 clip: true
+                contentWidth: width
+                contentHeight: cardsGrid.height
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-                GridLayout {
+                Flow {
                     id: cardsGrid
 
-                    width: parent.width
-                    columns: width >= 620 ? 2 : 1
-                    columnSpacing: 10
-                    rowSpacing: 10
+                    width: cardsContainer.width
+                    height: childrenRect.height
+                    spacing: 10
 
                     Repeater {
+                        id: shortcutRepeater
+
                         model: page.visibleBindings()
 
                         delegate: Rectangle {
                             id: shortcutCard
 
                             required property var modelData
+                            readonly property bool twoColumns: cardsGrid.width >= 620 && shortcutRepeater.count > 1
 
-                            Layout.fillWidth: true
-                            Layout.preferredWidth: (cardsGrid.width - cardsGrid.columnSpacing) / 2
-                            Layout.preferredHeight: 100
+                            width: twoColumns ? (cardsGrid.width - cardsGrid.spacing) / 2 : cardsGrid.width
+                            height: 100
                             radius: 10
                             color: cardHover.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
                             opacity: shortcutCard.modelData.enabled ? 1 : 0.58
