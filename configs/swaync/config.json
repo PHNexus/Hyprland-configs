@@ -143,16 +143,8 @@
             "command": "sh -c 'swaync-client --close-panel; settings show; qs -p \"$HOME/.config/quickshell/settings\" ipc call settings display'"
           },
           {
-            "label": "   Sound",
-            "command": "sh -c 'swaync-client --close-panel; settings show; qs -p \"$HOME/.config/quickshell/settings\" ipc call settings sound'"
-          },
-          {
             "label": "   General",
             "command": "sh -c 'swaync-client --close-panel; settings show; qs -p \"$HOME/.config/quickshell/settings\" ipc call settings general'"
-          },
-          {
-            "label": "  󰌌   Input Devices",
-            "command": "sh -c 'swaync-client --close-panel; settings show; qs -p \"$HOME/.config/quickshell/settings\" ipc call settings input'"
           },
           {
             "label": "󰌌   Keybinds",
@@ -163,12 +155,20 @@
             "command": "sh -c 'swaync-client --close-panel; settings show; qs -p \"$HOME/.config/quickshell/settings\" ipc call settings autostart'"
           },
           {
+            "label": "󰋊   Storage",
+            "command": "sh -c 'swaync-client --close-panel; settings show; qs -p \"$HOME/.config/quickshell/settings\" ipc call settings storage'"
+          },
+          {
             "label": "󰧮   Configs",
             "command": "sh -c 'swaync-client --close-panel; settings show; qs -p \"$HOME/.config/quickshell/settings\" ipc call settings configs'"
           },
           {
-            "label": "󰋊   Storage",
-            "command": "sh -c 'swaync-client --close-panel; settings show; qs -p \"$HOME/.config/quickshell/settings\" ipc call settings storage'"
+            "label": "   Sound",
+            "command": "sh -c 'swaync-client --close-panel; settings show; qs -p \"$HOME/.config/quickshell/settings\" ipc call settings sound'"
+          },
+          {
+            "label": "󰌌   Input",
+            "command": "sh -c 'swaync-client --close-panel; settings show; qs -p \"$HOME/.config/quickshell/settings\" ipc call settings input'"
           },
           {
             "label": "󰐥   Power",
