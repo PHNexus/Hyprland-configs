@@ -299,7 +299,11 @@ Item {
                             radius: 10
                             color: selected ? Theme.alpha(Theme.accent, 0.07) : hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
                             border.width: 1
-                            border.color: selected || hovered ? Theme.accent : Theme.border
+                            border.color: cardBorderHover.hovered ? "#555555" : "#393939"
+
+                            HoverHandler {
+                                id: cardBorderHover
+                            }
 
                             Column {
                                 anchors.centerIn: parent
@@ -383,7 +387,7 @@ Item {
 
                             Behavior on border.color {
                                 ColorAnimation {
-                                    duration: 140
+                                    duration: 130
                                 }
 
                             }
@@ -422,7 +426,11 @@ Item {
                 radius: 10
                 color: Theme.alpha(Theme.text, 0.015)
                 border.width: 1
-                border.color: Theme.border
+                border.color: batteryBorderHover.hovered ? "#555555" : "#393939"
+
+                HoverHandler {
+                    id: batteryBorderHover
+                }
 
                 Column {
                     anchors.fill: parent
@@ -521,6 +529,13 @@ Item {
 
                         }
 
+                    }
+
+                }
+
+                Behavior on border.color {
+                    ColorAnimation {
+                        duration: 130
                     }
 
                 }
