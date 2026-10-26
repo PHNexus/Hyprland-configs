@@ -22,9 +22,9 @@ function M.setup()
         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/wallpapers/set-random.sh"))
     hl.bind(mainMod .. " + W", --If you have 2 monitors it will open a WOFI menu to select one of the 2 if you have one it goes straight
         hl.dsp.exec_cmd("~/.local/bin/hyprquickpaper toggle"))
-    hl.bind("CTRL + SHIFT + L ",
-    hl.dsp.exec_cmd(
-        "sh -c 'pgrep -x wlogout >/dev/null && pkill -x wlogout || wlogout -b 1 -c 20 -r 20 -L 1700 -R 1700 -T 325 -B 325'"))
+    hl.bind(mainMod .. " + SHIFT + L",
+        hl.dsp.exec_cmd(
+            "sh -c 'pgrep -x wlogout >/dev/null && pkill -x wlogout || wlogout -b 1 -c 20 -r 20 -L 1700 -R 1700 -T 325 -B 325'"))
 
 
     -- ============================================================
