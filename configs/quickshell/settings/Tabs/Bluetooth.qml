@@ -48,6 +48,7 @@ Item {
     function setDiscovering(on) {
         var shouldDiscover = Boolean(on) && page.visible;
         page.desiredDiscovery = shouldDiscover;
+
         if (!page.adapter || page.adapter.state !== BluetoothAdapterState.Enabled)
             return ;
 
@@ -277,7 +278,6 @@ Item {
             page.discoveryCommandPending = false;
             if (page.desiredDiscovery !== page.lastDiscoveryRequest)
                 page.setDiscovering(page.desiredDiscovery);
-
         }
     }
 
@@ -356,70 +356,158 @@ Item {
         anchors.rightMargin: page.marginRight
         anchors.topMargin: page.marginTop
         anchors.bottomMargin: page.marginBottom
-        spacing: 14
+        spacing: 12
 
-        Text {
-            text: "BLUETOOTH"
-            color: Theme.text
-            font.family: "Noto Sans"
-            font.pixelSize: 19
-            font.letterSpacing: 3
+        Column {
+            width: parent.width
+            spacing: 3
+
+            Text {
+                text: "BLUETOOTH"
+                color: "#f0f0f0"
+                font.family: Theme.fontFamily
+                font.pixelSize: 19
+                font.weight: Font.Normal
+            }
+
+            Text {
+                text: "Nearby devices, pairing and connection status"
+                color: "#999999"
+                font.family: Theme.fontFamily
+                font.pixelSize: 10
+            }
         }
 
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.border
+            color: "#383838"
         }
 
         Rectangle {
+            id: powerStatus
+            property bool hovered: false
+
             width: parent.width
-            height: 36
-            radius: Theme.radius
-            color: page.powered ? Theme.alpha(Theme.accent, 0.1) : Theme.alpha(Theme.textFaint, 0.15)
+            height: 54
+            radius: 10
+            color: hovered ? Theme.alpha(Theme.text, 0.045) : Theme.alpha(Theme.text, 0.015)
             border.width: 1
-            border.color: page.powered ? Theme.accent : Theme.textFaint
+            border.color: hovered ? "#555555" : "#393939"
 
-            Text {
-                anchors.centerIn: parent
-                text: page.adapterStatusLabel
-                color: page.powered ? Theme.accent : Theme.textFaint
-                font.family: "Noto Sans"
-                font.pixelSize: 10
-                font.bold: true
-                font.letterSpacing: 1
-            }
+            Row {
+                anchors.left: parent.left
+                anchors.leftMargin: 12
+                anchors.right: powerAction.left
+                anchors.rightMargin: 10
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 10
 
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    page.togglePower();
+                Rectangle {
+                    width: 32
+                    height: 32
+                    radius: 8
+                    color: Theme.alpha(Theme.text, 0.025)
+                    border.width: 1
+                    border.color: "#414141"
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf294"
+                        color: page.powered ? "#eeeeee" : "#858585"
+                        font.family: Theme.iconFont
+                        font.pixelSize: 16
+                    }
+                }
+
+                Column {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 3
+
+                    Text {
+                        text: "Bluetooth"
+                        color: "#f0f0f0"
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                    }
+
+                    Text {
+                        text: page.adapter ? page.adapterStatusLabel.toLowerCase() : "waiting for adapter"
+                        color: "#999999"
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 10
+                    }
                 }
             }
 
+            Rectangle {
+                id: powerAction
+                property bool actionHovered: false
+
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                width: page.powered ? 76 : 64
+                height: 28
+                radius: 7
+                color: actionHovered ? Theme.alpha(Theme.text, 0.05) : Theme.alpha(Theme.text, 0.025)
+                border.width: 1
+                border.color: actionHovered ? "#777777" : "#505050"
+
+                Text {
+                    anchors.centerIn: parent
+                    text: page.powered ? "Disable" : "Enable"
+                    color: "#eeeeee"
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 10
+                    font.weight: Font.DemiBold
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onEntered: powerAction.actionHovered = true
+                    onExited: powerAction.actionHovered = false
+                    onClicked: page.togglePower()
+                }
+
+                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on border.color { ColorAnimation { duration: 120 } }
+            }
+
+            HoverHandler {
+                onHoveredChanged: powerStatus.hovered = hovered
+            }
+
+            Behavior on color { ColorAnimation { duration: 130 } }
+            Behavior on border.color { ColorAnimation { duration: 130 } }
         }
 
         Text {
             width: parent.width
             visible: page.statusText !== ""
             text: page.statusText
-            color: Theme.accent
-            font.family: "Noto Sans"
+            color: "#999999"
+            font.family: Theme.fontFamily
             font.pixelSize: 10
             wrapMode: Text.Wrap
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: Text.AlignLeft
+            leftPadding: 2
         }
 
         Text {
             width: parent.width
             visible: !page.adapter
             text: "Waiting for Bluetooth service and adapter..."
-            color: Theme.textDim
-            font.family: "Noto Sans"
+            color: "#999999"
+            font.family: Theme.fontFamily
             font.pixelSize: 10
             wrapMode: Text.Wrap
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: Text.AlignLeft
+            leftPadding: 2
         }
 
         Flickable {
@@ -438,81 +526,108 @@ Item {
                 width: flick.width
                 spacing: 6
 
-                Item {
+                Rectangle {
                     width: list.width
-                    height: 100
+                    height: 70
+                    radius: 10
                     visible: page.adapter && !page.powered
+                    color: Theme.alpha(Theme.text, 0.015)
+                    border.width: 1
+                    border.color: "#393939"
 
-                    Column {
+                    Row {
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 12
 
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: "\uf294"
-                            color: Theme.textDim
-                            font.family: Theme.iconFont
-                            font.pixelSize: 24
+                        Rectangle {
+                            width: 34
+                            height: 34
+                            radius: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Theme.alpha(Theme.text, 0.025)
+                            border.width: 1
+                            border.color: "#404040"
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf294"
+                                color: "#999999"
+                                font.family: Theme.iconFont
+                                font.pixelSize: 16
+                            }
                         }
 
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: "BLUETOOTH IS OFF"
-                            color: Theme.textDim
-                            font.family: "Noto Sans"
-                            font.pixelSize: 11
-                            font.letterSpacing: 1
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 3
+                            Text {
+                                text: "Bluetooth is off"
+                                color: "#eeeeee"
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                            }
+                            Text {
+                                text: "Turn on the adapter to discover devices"
+                                color: "#999999"
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 10
+                            }
                         }
-
                     }
-
                 }
 
-                Item {
+                Rectangle {
                     width: list.width
-                    height: 112
+                    height: 76
+                    radius: 10
                     visible: page.powered && repeater.count === 0
+                    color: Theme.alpha(Theme.text, 0.015)
+                    border.width: 1
+                    border.color: "#393939"
 
-                    Column {
+                    Row {
                         anchors.centerIn: parent
-                        spacing: 8
-
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: page.scanning ? "\uf1eb" : "\uf071"
-                            color: Theme.textDim
-                            font.family: Theme.iconFont
-                            font.pixelSize: 22
+                        spacing: 12
+                        Rectangle {
+                            width: 34
+                            height: 34
+                            radius: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Theme.alpha(Theme.text, 0.025)
+                            border.width: 1
+                            border.color: "#404040"
+                            Text {
+                                anchors.centerIn: parent
+                                text: page.scanning ? "\uf1eb" : "\uf071"
+                                color: "#dedede"
+                                font.family: Theme.iconFont
+                                font.pixelSize: 16
+                            }
                         }
-
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: page.scanning ? "SCANNING FOR DEVICES..." : "NO DEVICES FOUND"
-                            color: Theme.textDim
-                            font.family: "Noto Sans"
-                            font.pixelSize: 11
-                            font.letterSpacing: 1
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 3
+                            Text {
+                                text: page.scanning ? "Scanning devices" : "No devices found"
+                                color: "#eeeeee"
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                            }
+                            Text {
+                                text: page.scanning ? "Make devices discoverable and keep this page open." : "Click here to scan again."
+                                color: "#999999"
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 10
+                            }
                         }
-
-                        Text {
-                            width: list.width - 20
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: page.scanning ? "Make your device discoverable and keep this page open." : "Waiting for Bluetooth discovery..."
-                            color: Theme.textFaint
-                            font.family: "Noto Sans"
-                            font.pixelSize: 9
-                            wrapMode: Text.Wrap
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-
                     }
-
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
+                        enabled: !page.scanning
                         onClicked: page.setDiscovering(true)
                     }
-
                 }
 
                 Repeater {
@@ -625,11 +740,15 @@ Item {
 
                         visible: !(typeof BluetoothState !== "undefined" && BluetoothState.removingDevices && BluetoothState.removingDevices[deviceKey])
                         width: list.width
-                        height: visible ? 52 : 0
-                        radius: Theme.radius
-                        color: isConnected ? Theme.alpha(Theme.accent, 0.1) : "transparent"
+                        height: visible ? 54 : 0
+                        radius: 10
+                        color: isConnected ? Theme.alpha(Theme.text, 0.035) : (cardHover.hovered ? Theme.alpha(Theme.text, 0.045) : Theme.alpha(Theme.text, 0.015))
                         border.width: 1
-                        border.color: isConnected ? Theme.accent : Theme.border
+                        border.color: cardHover.hovered ? "#555555" : "#393939"
+
+                        HoverHandler {
+                            id: cardHover
+                        }
 
                         Timer {
                             id: forgetTimeout
@@ -735,154 +854,176 @@ Item {
                         Item {
                             id: actionArea
 
-                            x: 14
-                            y: 0
-                            width: 140
-                            height: card.height
+                            anchors.right: parent.right
+                            anchors.rightMargin: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 118
+                            height: 34
 
                             Row {
+                                anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
-                                spacing: 12
+                                spacing: 6
 
-                                Text {
-                                    id: actionText
+                                Rectangle {
+                                    id: actionButton
+                                    property bool hovered: false
+                                    width: 82
+                                    height: 28
+                                    radius: 7
+                                    color: hovered ? Theme.alpha(Theme.text, 0.05) : Theme.alpha(Theme.text, 0.025)
+                                    border.width: 1
+                                    border.color: hovered ? "#777777" : "#4b4b4b"
 
-                                    width: Math.min(implicitWidth, 80)
-                                    height: parent.height
-                                    text: page.actionLabel(card.modelData, card)
-                                    color: card.isConnected ? Theme.danger : Theme.accent
-                                    font.family: "Noto Sans"
-                                    font.pixelSize: 10
-                                    verticalAlignment: Text.AlignVCenter
-                                    elide: Text.ElideRight
+                                    Text {
+                                        id: actionText
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 4
+                                        anchors.rightMargin: 4
+                                        text: page.actionLabel(card.modelData, card)
+                                        color: "#eeeeee"
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 9
+                                        font.weight: Font.Medium
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                        elide: Text.ElideRight
+                                    }
 
                                     MouseArea {
                                         anchors.fill: parent
+                                        hoverEnabled: true
                                         cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            page.deviceAction(card.modelData, card);
-                                        }
+                                        onEntered: actionButton.hovered = true
+                                        onExited: actionButton.hovered = false
+                                        onClicked: page.deviceAction(card.modelData, card)
                                     }
 
+                                    Behavior on color { ColorAnimation { duration: 120 } }
+                                    Behavior on border.color { ColorAnimation { duration: 120 } }
                                 }
 
                                 Item {
                                     id: removeButton
-
-                                    width: 28
+                                    width: 26
                                     height: 28
                                     anchors.verticalCenter: parent.verticalCenter
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: 7
+                                        color: unpairMouseArea.containsMouse ? Theme.alpha(Theme.text, 0.06) : "transparent"
+                                        border.width: 1
+                                        border.color: unpairMouseArea.containsMouse ? "#555555" : "transparent"
+                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                        Behavior on border.color { ColorAnimation { duration: 120 } }
+                                    }
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: "\uf293"
-                                        color: Theme.textDim
+                                        color: unpairMouseArea.containsMouse ? "#eeeeee" : "#999999"
                                         font.family: Theme.iconFont
-                                        font.pixelSize: 16
+                                        font.pixelSize: 13
                                     }
 
                                     MouseArea {
                                         id: unpairMouseArea
-
                                         anchors.fill: parent
                                         cursorShape: Qt.PointingHandCursor
                                         hoverEnabled: true
-                                        onClicked: {
-                                            page.removeDevice(card.modelData);
-                                        }
+                                        onClicked: page.removeDevice(card.modelData)
                                     }
 
-                                    Rectangle {
+                                    ToolTip {
                                         visible: unpairMouseArea.containsMouse
-                                        z: 100
-                                        x: -8
+                                        delay: 600
+                                        padding: 5
+                                        parent: removeButton
+                                        x: Math.round((removeButton.width - width) / 2)
                                         y: removeButton.height + 6
-                                        width: tooltipText.width + 16
-                                        height: 24
-                                        radius: 4
-                                        color: "transparent"
-
-                                        Text {
-                                            id: tooltipText
-
-                                            anchors.centerIn: parent
-                                            text: "Unpair"
-                                            color: "white"
-                                            font.family: "Noto Sans"
-                                            font.pixelSize: 10
+                                        background: Rectangle {
+                                            color: "#202126"
+                                            radius: 5
+                                            border.width: 1
+                                            border.color: "#414141"
                                         }
-
+                                        contentItem: Text {
+                                            text: "Unpair"
+                                            color: "#eeeeee"
+                                            font.family: Theme.fontFamily
+                                            font.pixelSize: 9
+                                            font.weight: Font.Medium
+                                        }
                                     }
-
                                 }
-
                             }
-
                         }
 
                         Item {
                             id: deviceInfo
 
-                            x: actionArea.width + 28
-                            y: 0
-                            width: Math.max(0, card.width - actionArea.width - 42)
-                            height: card.height
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
+                            anchors.right: actionArea.left
+                            anchors.rightMargin: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            height: 38
 
-                            Text {
-                                id: deviceIcon
+                            Row {
+                                anchors.fill: parent
+                                spacing: 10
 
-                                x: 0
-                                y: (parent.height - height) / 2
-                                width: 18
-                                height: 18
-                                text: "\uf294"
-                                color: card.isConnected ? Theme.accent : Theme.textDim
-                                font.family: Theme.iconFont
-                                font.pixelSize: 15
-                                verticalAlignment: Text.AlignVCenter
-                            }
-
-                            Column {
-                                id: deviceText
-
-                                x: 28
-                                y: (parent.height - height) / 2
-                                width: Math.max(0, parent.width - x)
-                                spacing: 2
-
-                                Text {
-                                    width: parent.width
-                                    text: card.modelData.name || card.modelData.deviceName || card.modelData.address
-                                    elide: Text.ElideRight
-                                    color: Theme.text
-                                    font.family: "Noto Sans"
-                                    font.pixelSize: 12
-                                }
-
-                                Text {
-                                    width: parent.width
-                                    text: {
-                                        var parts = [];
-                                        if (card.modelData.address)
-                                            parts.push(card.modelData.address);
-
-                                        if (card.isConnected)
-                                            parts.push("connected");
-                                        else if (card.modelData.paired)
-                                            parts.push("paired");
-                                        if (card.modelData.batteryAvailable)
-                                            parts.push(Math.round(card.modelData.battery * 100) + "%");
-
-                                        return parts.join("  •  ");
+                                Rectangle {
+                                    width: 32
+                                    height: 32
+                                    radius: 8
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Theme.alpha(Theme.text, 0.025)
+                                    border.width: 1
+                                    border.color: "#414141"
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "\uf294"
+                                        color: card.isConnected ? "#eeeeee" : "#a0a0a0"
+                                        font.family: Theme.iconFont
+                                        font.pixelSize: 15
                                     }
-                                    color: card.isConnected ? Theme.accent : Theme.textFaint
-                                    font.family: "Noto Sans"
-                                    font.pixelSize: 9
-                                    elide: Text.ElideRight
                                 }
 
-                            }
+                                Column {
+                                    width: Math.max(0, parent.width - 42)
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 3
 
+                                    Text {
+                                        width: parent.width
+                                        text: card.modelData.name || card.modelData.deviceName || card.modelData.address
+                                        elide: Text.ElideRight
+                                        color: "#f0f0f0"
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 12
+                                        font.weight: card.isConnected ? Font.DemiBold : Font.Medium
+                                    }
+
+                                    Text {
+                                        width: parent.width
+                                        text: {
+                                            var parts = [];
+                                            if (card.isConnected) parts.push("Connected");
+                                            else if (card.modelData.paired) parts.push("Paired");
+                                            else parts.push("Available");
+                                            if (card.modelData.address) parts.push(card.modelData.address);
+                                            if (card.modelData.batteryAvailable) parts.push(Math.round(card.modelData.battery * 100) + "% battery");
+                                            return parts.join(" · ");
+                                        }
+                                        color: "#999999"
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 9
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                            }
                         }
 
                     }

@@ -287,24 +287,26 @@ Item {
                 spacing: 4
 
                 Text {
-                    text: "Autostart Manager"
+                    text: "AUTOSTART"
                     color: Theme.text
-                    font.family: Theme.displayFont
-                    font.pixelSize: 22
-                    font.weight: Font.DemiBold
+                    font.family: "Noto Sans"
+                    font.pixelSize: 19
+                    font.weight: Font.Normal
                 }
 
                 Text {
                     text: page.entries.length + " startup commands · autostart.lua"
                     color: Theme.textFaint
-                    font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.family: "Noto Sans"
+                    font.pixelSize: 10
                 }
 
             }
 
             Button {
                 text: "Reload"
+                implicitHeight: 28
+                implicitWidth: 70
                 enabled: page.fileReady
                 onClicked: {
                     autostartFile.reload();
@@ -312,7 +314,7 @@ Item {
                 }
 
                 background: Rectangle {
-                    radius: 9
+                    radius: 7
                     color: parent.hovered ? Theme.bgPanel : Theme.bgCard
                     border.width: 1
                     border.color: Theme.border
@@ -331,6 +333,8 @@ Item {
 
             Button {
                 text: "+ Add command"
+                implicitHeight: 28
+                implicitWidth: 116
                 enabled: page.fileReady
                 onClicked: {
                     page.dialogIsEdit = false;
@@ -360,6 +364,12 @@ Item {
 
         }
 
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 1
+            color: Theme.border
+        }
+
         TextField {
             Layout.fillWidth: true
             placeholderText: "Search startup commands..."
@@ -369,8 +379,8 @@ Item {
             onTextChanged: page.searchText = text
 
             background: Rectangle {
-                color: Theme.bgCard
-                radius: 11
+                color: Theme.alpha(Theme.text, 0.025)
+                radius: 7
                 border.width: 1
                 border.color: parent.activeFocus ? Theme.accent : Theme.border
             }
@@ -405,11 +415,11 @@ Item {
 
                             Layout.fillWidth: true
                             Layout.preferredWidth: (cardsGrid.width - cardsGrid.columnSpacing) / 2
-                            Layout.preferredHeight: 110
-                            radius: 14
-                            color: entryHover.hovered ? Theme.bgPanel : Theme.bgCard
+                            Layout.preferredHeight: 100
+                            radius: 10
+                            color: entryHover.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
                             border.width: 1
-                            border.color: entryHover.hovered ? Theme.accent : Theme.border
+                            border.color: entryHover.hovered ? "#555555" : "#393939"
                             opacity: modelData.enabled ? 1 : 0.6
 
                             HoverHandler {
@@ -418,17 +428,17 @@ Item {
 
                             ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 13
-                                spacing: 8
+                                anchors.margins: 10
+                                spacing: 6
 
                                 RowLayout {
                                     Layout.fillWidth: true
                                     spacing: 9
 
                                     Rectangle {
-                                        Layout.preferredWidth: 36
-                                        Layout.preferredHeight: 36
-                                        radius: 10
+                                        Layout.preferredWidth: 30
+                                        Layout.preferredHeight: 30
+                                        radius: 7
                                         color: Theme.bgPanel
                                         border.width: 1
                                         border.color: Theme.border
@@ -438,7 +448,7 @@ Item {
                                             text: "󰐥"
                                             color: modelData.enabled ? Theme.accent : Theme.textFaint
                                             font.family: Theme.iconFont
-                                            font.pixelSize: 17
+                                            font.pixelSize: 15
                                         }
 
                                     }
@@ -475,7 +485,7 @@ Item {
                                         indicator: Rectangle {
                                             implicitWidth: 38
                                             implicitHeight: 20
-                                            radius: 10
+                                            radius: 7
                                             color: entrySwitch.checked ? Theme.accent : Theme.bgPanel
                                             border.width: 1
                                             border.color: entrySwitch.checked ? Qt.lighter(Theme.accent, 1.15) : Theme.border
@@ -512,8 +522,8 @@ Item {
                                     Button {
                                         id: editButton
 
-                                        implicitWidth: 34
-                                        implicitHeight: 34
+                                        implicitWidth: 28
+                                        implicitHeight: 28
                                         hoverEnabled: true
                                         onClicked: {
                                             page.dialogIsEdit = true;
@@ -526,7 +536,7 @@ Item {
                                         ToolTip.delay: 500
 
                                         background: Rectangle {
-                                            radius: 10
+                                            radius: 7
                                             color: editButton.hovered ? Theme.bgCard : "transparent"
                                             border.width: 1
                                             border.color: editButton.hovered ? Theme.accent : "transparent"
@@ -554,8 +564,8 @@ Item {
                                     Button {
                                         id: removeButton
 
-                                        implicitWidth: 34
-                                        implicitHeight: 34
+                                        implicitWidth: 28
+                                        implicitHeight: 28
                                         hoverEnabled: true
                                         onClicked: page.removeEntry(modelData)
                                         ToolTip.visible: hovered
@@ -563,7 +573,7 @@ Item {
                                         ToolTip.delay: 500
 
                                         background: Rectangle {
-                                            radius: 10
+                                            radius: 7
                                             color: removeButton.hovered ? Theme.bgCard : "transparent"
                                             border.width: 1
                                             border.color: removeButton.hovered ? "#ff6b6b" : "transparent"
@@ -598,6 +608,13 @@ Item {
                                     font.pixelSize: 10
                                     elide: Text.ElideRight
                                     maximumLineCount: 1
+                                }
+
+                            }
+
+                            Behavior on border.color {
+                                ColorAnimation {
+                                    duration: 130
                                 }
 
                             }
@@ -676,10 +693,10 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
-            color: "#202228"
+            color: "#111216"
             radius: 18
             border.width: 1
-            border.color: "#3a3d46"
+            border.color: Theme.border
         }
 
         contentItem: ColumnLayout {
@@ -691,12 +708,12 @@ Item {
                 spacing: 13
 
                 Rectangle {
-                    Layout.preferredWidth: 46
-                    Layout.preferredHeight: 46
-                    radius: 14
+                    Layout.preferredWidth: 36
+                    Layout.preferredHeight: 36
+                    radius: 7
                     color: "#2b2e37"
                     border.width: 1
-                    border.color: "#444853"
+                    border.color: Theme.border
 
                     Text {
                         anchors.centerIn: parent
@@ -738,7 +755,7 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: "#383b44"
+                color: Theme.border
             }
 
             ColumnLayout {
@@ -760,11 +777,11 @@ Item {
 
                     Rectangle {
                         Layout.fillWidth: true
-                        implicitHeight: 48
-                        radius: 11
+                        implicitHeight: 42
+                        radius: 7
                         color: "#17191f"
                         border.width: commandField.activeFocus ? 1.5 : 1
-                        border.color: commandField.activeFocus ? Theme.accent : "#3a3d46"
+                        border.color: commandField.activeFocus ? Theme.accent : Theme.border
 
                         RowLayout {
                             anchors.fill: parent
@@ -823,7 +840,7 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: "#383b44"
+                color: Theme.border
             }
 
             RowLayout {
@@ -834,7 +851,7 @@ Item {
 
                 Button {
                     text: page.dialogIsEdit ? "Save changes" : "Add command"
-                    implicitHeight: 38
+                    implicitHeight: 32
                     implicitWidth: 116
                     onClicked: {
                         var accepted = page.dialogIsEdit ? page.updateEntry(page.editingEntry, page.draftCommand) : page.addEntry(page.draftCommand);
@@ -844,7 +861,7 @@ Item {
                     }
 
                     background: Rectangle {
-                        radius: 10
+                        radius: 7
                         color: parent.down ? Qt.darker(Theme.accent, 1.12) : parent.hovered ? Qt.lighter(Theme.accent, 1.08) : Theme.accent
                         border.width: 1
                         border.color: Qt.lighter(Theme.accent, 1.12)
@@ -864,15 +881,15 @@ Item {
 
                 Button {
                     text: "Cancel"
-                    implicitHeight: 38
+                    implicitHeight: 32
                     implicitWidth: 86
                     onClicked: editorDialog.close()
 
                     background: Rectangle {
-                        radius: 10
+                        radius: 7
                         color: parent.hovered ? "#2b2e36" : "#24262d"
                         border.width: 1
-                        border.color: "#41444e"
+                        border.color: parent.hovered ? Theme.accent : Theme.border
                     }
 
                     contentItem: Text {

@@ -20,6 +20,9 @@ Item {
     property bool saveInProgress: false
     property bool queuedSave: false
     property string queuedSaveText: ""
+    property string queuedSaveMessage: ""
+    property bool closeEditorAfterSave: false
+    property bool dialogIsAdd: false
     readonly property var categories: ["All", "Apps", "Windows", "Workspaces", "Media", "Capture", "Other"]
 
     function skipString(s, i) {
@@ -365,7 +368,7 @@ Item {
         return "Custom action";
     }
 
-    function parseBindings(s) {
+    function parseBindings(s, includeDisabled) {
         var parsed = [], calls = findCalls(s);
         for (var i = 0; i < calls.length; i++) {
             var call = calls[i];
@@ -377,6 +380,11 @@ Item {
             var key = getKey(keyRaw, s);
             var commandInfo = getCommand(actionRaw);
             var command = commandInfo.command;
+            var lineStart = s.lastIndexOf("\n", call.start - 1) + 1;
+            var lineEnd = s.indexOf("\n", call.end);
+            if (lineEnd < 0)
+                lineEnd = s.length;
+
             parsed.push({
                 "id": i,
                 "key": key,
@@ -389,9 +397,86 @@ Item {
                 "keyEnd": keyArg.end,
                 "actionStart": actionArg.start,
                 "actionEnd": actionArg.end,
-                "rawAction": actionRaw
+                "rawAction": actionRaw,
+                "enabled": true,
+                "start": call.start,
+                "end": call.end,
+                "lineStart": lineStart,
+                "lineEnd": lineEnd,
+                "blockStart": -1,
+                "blockEnd": -1
             });
         }
+        if (includeDisabled === false)
+            return parsed;
+
+        // Disabled bindings are stored in reversible comment blocks so multiline Lua calls
+        // can be toggled without losing their original formatting or comments.
+        var markerPattern = /(^|\n)-- KEYBIND_DISABLED_BEGIN\r?\n([\s\S]*?)\r?\n-- KEYBIND_DISABLED_END/g;
+        var markerMatch;
+        while ((markerMatch = markerPattern.exec(s)) !== null) {
+            var blockStart = markerMatch.index + markerMatch[1].length;
+            var beginLineEnd = s.indexOf("\n", blockStart);
+            if (beginLineEnd < 0)
+                continue;
+
+            var bodyStart = beginLineEnd + 1;
+            var endMarkerStart = s.indexOf("-- KEYBIND_DISABLED_END", bodyStart);
+            if (endMarkerStart < 0)
+                continue;
+
+            var bodyEnd = endMarkerStart;
+            if (bodyEnd > bodyStart && s.charAt(bodyEnd - 1) === "\n")
+                bodyEnd--;
+
+            if (bodyEnd > bodyStart && s.charAt(bodyEnd - 1) === "\r")
+                bodyEnd--;
+
+            var bodyRaw = s.slice(bodyStart, bodyEnd);
+            var bodyLines = bodyRaw.split("\n");
+            var restoredLines = [];
+            var sourceOffsets = [];
+            var sourceLineOffset = bodyStart;
+            for (var lineIndex = 0; lineIndex < bodyLines.length; lineIndex++) {
+                var commentedLine = bodyLines[lineIndex];
+                var prefixLength = commentedLine.indexOf("-- ") === 0 ? 3 : (commentedLine.indexOf("--") === 0 ? 2 : 0);
+                var restoredLine = commentedLine.slice(prefixLength);
+                restoredLines.push(restoredLine);
+                for (var charIndex = 0; charIndex < restoredLine.length; charIndex++) sourceOffsets.push(sourceLineOffset + prefixLength + charIndex)
+                if (lineIndex < bodyLines.length - 1)
+                    sourceOffsets.push(sourceLineOffset + commentedLine.length);
+
+                sourceLineOffset += commentedLine.length + (lineIndex < bodyLines.length - 1 ? 1 : 0);
+            }
+            var restoredText = restoredLines.join("\n");
+            var innerBindings = parseBindings(restoredText, false);
+            var blockEnd = endMarkerStart + "-- KEYBIND_DISABLED_END".length;
+            for (var innerIndex = 0; innerIndex < innerBindings.length; innerIndex++) {
+                var disabled = innerBindings[innerIndex];
+                if (disabled.keyStart < 0 || disabled.keyEnd <= disabled.keyStart || disabled.keyEnd - 1 >= sourceOffsets.length)
+                    continue;
+
+                if (disabled.actionStart < 0 || disabled.actionEnd <= disabled.actionStart || disabled.actionEnd - 1 >= sourceOffsets.length)
+                    continue;
+
+                disabled.keyStart = sourceOffsets[disabled.keyStart];
+                disabled.keyEnd = sourceOffsets[disabled.keyEnd - 1] + 1;
+                disabled.actionStart = sourceOffsets[disabled.actionStart];
+                disabled.actionEnd = sourceOffsets[disabled.actionEnd - 1] + 1;
+                disabled.enabled = false;
+                disabled.start = blockStart;
+                disabled.end = blockEnd;
+                disabled.lineStart = blockStart;
+                disabled.lineEnd = blockEnd;
+                disabled.blockStart = blockStart;
+                disabled.blockEnd = blockEnd;
+                disabled.id = parsed.length + innerIndex;
+                parsed.push(disabled);
+            }
+        }
+        parsed.sort(function(a, b) {
+            return a.start - b.start;
+        });
         return parsed;
     }
 
@@ -417,43 +502,100 @@ Item {
     }
 
     function openEditor(binding) {
+        dialogIsAdd = false;
         selectedBinding = binding;
         editKey = binding.keyEditable ? binding.key : "";
         editCommand = binding.command;
         editDialog.open();
     }
 
-    function saveSource(text) {
+    function openAddDialog() {
+        dialogIsAdd = true;
+        selectedBinding = null;
+        editKey = "";
+        editCommand = "";
+        editDialog.open();
+    }
+
+    function saveSource(text, message) {
         sourceText = text;
-        statusMessage = "Saving keybinds.lua...";
+        statusMessage = message || "Saving keybinds.lua...";
         if (saveInProgress) {
             queuedSave = true;
             queuedSaveText = text;
-            return ;
+            queuedSaveMessage = statusMessage;
+            return true;
         }
         saveInProgress = true;
         keybindFile.setText(text);
+        return true;
+    }
+
+    function normalizedShortcut(key) {
+        return key.trim().replace(/\s*\+\s*/g, " + ").toUpperCase();
+    }
+
+    function keyExpression(input) {
+        var normalized = input.trim().replace(/\s*\+\s*/g, " + ");
+        var modifier = mainModifier(sourceText);
+        var escapedModifier = modifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        var match = normalized.match(new RegExp("^" + escapedModifier + "\\s*\\+\\s*(.+)$", "i"));
+        if (match) {
+            var suffix = match[1].trim().replace(/\s*\+\s*/g, " + ");
+            if (!suffix)
+                return "";
+
+            return "mainMod .. " + encodeLuaString(" + " + suffix);
+        }
+        return encodeLuaString(normalized);
+    }
+
+    function addBinding(key, command) {
+        var cleanKey = key.trim().replace(/\s*\+\s*/g, " + ");
+        var cleanCommand = command.trim();
+        if (!cleanKey || !cleanCommand) {
+            statusMessage = "Enter both a shortcut and a command";
+            return false;
+        }
+        var expression = keyExpression(cleanKey);
+        if (!expression) {
+            statusMessage = "Enter a valid key combination";
+            return false;
+        }
+        var candidate = normalizedShortcut(cleanKey);
+        for (var i = 0; i < bindings.length; i++) {
+            if (bindings[i].enabled && normalizedShortcut(bindings[i].key) === candidate) {
+                statusMessage = "That shortcut is already assigned to another action";
+                return false;
+            }
+        }
+        var closing = /\nend\s*\n\s*return\s+M\s*$/m.exec(sourceText);
+        if (!closing) {
+            statusMessage = "Could not find the end of M.setup(); keybinds.lua was not changed";
+            return false;
+        }
+        var newCall = "    hl.bind(" + expression + ", hl.dsp.exec_cmd(" + encodeLuaString(cleanCommand) + "))";
+        var insertAt = closing.index;
+        var updated = sourceText.slice(0, insertAt) + "\n" + newCall + "\n" + sourceText.slice(insertAt + 1);
+        saveSource(updated, "Adding shortcut...");
+        bindings = parseBindings(updated);
+        return true;
     }
 
     function applyEdit() {
+        if (dialogIsAdd)
+            return addBinding(editKey, editCommand);
+
         if (!selectedBinding)
-            return ;
+            return false;
 
         var replacements = [], b = selectedBinding;
         if (b.keyEditable && editKey.trim().length > 0 && editKey !== b.key) {
             var newKeyText = editKey.trim();
-            var formattedKey = "";
-            var modifier = mainModifier(sourceText);
-            var modifierPrefix = new RegExp("^" + modifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\+\\s*", "i");
-            if (modifierPrefix.test(newKeyText)) {
-                var actualKey = newKeyText.replace(modifierPrefix, "").trim();
-                if (!actualKey) {
-                    statusMessage = "Enter a key after the modifier";
-                    return ;
-                }
-                formattedKey = "mainMod .. " + encodeLuaString(" + " + actualKey);
-            } else {
-                formattedKey = encodeLuaString(newKeyText);
+            var formattedKey = keyExpression(newKeyText);
+            if (!formattedKey) {
+                statusMessage = "Enter a valid key combination";
+                return false;
             }
             replacements.push({
                 "start": b.keyStart,
@@ -470,19 +612,18 @@ Item {
 
         if (!replacements.length) {
             statusMessage = "No changes to save";
-            return ;
+            return false;
         }
         if (b.keyEditable && editKey.trim().length > 0 && editKey !== b.key) {
-            var candidateKey = editKey.trim().replace(/\s*\+\s*/g, " + ").toUpperCase();
+            var candidateKey = normalizedShortcut(editKey);
             for (var duplicateIndex = 0; duplicateIndex < bindings.length; duplicateIndex++) {
                 var existing = bindings[duplicateIndex];
-                if (existing === b)
+                if (existing === b || !existing.enabled)
                     continue;
 
-                var existingKey = existing.key.trim().replace(/\s*\+\s*/g, " + ").toUpperCase();
-                if (candidateKey === existingKey) {
+                if (normalizedShortcut(existing.key) === candidateKey) {
                     statusMessage = "That shortcut is already assigned to another action";
-                    return ;
+                    return false;
                 }
             }
         }
@@ -494,9 +635,67 @@ Item {
             var r = replacements[i];
             updated = updated.slice(0, r.start) + r.text + updated.slice(r.end);
         }
-        sourceText = updated;
+        saveSource(updated, "Updating shortcut...");
         bindings = parseBindings(updated);
-        saveSource(updated);
+        return true;
+    }
+
+    function toggleBinding(binding) {
+        if (!binding || !fileReady)
+            return ;
+
+        var updated;
+        if (binding.enabled) {
+            var start = binding.lineStart;
+            var end = binding.lineEnd;
+            if (start < 0 || end <= start || end > sourceText.length) {
+                statusMessage = "Could not locate shortcut in keybinds.lua";
+                return ;
+            }
+            var original = sourceText.slice(start, end);
+            var commented = "-- KEYBIND_DISABLED_BEGIN\n" + original.split("\n").map(function(line) {
+                return "-- " + line;
+            }).join("\n") + "\n-- KEYBIND_DISABLED_END";
+            updated = sourceText.slice(0, start) + commented + sourceText.slice(end);
+            saveSource(updated, "Disabling shortcut...");
+        } else {
+            var blockStart = binding.blockStart;
+            var blockEnd = binding.blockEnd;
+            if (blockStart < 0 || blockEnd <= blockStart || blockEnd > sourceText.length) {
+                statusMessage = "Could not locate disabled shortcut in keybinds.lua";
+                return ;
+            }
+            var blockLines = sourceText.slice(blockStart, blockEnd).split("\n");
+            if (blockLines.length < 3) {
+                statusMessage = "Could not restore disabled shortcut";
+                return ;
+            }
+            var restored = blockLines.slice(1, -1).map(function(line) {
+                return line.indexOf("-- ") === 0 ? line.slice(3) : (line.indexOf("--") === 0 ? line.slice(2) : line);
+            }).join("\n");
+            updated = sourceText.slice(0, blockStart) + restored + sourceText.slice(blockEnd);
+            saveSource(updated, "Enabling shortcut...");
+        }
+        bindings = parseBindings(updated);
+    }
+
+    function removeBinding(binding) {
+        if (!binding || !fileReady)
+            return ;
+
+        var start = binding.enabled ? binding.lineStart : binding.blockStart;
+        var end = binding.enabled ? binding.lineEnd : binding.blockEnd;
+        if (start < 0 || end <= start || end > sourceText.length) {
+            statusMessage = "Could not locate shortcut in keybinds.lua";
+            return ;
+        }
+        if (end < sourceText.length && sourceText.charAt(end) === "\n")
+            end++;
+        else if (start > 0 && sourceText.charAt(start - 1) === "\n")
+            start--;
+        var updated = sourceText.slice(0, start) + sourceText.slice(end);
+        saveSource(updated, "Removing shortcut...");
+        bindings = parseBindings(updated);
     }
 
     FileView {
@@ -519,25 +718,36 @@ Item {
             page.saveInProgress = false;
             if (page.queuedSave) {
                 var nextText = page.queuedSaveText;
+                var nextMessage = page.queuedSaveMessage;
                 page.queuedSave = false;
                 page.queuedSaveText = "";
+                page.queuedSaveMessage = "";
+                page.statusMessage = nextMessage;
                 page.saveInProgress = true;
                 keybindFile.setText(nextText);
                 return ;
             }
-            page.statusMessage = "Changes saved to keybinds.lua";
             page.loadBindings(keybindFile.text());
+            page.statusMessage = "Changes saved to keybinds.lua";
+            if (page.closeEditorAfterSave) {
+                page.closeEditorAfterSave = false;
+                editDialog.close();
+            }
         }
         onSaveFailed: (error) => {
             page.saveInProgress = false;
             if (page.queuedSave) {
                 var nextText = page.queuedSaveText;
+                var nextMessage = page.queuedSaveMessage;
                 page.queuedSave = false;
                 page.queuedSaveText = "";
+                page.queuedSaveMessage = "";
+                page.statusMessage = nextMessage;
                 page.saveInProgress = true;
                 keybindFile.setText(nextText);
                 return ;
             }
+            page.closeEditorAfterSave = false;
             page.statusMessage = "Could not save keybinds.lua; reloading saved file...";
             keybindFile.reload();
         }
@@ -556,11 +766,10 @@ Item {
                 spacing: 4
 
                 Text {
-                    text: "Keybind Manager"
+                    text: "KEYBINDS"
                     color: Theme.text
-                    font.family: Theme.displayFont
-                    font.pixelSize: 22
-                    font.weight: Font.DemiBold
+                    font.family: "Noto Sans"
+                    font.pixelSize: 19
                 }
 
                 Text {
@@ -574,6 +783,8 @@ Item {
 
             Button {
                 text: "Reload"
+                implicitHeight: 28
+                implicitWidth: 70
                 enabled: page.fileReady
                 onClicked: {
                     keybindFile.reload();
@@ -581,10 +792,10 @@ Item {
                 }
 
                 background: Rectangle {
-                    radius: 9
+                    radius: 7
                     color: parent.hovered ? Theme.bgPanel : Theme.bgCard
                     border.width: 1
-                    border.color: Theme.border
+                    border.color: parent.hovered ? "#555555" : "#393939"
                 }
 
                 contentItem: Text {
@@ -598,6 +809,38 @@ Item {
 
             }
 
+            Button {
+                text: "+ Add shortcut"
+                implicitHeight: 28
+                implicitWidth: 116
+                enabled: page.fileReady
+                onClicked: page.openAddDialog()
+
+                background: Rectangle {
+                    radius: 9
+                    color: parent.hovered ? Qt.lighter(Theme.accent, 1.08) : Theme.accent
+                    border.width: 1
+                    border.color: Qt.lighter(Theme.accent, 1.12)
+                }
+
+                contentItem: Text {
+                    text: parent.text
+                    color: "#101116"
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+            }
+
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 1
+            color: Theme.border
         }
 
         TextField {
@@ -609,8 +852,8 @@ Item {
             onTextChanged: page.searchText = text
 
             background: Rectangle {
-                color: Theme.bgCard
-                radius: 11
+                color: Theme.alpha(Theme.text, 0.015)
+                radius: 7
                 border.width: 1
                 border.color: parent.activeFocus ? Theme.accent : Theme.border
             }
@@ -619,7 +862,7 @@ Item {
 
         Flickable {
             Layout.fillWidth: true
-            implicitHeight: 36
+            implicitHeight: 40
             contentWidth: categoryRow.implicitWidth
             contentHeight: categoryRow.implicitHeight
             clip: true
@@ -627,7 +870,7 @@ Item {
             Row {
                 id: categoryRow
 
-                spacing: 7
+                spacing: 8
 
                 Repeater {
                     model: page.categories
@@ -637,19 +880,33 @@ Item {
 
                         text: modelData
                         onClicked: page.categoryFilter = modelData
+                        implicitHeight: 34
+                        implicitWidth: Math.max(62, categoryLabel.implicitWidth + 26)
+                        hoverEnabled: true
 
                         background: Rectangle {
                             radius: 9
-                            color: page.categoryFilter === modelData ? Theme.bgPanel : "transparent"
+                            color: page.categoryFilter === modelData ? Theme.alpha(Theme.accent, 0.15) : (parent.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.bgCard)
                             border.width: 1
                             border.color: page.categoryFilter === modelData ? Theme.accent : Theme.border
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 130
+                                }
+
+                            }
+
                         }
 
                         contentItem: Text {
+                            id: categoryLabel
+
                             text: modelData
-                            color: page.categoryFilter === modelData ? Theme.text : Theme.textDim
+                            color: page.categoryFilter === modelData ? Theme.accent : Theme.textDim
                             font.family: Theme.fontFamily
                             font.pixelSize: 11
+                            font.weight: page.categoryFilter === modelData ? Font.DemiBold : Font.Medium
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -690,11 +947,12 @@ Item {
 
                             Layout.fillWidth: true
                             Layout.preferredWidth: (cardsGrid.width - cardsGrid.columnSpacing) / 2
-                            Layout.preferredHeight: 132
-                            radius: 14
-                            color: cardHover.hovered ? Theme.bgPanel : Theme.bgCard
+                            Layout.preferredHeight: 100
+                            radius: 10
+                            color: cardHover.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
+                            opacity: shortcutCard.modelData.enabled ? 1 : 0.58
                             border.width: 1
-                            border.color: cardHover.hovered ? Theme.accent : Theme.border
+                            border.color: cardHover.hovered ? "#555555" : "#393939"
 
                             HoverHandler {
                                 id: cardHover
@@ -702,18 +960,18 @@ Item {
 
                             ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 13
-                                spacing: 8
+                                anchors.margins: 10
+                                spacing: 6
 
                                 RowLayout {
                                     Layout.fillWidth: true
                                     spacing: 9
 
                                     Rectangle {
-                                        Layout.preferredWidth: 36
-                                        Layout.preferredHeight: 36
-                                        radius: 10
-                                        color: Theme.bgPanel
+                                        Layout.preferredWidth: 30
+                                        Layout.preferredHeight: 30
+                                        radius: 7
+                                        color: Theme.alpha(Theme.accent, 0.05)
                                         border.width: 1
                                         border.color: Theme.border
 
@@ -757,7 +1015,7 @@ Item {
                                         }
 
                                         Text {
-                                            text: shortcutCard.modelData.category
+                                            text: shortcutCard.modelData.enabled ? shortcutCard.modelData.category : shortcutCard.modelData.category + " · Disabled"
                                             color: Theme.textFaint
                                             font.family: Theme.monoFont
                                             font.pixelSize: 10
@@ -765,11 +1023,92 @@ Item {
 
                                     }
 
+                                    Switch {
+                                        id: bindingSwitch
+
+                                        Layout.alignment: Qt.AlignVCenter
+                                        checked: shortcutCard.modelData.enabled
+                                        onToggled: page.toggleBinding(shortcutCard.modelData)
+
+                                        indicator: Rectangle {
+                                            implicitWidth: 38
+                                            implicitHeight: 20
+                                            radius: 7
+                                            color: bindingSwitch.checked ? Theme.accent : Theme.bgPanel
+                                            border.width: 1
+                                            border.color: bindingSwitch.checked ? Qt.lighter(Theme.accent, 1.15) : "#393939"
+
+                                            Rectangle {
+                                                x: bindingSwitch.checked ? parent.width - width - 2 : 2
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                width: 16
+                                                height: 16
+                                                radius: 8
+                                                color: bindingSwitch.checked ? "#101116" : Theme.textFaint
+
+                                                Behavior on x {
+                                                    NumberAnimation {
+                                                        duration: 150
+                                                        easing.type: Easing.InOutQuad
+                                                    }
+
+                                                }
+
+                                            }
+
+                                            Behavior on color {
+                                                ColorAnimation {
+                                                    duration: 150
+                                                }
+
+                                            }
+
+                                        }
+
+                                    }
+
+                                    Button {
+                                        id: removeButton
+
+                                        implicitWidth: 28
+                                        implicitHeight: 28
+                                        hoverEnabled: true
+                                        onClicked: page.removeBinding(shortcutCard.modelData)
+                                        ToolTip.visible: hovered
+                                        ToolTip.text: "Remove shortcut"
+                                        ToolTip.delay: 500
+
+                                        background: Rectangle {
+                                            radius: 7
+                                            color: removeButton.hovered ? Theme.bgCard : "transparent"
+                                            border.width: 1
+                                            border.color: removeButton.hovered ? "#ff6b6b" : "transparent"
+
+                                            Behavior on color {
+                                                ColorAnimation {
+                                                    duration: 140
+                                                }
+
+                                            }
+
+                                        }
+
+                                        contentItem: Text {
+                                            text: "󰆴"
+                                            color: removeButton.hovered ? "#ff6b6b" : Theme.textFaint
+                                            font.family: Theme.iconFont
+                                            font.pixelSize: 17
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+
+                                    }
+
                                     Button {
                                         id: editButton
 
-                                        implicitWidth: 34
-                                        implicitHeight: 34
+                                        implicitWidth: 28
+                                        implicitHeight: 28
                                         hoverEnabled: true
                                         onClicked: page.openEditor(shortcutCard.modelData)
                                         ToolTip.visible: hovered
@@ -777,8 +1116,8 @@ Item {
                                         ToolTip.delay: 500
 
                                         background: Rectangle {
-                                            radius: 10
-                                            color: editButton.hovered ? Theme.bgCard : "transparent"
+                                            radius: 7
+                                            color: editButton.hovered ? Theme.alpha(Theme.accent, 0.05) : "transparent"
                                             border.width: 1
                                             border.color: editButton.hovered ? Theme.accent : "transparent"
 
@@ -815,9 +1154,9 @@ Item {
                                             required property string modelData
 
                                             implicitWidth: keyLabel.implicitWidth + 18
-                                            implicitHeight: 26
-                                            radius: 6
-                                            color: Theme.bgPanel
+                                            implicitHeight: 24
+                                            radius: 7
+                                            color: Theme.alpha(Theme.text, 0.03)
                                             border.width: 1
                                             border.color: Theme.border
 
@@ -849,6 +1188,13 @@ Item {
                                     font.pixelSize: 10
                                     elide: Text.ElideRight
                                     maximumLineCount: 1
+                                }
+
+                            }
+
+                            Behavior on border.color {
+                                ColorAnimation {
+                                    duration: 130
                                 }
 
                             }
@@ -927,10 +1273,10 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
-            color: "#202228"
+            color: "#111216"
             radius: 18
             border.width: 1
-            border.color: "#3a3d46"
+            border.color: Theme.border
         }
 
         contentItem: ColumnLayout {
@@ -944,10 +1290,10 @@ Item {
                 Rectangle {
                     Layout.preferredWidth: 46
                     Layout.preferredHeight: 46
-                    radius: 14
+                    radius: 10
                     color: "#2b2e37"
                     border.width: 1
-                    border.color: "#444853"
+                    border.color: Theme.border
 
                     Text {
                         anchors.centerIn: parent
@@ -965,7 +1311,7 @@ Item {
 
                     Text {
                         Layout.fillWidth: true
-                        text: page.selectedBinding ? page.selectedBinding.title : "Edit shortcut"
+                        text: page.dialogIsAdd ? "Add shortcut" : (page.selectedBinding ? page.selectedBinding.title : "Edit shortcut")
                         color: Theme.text
                         font.family: Theme.displayFont
                         font.pixelSize: 18
@@ -975,7 +1321,7 @@ Item {
 
                     Text {
                         Layout.fillWidth: true
-                        text: "Customize this keybinding"
+                        text: page.dialogIsAdd ? "Create a new keybinding" : "Customize this keybinding"
                         color: Theme.textFaint
                         font.family: Theme.fontFamily
                         font.pixelSize: 11
@@ -989,7 +1335,7 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: "#383b44"
+                color: Theme.border
             }
 
             ColumnLayout {
@@ -1000,7 +1346,7 @@ Item {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 8
-                    visible: page.selectedBinding ? page.selectedBinding.keyEditable : false
+                    visible: page.dialogIsAdd || (page.selectedBinding ? page.selectedBinding.keyEditable : false)
 
                     Label {
                         text: "KEY COMBINATION"
@@ -1013,10 +1359,10 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: 48
-                        radius: 11
+                        radius: 7
                         color: "#17191f"
                         border.width: keyField.activeFocus ? 1.5 : 1
-                        border.color: keyField.activeFocus ? Theme.accent : "#3a3d46"
+                        border.color: keyField.activeFocus ? Theme.accent : Theme.border
 
                         RowLayout {
                             anchors.fill: parent
@@ -1036,7 +1382,7 @@ Item {
 
                                 Layout.fillWidth: true
                                 text: page.editKey
-                                placeholderText: "SUPER + T"
+                                placeholderText: "SUPER + T or ALT + TAB"
                                 color: Theme.text
                                 font.family: Theme.monoFont
                                 font.pixelSize: 12
@@ -1054,7 +1400,7 @@ Item {
 
                     Text {
                         Layout.fillWidth: true
-                        text: "Use SUPER, SHIFT, CTRL, ALT and the key name."
+                        text: page.dialogIsAdd ? "Use SUPER, SHIFT, CTRL, ALT and the key name." : "Use SUPER, SHIFT, CTRL, ALT and the key name."
                         color: Theme.textFaint
                         font.family: Theme.fontFamily
                         font.pixelSize: 10
@@ -1076,7 +1422,7 @@ Item {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 8
-                    visible: page.selectedBinding ? page.selectedBinding.commandEditable : false
+                    visible: page.dialogIsAdd || (page.selectedBinding ? page.selectedBinding.commandEditable : false)
 
                     Label {
                         text: "COMMAND"
@@ -1089,10 +1435,10 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: 48
-                        radius: 11
+                        radius: 7
                         color: "#17191f"
                         border.width: commandField.activeFocus ? 1.5 : 1
-                        border.color: commandField.activeFocus ? Theme.accent : "#3a3d46"
+                        border.color: commandField.activeFocus ? Theme.accent : Theme.border
 
                         RowLayout {
                             anchors.fill: parent
@@ -1113,12 +1459,17 @@ Item {
 
                                 Layout.fillWidth: true
                                 text: page.editCommand
-                                placeholderText: "Command to execute"
+                                placeholderText: "e.g. waybar or wofi --show drun"
                                 color: Theme.text
                                 font.family: Theme.monoFont
                                 font.pixelSize: 12
                                 selectByMouse: true
                                 onTextChanged: page.editCommand = text
+                                Keys.onReturnPressed: {
+                                    if (page.applyEdit())
+                                        page.closeEditorAfterSave = true;
+
+                                }
 
                                 background: Item {
                                 }
@@ -1127,6 +1478,16 @@ Item {
 
                         }
 
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        visible: page.dialogIsAdd
+                        text: "The command runs when this key combination is pressed."
+                        color: Theme.textFaint
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 10
+                        wrapMode: Text.Wrap
                     }
 
                 }
@@ -1146,7 +1507,7 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: "#383b44"
+                color: Theme.border
             }
 
             RowLayout {
@@ -1156,12 +1517,13 @@ Item {
                 Layout.margins: 16
 
                 Button {
-                    text: "Save changes"
+                    text: page.dialogIsAdd ? "Add shortcut" : "Save changes"
                     implicitHeight: 38
                     implicitWidth: 116
                     onClicked: {
-                        page.applyEdit();
-                        editDialog.close();
+                        if (page.applyEdit())
+                            page.closeEditorAfterSave = true;
+
                     }
 
                     background: Rectangle {
@@ -1193,7 +1555,7 @@ Item {
                         radius: 10
                         color: parent.hovered ? "#2b2e36" : "#24262d"
                         border.width: 1
-                        border.color: "#41444e"
+                        border.color: parent.hovered ? Theme.accent : Theme.border
                     }
 
                     contentItem: Text {

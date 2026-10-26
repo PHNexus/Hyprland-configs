@@ -2,6 +2,7 @@ import "../"
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls as Controls
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 
@@ -25,6 +26,9 @@ Item {
     property string pendingMonitorConfigText: ""
     property bool monitorConfigWritePending: false
     property bool monitorConfigWriteInProgress: false
+    property bool layoutDragging: false
+    readonly property real edgeTolerance: 2
+    readonly property real preferredEdgeOverlap: 24
     readonly property var bboxCenter: {
         if (activeMonitors.length === 0)
             return {
@@ -32,23 +36,191 @@ Item {
             "y": 0
         };
 
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
         for (let i = 0; i < activeMonitors.length; i++) {
-            const m = activeMonitors[i];
-            const s = m.scale > 0 ? m.scale : 1;
-            const x1 = Number(m.x || 0);
-            const y1 = Number(m.y || 0);
-            const x2 = x1 + m.width / s;
-            const y2 = y1 + m.height / s;
-            minX = Math.min(minX, x1, x2);
-            minY = Math.min(minY, y1, y2);
-            maxX = Math.max(maxX, x1, x2);
-            maxY = Math.max(maxY, y1, y2);
+            const r = monitorRect(activeMonitors[i]);
+            minX = Math.min(minX, r.x);
+            minY = Math.min(minY, r.y);
+            maxX = Math.max(maxX, r.x + r.w);
+            maxY = Math.max(maxY, r.y + r.h);
         }
         return {
             "x": (minX + maxX) / 2,
             "y": (minY + maxY) / 2
         };
+    }
+
+    function monitorRect(mon) {
+        if (!mon)
+            return {
+            "x": 0,
+            "y": 0,
+            "w": 0,
+            "h": 0
+        };
+
+        const scale = Number(mon.scale) > 0 ? Number(mon.scale) : 1;
+        return {
+            "x": Number(mon.x || 0),
+            "y": Number(mon.y || 0),
+            "w": Number(mon.width || 0) / scale,
+            "h": Number(mon.height || 0) / scale
+        };
+    }
+
+    function clamp(value, minimum, maximum) {
+        if (minimum > maximum)
+            return (minimum + maximum) / 2;
+
+        return Math.max(minimum, Math.min(maximum, value));
+    }
+
+    function overlapLength(aStart, aSize, bStart, bSize) {
+        return Math.min(aStart + aSize, bStart + bSize) - Math.max(aStart, bStart);
+    }
+
+    function requiredEdgeOverlap(w, h, otherW, otherH) {
+        return Math.min(preferredEdgeOverlap, Math.max(1, Math.min(w, h, otherW, otherH) * 0.05));
+    }
+
+    function dockCandidate(mon, otherRect, side, wantedX, wantedY) {
+        const r = monitorRect(mon);
+        const overlap = requiredEdgeOverlap(r.w, r.h, otherRect.w, otherRect.h);
+        let x = wantedX;
+        let y = wantedY;
+        if (side === "right") {
+            x = otherRect.x + otherRect.w;
+            y = clamp(wantedY, otherRect.y - r.h + overlap, otherRect.y + otherRect.h - overlap);
+        } else if (side === "left") {
+            x = otherRect.x - r.w;
+            y = clamp(wantedY, otherRect.y - r.h + overlap, otherRect.y + otherRect.h - overlap);
+        } else if (side === "below") {
+            y = otherRect.y + otherRect.h;
+            x = clamp(wantedX, otherRect.x - r.w + overlap, otherRect.x + otherRect.w - overlap);
+        } else if (side === "above") {
+            y = otherRect.y - r.h;
+            x = clamp(wantedX, otherRect.x - r.w + overlap, otherRect.x + otherRect.w - overlap);
+        }
+        return {
+            "x": Math.round(x),
+            "y": Math.round(y),
+            "side": side
+        };
+    }
+
+    function rectanglesOverlap(a, b) {
+        return Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 1 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 1;
+    }
+
+    function connectedLayoutPositions() {
+        const items = activeMonitors.filter((m) => {
+            return Number(m.width) > 0 && Number(m.height) > 0;
+        });
+        const result = ({
+        });
+        if (items.length === 0)
+            return result;
+
+        let anchorIndex = items.findIndex((m) => {
+            return Math.abs(Number(m.x || 0)) <= 1 && Math.abs(Number(m.y || 0)) <= 1;
+        });
+        if (anchorIndex < 0)
+            anchorIndex = 0;
+
+        const anchor = items[anchorIndex];
+        const anchorRect = monitorRect(anchor);
+        const placed = [{
+            "mon": anchor,
+            "x": anchorRect.x,
+            "y": anchorRect.y,
+            "w": anchorRect.w,
+            "h": anchorRect.h
+        }];
+        const remaining = items.filter((m) => {
+            return m.name !== anchor.name;
+        });
+        result[anchor.name] = {
+            "x": anchorRect.x,
+            "y": anchorRect.y
+        };
+        while (remaining.length > 0) {
+            let best = null;
+            for (let i = 0; i < remaining.length; i++) {
+                const mon = remaining[i];
+                const current = monitorRect(mon);
+                for (let j = 0; j < placed.length; j++) {
+                    const parent = placed[j];
+                    const parentRect = {
+                        "x": parent.x,
+                        "y": parent.y,
+                        "w": parent.w,
+                        "h": parent.h
+                    };
+                    const sides = ["right", "left", "below", "above"];
+                    for (let k = 0; k < sides.length; k++) {
+                        const candidate = dockCandidate(mon, parentRect, sides[k], current.x, current.y);
+                        const rect = {
+                            "x": candidate.x,
+                            "y": candidate.y,
+                            "w": current.w,
+                            "h": current.h
+                        };
+                        let collides = false;
+                        for (let n = 0; n < placed.length; n++) {
+                            if (placed[n].mon.name !== parent.mon.name && rectanglesOverlap(rect, placed[n])) {
+                                collides = true;
+                                break;
+                            }
+                        }
+                        if (collides)
+                            continue;
+
+                        const distance = Math.abs(candidate.x - current.x) + Math.abs(candidate.y - current.y);
+                        if (!best || distance < best.distance)
+                            best = {
+                            "mon": mon,
+                            "candidate": candidate,
+                            "rect": rect,
+                            "distance": distance,
+                            "index": i
+                        };
+
+                    }
+                }
+            }
+            if (!best) {
+                const mon = remaining[0];
+                const current = monitorRect(mon);
+                const parent = placed[placed.length - 1];
+                best = {
+                    "mon": mon,
+                    "candidate": dockCandidate(mon, parent, "right", current.x, current.y),
+                    "index": 0
+                };
+                best.rect = {
+                    "x": best.candidate.x,
+                    "y": best.candidate.y,
+                    "w": current.w,
+                    "h": current.h
+                };
+            }
+            result[best.mon.name] = {
+                "x": best.candidate.x,
+                "y": best.candidate.y
+            };
+            placed.push({
+                "mon": best.mon,
+                "x": best.candidate.x,
+                "y": best.candidate.y,
+                "w": best.rect.w,
+                "h": best.rect.h
+            });
+            remaining.splice(best.index, 1);
+        }
+        return result;
     }
 
     function loadState() {
@@ -79,7 +251,7 @@ Item {
         stateSaveTimer.stop();
         savedState = ({
         });
-        pReset.command = ["sh", "-c", "rm -f '" + page.stateDir + "/display.json'; hyprctl reload"];
+        pReset.command = ["sh", "-c", "rm -f '" + page.stateDir + "/display.json' '" + page.stateDir + "/display.lua'; hyprctl reload"];
         pReset.running = true;
     }
 
@@ -215,9 +387,23 @@ Item {
         if (!mon || !mon.name)
             return ;
 
-        const position = Math.round(Number(x)) + "x" + Math.round(Number(y));
+        const px = Math.round(Number(x));
+        const py = Math.round(Number(y));
+        const position = px + "x" + py;
         const mode = monitorMode(mon);
         const scale = mon.scale !== undefined ? mon.scale : 1;
+        const index = page.monitors.findIndex((m) => {
+            return m.name === mon.name;
+        });
+        if (index !== -1) {
+            const updated = page.monitors.slice();
+            updated[index] = Object.assign({
+            }, updated[index], {
+                "x": px,
+                "y": py
+            });
+            page.monitors = updated;
+        }
         rememberMonitor(mon, {
             "mode": mode,
             "position": position,
@@ -226,80 +412,122 @@ Item {
         updateMonitorConfig(mon.name, mode, position, scale);
     }
 
-    function gluePosition(movedMon, x, y, w, h) {
-        if (activeMonitors.length <= 1)
+    function dockingConstraints(mon) {
+        const constraints = [];
+        for (let i = 0; i < activeMonitors.length; i++) {
+            const other = activeMonitors[i];
+            if (other.name === mon.name)
+                continue;
+
+            const rect = monitorRect(other);
+            constraints.push({
+                "name": other.name,
+                "x": rect.x,
+                "y": rect.y,
+                "w": rect.w,
+                "h": rect.h
+            });
+        }
+        return constraints;
+    }
+
+    function constrainConnectedPosition(mon, x, y, constraints) {
+        const r = monitorRect(mon);
+        if (constraints.length === 0)
             return {
             "x": Math.round(x),
             "y": Math.round(y)
         };
 
-        let bestDist = Infinity;
-        let best = {
+        const sides = ["right", "left", "below", "above"];
+        let bestValid = null;
+        let bestFallback = null;
+        for (let i = 0; i < constraints.length; i++) {
+            const parent = constraints[i];
+            for (let j = 0; j < sides.length; j++) {
+                const candidate = dockCandidate(mon, parent, sides[j], x, y);
+                const rect = {
+                    "x": candidate.x,
+                    "y": candidate.y,
+                    "w": r.w,
+                    "h": r.h
+                };
+                let collisionArea = 0;
+                for (let k = 0; k < constraints.length; k++) {
+                    const other = constraints[k];
+                    if (other.name === parent.name)
+                        continue;
+
+                    const overlapX = Math.max(0, Math.min(rect.x + rect.w, other.x + other.w) - Math.max(rect.x, other.x));
+                    const overlapY = Math.max(0, Math.min(rect.y + rect.h, other.y + other.h) - Math.max(rect.y, other.y));
+                    collisionArea += overlapX * overlapY;
+                }
+                const dx = candidate.x - x;
+                const dy = candidate.y - y;
+                const distance = dx * dx + dy * dy;
+                const fallbackScore = distance + collisionArea * 1000;
+                if (!bestFallback || fallbackScore < bestFallback.score)
+                    bestFallback = {
+                    "candidate": candidate,
+                    "score": fallbackScore
+                };
+
+                if (collisionArea <= 1 && (!bestValid || distance < bestValid.score))
+                    bestValid = {
+                    "candidate": candidate,
+                    "score": distance
+                };
+
+            }
+        }
+        const best = bestValid || bestFallback;
+        return best ? {
+            "x": best.candidate.x,
+            "y": best.candidate.y
+        } : {
             "x": Math.round(x),
             "y": Math.round(y)
         };
-        for (let i = 0; i < activeMonitors.length; i++) {
-            const other = activeMonitors[i];
-            if (other.name === movedMon.name)
+    }
+
+    function normalizeMonitorPositions() {
+        if (layoutDragging || monitorConfigWritePending || monitorConfigWriteInProgress)
+            return ;
+
+        const positions = connectedLayoutPositions();
+        const active = activeMonitors.slice();
+        for (let i = 0; i < active.length; i++) {
+            const mon = active[i];
+            const target = positions[mon.name];
+            if (!target)
                 continue;
 
-            const s = other.scale > 0 ? other.scale : 1;
-            const ox = Number(other.x || 0);
-            const oy = Number(other.y || 0);
-            const ow = other.width / s;
-            const oh = other.height / s;
-            const candidates = [{
-                "x": ox + ow,
-                "y": y,
-                "dist": Math.abs(ox + ow - x)
-            }, {
-                "x": ox - w,
-                "y": y,
-                "dist": Math.abs(ox - w - x)
-            }, {
-                "x": x,
-                "y": oy - h,
-                "dist": Math.abs(oy - h - y)
-            }, {
-                "x": x,
-                "y": oy + oh,
-                "dist": Math.abs(oy + oh - y)
-            }];
-            for (let c = 0; c < candidates.length; c++) {
-                const cand = candidates[c];
-                if (cand.dist < bestDist) {
-                    bestDist = cand.dist;
-                    best = {
-                        "x": Math.round(cand.x),
-                        "y": Math.round(cand.y)
-                    };
-                }
-            }
+            if (Math.abs(Number(mon.x || 0) - target.x) > 1 || Math.abs(Number(mon.y || 0) - target.y) > 1)
+                setPosition(mon, target.x, target.y);
+
         }
-        return best;
     }
 
     function graphScale(graphWidth, graphHeight) {
         if (activeMonitors.length === 0)
             return 0.15;
 
-        const cx = bboxCenter.x;
-        const cy = bboxCenter.y;
-        let maxHalfW = 150, maxHalfH = 100;
+        const center = bboxCenter;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
         for (let i = 0; i < activeMonitors.length; i++) {
-            const m = activeMonitors[i];
-            const s = m.scale > 0 ? m.scale : 1;
-            const x1 = Number(m.x || 0) - cx;
-            const y1 = Number(m.y || 0) - cy;
-            const x2 = x1 + m.width / s;
-            const y2 = y1 + m.height / s;
-            maxHalfW = Math.max(maxHalfW, Math.abs(x1), Math.abs(x2));
-            maxHalfH = Math.max(maxHalfH, Math.abs(y1), Math.abs(y2));
+            const r = monitorRect(activeMonitors[i]);
+            minX = Math.min(minX, r.x);
+            minY = Math.min(minY, r.y);
+            maxX = Math.max(maxX, r.x + r.w);
+            maxY = Math.max(maxY, r.y + r.h);
         }
         const margin = 24;
-        const availW = Math.max(50, graphWidth / 2 - margin);
-        const availH = Math.max(50, graphHeight / 2 - margin);
-        return Math.max(0.025, Math.min(availW / maxHalfW, availH / maxHalfH, 0.25));
+        const halfW = Math.max(1, Math.abs(minX - center.x), Math.abs(maxX - center.x));
+        const halfH = Math.max(1, Math.abs(minY - center.y), Math.abs(maxY - center.y));
+        return Math.max(0.025, Math.min((graphWidth / 2 - margin) / halfW, (graphHeight / 2 - margin) / halfH, 0.25));
     }
 
     function isMain(mon) {
@@ -614,6 +842,12 @@ Item {
     }
 
     FileView {
+        id: displayLua
+
+        path: page.stateDir + "/display.lua"
+    }
+
+    FileView {
         id: monitorConfigFile
 
         path: page.monitorConfigPath
@@ -714,12 +948,22 @@ Item {
             onStreamFinished: {
                 try {
                     page.monitors = JSON.parse(text);
+                    layoutNormalizeTimer.restart();
                 } catch (error) {
                     page.monitors = [];
+                    console.warn("Display: failed to parse monitor data: " + error);
                 }
             }
         }
 
+    }
+
+    Timer {
+        id: layoutNormalizeTimer
+
+        interval: 350
+        repeat: false
+        onTriggered: page.normalizeMonitorPositions()
     }
 
     Timer {
@@ -760,18 +1004,153 @@ Item {
             width: flick.width
             spacing: 14
 
-            Text {
-                text: "DISPLAY"
-                color: Theme.text
-                font.family: "Noto Sans"
-                font.pixelSize: 19
-                font.letterSpacing: 3
+            Row {
+                width: parent.width
+                height: 46
+                spacing: 12
+
+                Rectangle {
+                    width: 40
+                    height: 40
+                    radius: 11
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Theme.alpha(Theme.text, 0.025)
+                    border.width: 1
+                    border.color: "#414141"
+                    layer.enabled: true
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf108"
+                        color: Theme.text
+                        font.family: Theme.iconFont
+                        font.pixelSize: 19
+                    }
+
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: "#8f95a1"
+                        shadowOpacity: 0.28
+                        shadowBlur: 0.38
+                        shadowVerticalOffset: 2
+                    }
+
+                }
+
+                Column {
+                    width: Math.max(90, parent.width - 40 - 64 - parent.spacing * 2)
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 3
+
+                    Text {
+                        width: parent.width
+                        text: "Displays"
+                        color: Theme.text
+                        font.family: Theme.displayFont
+                        font.pixelSize: 19
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: "Arrange monitors and tune display settings"
+                        color: Theme.textFaint
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 10
+                        elide: Text.ElideRight
+                    }
+
+                }
+
+                Rectangle {
+                    width: 64
+                    height: 28
+                    radius: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Theme.alpha(Theme.text, 0.025)
+                    border.width: 1
+                    border.color: "#414141"
+                    layer.enabled: true
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
+
+                        Text {
+                            text: "\uf108"
+                            color: Theme.textDim
+                            font.family: Theme.iconFont
+                            font.pixelSize: 11
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        Text {
+                            text: String(page.activeMonitors.length)
+                            color: Theme.text
+                            font.family: Theme.monoFont
+                            font.pixelSize: 11
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                    }
+
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: "#8f95a1"
+                        shadowOpacity: 0.28
+                        shadowBlur: 0.38
+                        shadowVerticalOffset: 2
+                    }
+
+                }
+
             }
 
-            Rectangle {
+            Row {
                 width: parent.width
-                height: 1
-                color: Theme.border
+                height: 26
+                spacing: 8
+
+                Text {
+                    width: 104
+                    text: "WORKSPACE MAP"
+                    color: Theme.text
+                    font.family: Theme.monoFont
+                    font.pixelSize: 10
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.8
+                    anchors.verticalCenter: parent.verticalCenter
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    width: Math.max(60, parent.width - 104 - 15 - parent.spacing * 2)
+                    text: "Drag displays to rearrange"
+                    color: Theme.textFaint
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    width: 15
+                    text: "\uf2f1"
+                    color: Theme.textDim
+                    font.family: Theme.iconFont
+                    font.pixelSize: 13
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -6
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: page.refresh()
+                    }
+
+                }
+
             }
 
             Rectangle {
@@ -782,11 +1161,11 @@ Item {
                 property real centerY: page.bboxCenter.y
 
                 width: parent.width
-                height: 260
-                radius: Theme.radius
-                color: Theme.alpha(Theme.text, 0.025)
-                border.width: 1
-                border.color: Theme.border
+                height: 270
+                radius: 12
+                color: Theme.alpha(Theme.text, 0.012)
+                border.width: 0
+                border.color: "transparent"
                 clip: true
 
                 Repeater {
@@ -799,7 +1178,7 @@ Item {
                         y: 0
                         width: 1
                         height: monitorGraph.height
-                        color: Theme.alpha(Theme.text, 0.035)
+                        color: Theme.alpha(Theme.text, 0.012)
                         z: 0
                     }
 
@@ -810,7 +1189,7 @@ Item {
                     y: monitorGraph.height / 2
                     width: monitorGraph.width
                     height: 1
-                    color: Theme.alpha(Theme.text, 0.08)
+                    color: Theme.alpha(Theme.text, 0.025)
                     z: 0
                 }
 
@@ -828,6 +1207,51 @@ Item {
                     model: page.activeMonitors
 
                     delegate: Rectangle {
+                        required property var modelData
+                        readonly property real tileScale: monitorGraph.scaleFactor
+                        readonly property real tileW: modelData.width / (modelData.scale > 0 ? modelData.scale : 1)
+                        readonly property real tileH: modelData.height / (modelData.scale > 0 ? modelData.scale : 1)
+                        readonly property var displayPosition: page.monitorRect(modelData)
+
+                        x: monitorGraph.width / 2 + (displayPosition.x - monitorGraph.centerX) * tileScale + 2
+                        y: monitorGraph.height / 2 + (displayPosition.y - monitorGraph.centerY) * tileScale + 3
+                        width: Math.max(52, tileW * tileScale)
+                        height: Math.max(38, tileH * tileScale)
+                        radius: 8
+                        color: "transparent"
+                        border.width: 1
+                        border.color: "#393939"
+                        z: 0.5
+                    }
+
+                }
+
+                Text {
+                    x: 13
+                    y: 11
+                    text: "LAYOUT"
+                    color: Theme.alpha(Theme.text, 0.34)
+                    font.family: Theme.monoFont
+                    font.pixelSize: 9
+                    font.letterSpacing: 0.7
+                    z: 4
+                }
+
+                Text {
+                    x: 13
+                    y: monitorGraph.height - 22
+                    text: page.layoutDragging ? "MOVING DISPLAY" : "DRAG TO REPOSITION"
+                    color: Theme.alpha(Theme.text, 0.42)
+                    font.family: Theme.monoFont
+                    font.pixelSize: 9
+                    font.letterSpacing: 0.4
+                    z: 4
+                }
+
+                Repeater {
+                    model: page.activeMonitors
+
+                    delegate: Rectangle {
                         id: monitorTile
 
                         required property var modelData
@@ -835,15 +1259,17 @@ Item {
                         readonly property real tileScale: monitorGraph.scaleFactor
                         readonly property real tileW: modelData.width / (modelData.scale > 0 ? modelData.scale : 1)
                         readonly property real tileH: modelData.height / (modelData.scale > 0 ? modelData.scale : 1)
+                        readonly property var displayPosition: page.monitorRect(modelData)
 
-                        x: monitorGraph.width / 2 + (Number(modelData.x || 0) - monitorGraph.centerX) * tileScale
-                        y: monitorGraph.height / 2 + (Number(modelData.y || 0) - monitorGraph.centerY) * tileScale
+                        x: monitorGraph.width / 2 + (displayPosition.x - monitorGraph.centerX) * tileScale
+                        y: monitorGraph.height / 2 + (displayPosition.y - monitorGraph.centerY) * tileScale
                         width: Math.max(52, tileW * tileScale)
                         height: Math.max(38, tileH * tileScale)
-                        radius: 7
+                        radius: 8
                         color: Theme.alpha(index === 0 ? Theme.accent : Theme.text, 0.13)
-                        border.width: 2
-                        border.color: page.isMain(modelData) ? Theme.accent : Theme.alpha(Theme.text, 0.42)
+                        border.width: 1
+                        border.color: page.isMain(monitorTile.modelData) ? "#555555" : "#393939"
+                        layer.enabled: true
                         z: dragMouse.pressed ? 5 : 2
 
                         Column {
@@ -855,15 +1281,15 @@ Item {
                                 text: monitorTile.modelData.name
                                 color: Theme.text
                                 font.family: "Noto Sans"
-                                font.pixelSize: 11
-                                font.bold: true
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
                             }
 
                             Rectangle {
                                 width: 24
                                 height: 2
                                 radius: 1
-                                color: Theme.alpha(Theme.text, 0.4)
+                                color: page.isMain(monitorTile.modelData) ? Theme.accent : Theme.textDim
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
 
@@ -885,18 +1311,19 @@ Item {
                             property real startWorldX: 0
                             property real startWorldY: 0
                             property bool moved: false
+                            property var dragConstraints: []
 
-                            function applyGlue(mouseX, mouseY) {
+                            function applyConnectedDrag(mouseX, mouseY) {
                                 const factor = monitorGraph.scaleFactor;
                                 const p = dragMouse.mapToItem(monitorGraph, mouseX, mouseY);
                                 const dxWorld = (p.x - pressGraphX) / factor;
                                 const dyWorld = (p.y - pressGraphY) / factor;
-                                const wantX = startWorldX + dxWorld;
-                                const wantY = startWorldY + dyWorld;
-                                const glued = page.gluePosition(monitorTile.modelData, wantX, wantY, monitorTile.tileW, monitorTile.tileH);
-                                monitorTile.x = monitorGraph.width / 2 + (glued.x - monitorGraph.centerX) * factor;
-                                monitorTile.y = monitorGraph.height / 2 + (glued.y - monitorGraph.centerY) * factor;
-                                return glued;
+                                const wantedX = startWorldX + dxWorld;
+                                const wantedY = startWorldY + dyWorld;
+                                const next = page.constrainConnectedPosition(monitorTile.modelData, wantedX, wantedY, dragConstraints);
+                                monitorTile.x = monitorGraph.width / 2 + (next.x - monitorGraph.centerX) * factor;
+                                monitorTile.y = monitorGraph.height / 2 + (next.y - monitorGraph.centerY) * factor;
+                                return next;
                             }
 
                             anchors.fill: parent
@@ -904,11 +1331,13 @@ Item {
                             preventStealing: true
                             cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
                             onPressed: function(mouse) {
+                                page.layoutDragging = true;
                                 const p = dragMouse.mapToItem(monitorGraph, mouse.x, mouse.y);
                                 pressGraphX = p.x;
                                 pressGraphY = p.y;
-                                startWorldX = Number(monitorTile.modelData.x || 0);
-                                startWorldY = Number(monitorTile.modelData.y || 0);
+                                startWorldX = monitorTile.displayPosition.x;
+                                startWorldY = monitorTile.displayPosition.y;
+                                dragConstraints = page.dockingConstraints(monitorTile.modelData);
                                 moved = false;
                             }
                             onPositionChanged: function(mouse) {
@@ -916,15 +1345,28 @@ Item {
                                     return ;
 
                                 moved = true;
-                                applyGlue(mouse.x, mouse.y);
+                                applyConnectedDrag(mouse.x, mouse.y);
                             }
                             onReleased: function(mouse) {
-                                if (!moved)
-                                    return ;
-
-                                const glued = applyGlue(mouse.x, mouse.y);
-                                page.setPosition(monitorTile.modelData, glued.x, glued.y);
+                                if (moved) {
+                                    const next = applyConnectedDrag(mouse.x, mouse.y);
+                                    page.setPosition(monitorTile.modelData, next.x, next.y);
+                                }
+                                page.layoutDragging = false;
+                                dragConstraints = [];
                             }
+                            onCanceled: {
+                                page.layoutDragging = false;
+                                dragConstraints = [];
+                            }
+                        }
+
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: "#8f95a1"
+                            shadowOpacity: 0.28
+                            shadowBlur: 0.38
+                            shadowVerticalOffset: 2
                         }
 
                     }
@@ -935,7 +1377,32 @@ Item {
 
             Column {
                 width: parent.width
-                spacing: 8
+                spacing: 10
+
+                Row {
+                    width: parent.width
+                    height: 25
+                    spacing: 8
+
+                    Text {
+                        text: "CONNECTED DISPLAYS"
+                        color: Theme.text
+                        font.family: Theme.monoFont
+                        font.pixelSize: 10
+                        font.weight: Font.DemiBold
+                        font.letterSpacing: 0.7
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: String(page.monitors.length)
+                        color: Theme.textFaint
+                        font.family: Theme.monoFont
+                        font.pixelSize: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                }
 
                 Repeater {
                     model: page.monitors
@@ -949,11 +1416,25 @@ Item {
                         readonly property bool scaleAvailable: page.hasScaleOptions(modelData)
 
                         width: parent.width
-                        height: cardColumn.implicitHeight + 20
-                        radius: Theme.radius
-                        color: "#00000000"
+                        height: cardColumn.implicitHeight + 22
+                        radius: 11
+                        color: card.off ? Theme.alpha(Theme.text, 0.008) : (cardHover.hovered ? Theme.alpha(Theme.text, 0.03) : Theme.alpha(Theme.text, 0.014))
                         border.width: 1
-                        border.color: modelData.focused && !off ? "#454545" : Theme.border
+                        border.color: cardHover.hovered ? "#555555" : "#393939"
+                        layer.enabled: true
+
+                        HoverHandler {
+                            id: cardHover
+                        }
+
+                        Rectangle {
+                            x: 0
+                            y: 10
+                            width: 3
+                            height: Math.max(0, parent.height - 20)
+                            radius: 1.5
+                            color: card.off ? Theme.alpha(Theme.text, 0.1) : (card.main ? Theme.accent : Theme.alpha("#aeb4bf", 0.28))
+                        }
 
                         Column {
                             id: cardColumn
@@ -966,19 +1447,49 @@ Item {
 
                             Item {
                                 width: parent.width
-                                height: 24
+                                height: 32
+
+                                Rectangle {
+                                    x: 0
+                                    width: 30
+                                    height: 30
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    radius: 8
+                                    color: Theme.alpha(Theme.text, 0.025)
+                                    border.width: 1
+                                    border.color: "#414141"
+                                    layer.enabled: true
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "\uf108"
+                                        color: card.off ? Theme.textFaint : Theme.accent
+                                        font.family: Theme.iconFont
+                                        font.pixelSize: 15
+                                    }
+
+                                    layer.effect: MultiEffect {
+                                        shadowEnabled: true
+                                        shadowColor: "#8f95a1"
+                                        shadowOpacity: 0.28
+                                        shadowBlur: 0.38
+                                        shadowVerticalOffset: 2
+                                    }
+
+                                }
 
                                 Row {
                                     anchors.left: parent.left
+                                    anchors.leftMargin: 38
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: 8
 
                                     Text {
                                         text: card.modelData.name
                                         color: card.off ? Theme.textDim : Theme.text
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 14
-                                        font.bold: true
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 13
+                                        font.weight: Font.Medium
                                     }
 
                                     Text {
@@ -1000,10 +1511,11 @@ Item {
                                         visible: !card.off && page.activeMonitors.length > 1
                                         width: 84
                                         height: 24
-                                        radius: Theme.radius
-                                        color: card.main ? Theme.alpha(Theme.accent, 0.1) : (mainMouse.containsMouse ? Theme.alpha(Theme.accent, 0.08) : "#00000000")
+                                        radius: 7
+                                        color: card.main ? Theme.alpha(Theme.accent, 0.07) : (mainMouse.containsMouse ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015))
                                         border.width: 1
-                                        border.color: card.main || mainMouse.containsMouse ? Theme.accent : Theme.border
+                                        border.color: card.main ? "#555555" : (mainMouse.containsMouse ? "#555555" : "#393939")
+                                        layer.enabled: true
 
                                         Text {
                                             anchors.centerIn: parent
@@ -1012,7 +1524,6 @@ Item {
                                             font.family: "Noto Sans"
                                             font.pixelSize: 11
                                             font.bold: true
-                                            font.letterSpacing: 1
                                         }
 
                                         MouseArea {
@@ -1025,16 +1536,25 @@ Item {
                                             onClicked: page.setMainMonitor(card.modelData)
                                         }
 
+                                        layer.effect: MultiEffect {
+                                            shadowEnabled: true
+                                            shadowColor: "#8f95a1"
+                                            shadowOpacity: 0.28
+                                            shadowBlur: 0.38
+                                            shadowVerticalOffset: 2
+                                        }
+
                                     }
 
                                     Rectangle {
                                         visible: card.off || page.activeMonitors.length > 1
                                         width: 72
                                         height: 24
-                                        radius: Theme.radius
-                                        color: toggleMouse.containsMouse ? Theme.alpha(Theme.accent, 0.08) : "#00000000"
+                                        radius: 7
+                                        color: toggleMouse.containsMouse ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
                                         border.width: 1
-                                        border.color: toggleMouse.containsMouse ? Theme.accent : Theme.border
+                                        border.color: toggleMouse.containsMouse ? "#555555" : "#393939"
+                                        layer.enabled: true
 
                                         Text {
                                             anchors.centerIn: parent
@@ -1043,7 +1563,6 @@ Item {
                                             font.family: "Noto Sans"
                                             font.pixelSize: 11
                                             font.bold: true
-                                            font.letterSpacing: 1
                                         }
 
                                         MouseArea {
@@ -1053,6 +1572,14 @@ Item {
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: page.setMonitorEnabled(card.modelData, card.off)
+                                        }
+
+                                        layer.effect: MultiEffect {
+                                            shadowEnabled: true
+                                            shadowColor: "#8f95a1"
+                                            shadowOpacity: 0.28
+                                            shadowBlur: 0.38
+                                            shadowVerticalOffset: 2
                                         }
 
                                     }
@@ -1076,8 +1603,11 @@ Item {
                                 }
 
                                 Controls.Slider {
+                                    id: scaleSlider
+
                                     visible: card.scaleAvailable
                                     width: parent.width - 36 - 44 - 16
+                                    height: 22
                                     anchors.verticalCenter: parent.verticalCenter
                                     from: 0
                                     to: 1
@@ -1088,6 +1618,35 @@ Item {
                                         page.pendingScaleValue = newScale;
                                         scaleApplyTimer.restart();
                                     }
+
+                                    background: Rectangle {
+                                        x: scaleSlider.leftPadding
+                                        y: scaleSlider.topPadding + scaleSlider.availableHeight / 2 - height / 2
+                                        width: scaleSlider.availableWidth
+                                        height: 4
+                                        radius: 2
+                                        color: Theme.alpha(Theme.text, 0.14)
+
+                                        Rectangle {
+                                            width: scaleSlider.visualPosition * parent.width
+                                            height: parent.height
+                                            radius: parent.radius
+                                            color: Theme.accent
+                                        }
+
+                                    }
+
+                                    handle: Rectangle {
+                                        x: scaleSlider.leftPadding + scaleSlider.visualPosition * (scaleSlider.availableWidth - width)
+                                        y: scaleSlider.topPadding + scaleSlider.availableHeight / 2 - height / 2
+                                        width: 14
+                                        height: 14
+                                        radius: 7
+                                        color: Theme.text
+                                        border.width: 2
+                                        border.color: Theme.accent
+                                    }
+
                                 }
 
                                 Text {
@@ -1106,7 +1665,7 @@ Item {
                                     width: 44
                                     anchors.verticalCenter: parent.verticalCenter
                                     horizontalAlignment: Text.AlignRight
-                                    text: (card.modelData.scale || 1).toFixed(2) + "x"
+                                    text: (card.modelData.scale || 1).toFixed(2) + "×"
                                     color: Theme.text
                                     font.family: "Noto Sans"
                                     font.pixelSize: 11
@@ -1144,15 +1703,16 @@ Item {
 
                                             width: 92
                                             height: 28
-                                            radius: Theme.radius
-                                            color: current ? Theme.alpha(Theme.accent, 0.1) : (resMouse.containsMouse ? Theme.alpha(Theme.accent, 0.08) : "#00000000")
+                                            radius: 7
+                                            color: current ? Theme.alpha(Theme.accent, 0.07) : (resMouse.containsMouse ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015))
                                             border.width: 1
-                                            border.color: current || resMouse.containsMouse ? Theme.accent : Theme.border
+                                            border.color: current ? "#555555" : (resMouse.containsMouse ? "#555555" : "#393939")
+                                            layer.enabled: true
 
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: resButton.modelData
-                                                color: Theme.text
+                                                color: resButton.current ? Theme.accent : Theme.text
                                                 font.family: "Noto Sans"
                                                 font.pixelSize: 11
                                                 font.bold: true
@@ -1170,6 +1730,21 @@ Item {
                                                         page.setResolution(card.modelData, mode);
 
                                                 }
+                                            }
+
+                                            layer.effect: MultiEffect {
+                                                shadowEnabled: true
+                                                shadowColor: "#8f95a1"
+                                                shadowOpacity: 0.28
+                                                shadowBlur: 0.38
+                                                shadowVerticalOffset: 2
+                                            }
+
+                                            Behavior on color {
+                                                ColorAnimation {
+                                                    duration: 110
+                                                }
+
                                             }
 
                                         }
@@ -1210,15 +1785,16 @@ Item {
 
                                             width: 76
                                             height: 28
-                                            radius: Theme.radius
-                                            color: current ? Theme.alpha(Theme.accent, 0.1) : (rateMouse.containsMouse ? Theme.alpha(Theme.accent, 0.08) : "#00000000")
+                                            radius: 7
+                                            color: current ? Theme.alpha(Theme.accent, 0.07) : (rateMouse.containsMouse ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015))
                                             border.width: 1
-                                            border.color: current || rateMouse.containsMouse ? Theme.accent : Theme.border
+                                            border.color: current ? "#555555" : (rateMouse.containsMouse ? "#555555" : "#393939")
+                                            layer.enabled: true
 
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: rateButton.modelData.toFixed(2)
-                                                color: Theme.text
+                                                color: rateButton.current ? Theme.accent : Theme.text
                                                 font.family: "Noto Sans"
                                                 font.pixelSize: 11
                                                 font.bold: true
@@ -1233,12 +1809,49 @@ Item {
                                                 onClicked: page.setRefreshRate(card.modelData, rateButton.modelData)
                                             }
 
+                                            layer.effect: MultiEffect {
+                                                shadowEnabled: true
+                                                shadowColor: "#8f95a1"
+                                                shadowOpacity: 0.28
+                                                shadowBlur: 0.38
+                                                shadowVerticalOffset: 2
+                                            }
+
+                                            Behavior on color {
+                                                ColorAnimation {
+                                                    duration: 110
+                                                }
+
+                                            }
+
                                         }
 
                                     }
 
                                 }
 
+                            }
+
+                        }
+
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: "#8f95a1"
+                            shadowOpacity: 0.28
+                            shadowBlur: 0.38
+                            shadowVerticalOffset: 2
+                        }
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 130
+                            }
+
+                        }
+
+                        Behavior on border.color {
+                            ColorAnimation {
+                                duration: 130
                             }
 
                         }
@@ -1252,10 +1865,11 @@ Item {
             Rectangle {
                 width: parent.width
                 height: 34
-                radius: Theme.radius
-                color: resetMouse.containsMouse ? Theme.alpha(Theme.accent, 0.08) : "#00000000"
+                radius: 8
+                color: resetMouse.containsMouse ? Theme.alpha(Theme.text, 0.035) : Theme.alpha(Theme.text, 0.015)
                 border.width: 1
-                border.color: resetMouse.containsMouse ? Theme.accent : Theme.border
+                border.color: resetMouse.containsMouse ? "#555555" : "#393939"
+                layer.enabled: true
 
                 Text {
                     anchors.centerIn: parent
@@ -1264,7 +1878,6 @@ Item {
                     font.family: "Noto Sans"
                     font.pixelSize: 12
                     font.bold: true
-                    font.letterSpacing: 1
                 }
 
                 MouseArea {
@@ -1274,6 +1887,14 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: page.resetToConfig()
+                }
+
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: "#8f95a1"
+                    shadowOpacity: 0.28
+                    shadowBlur: 0.38
+                    shadowVerticalOffset: 2
                 }
 
             }

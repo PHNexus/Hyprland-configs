@@ -17,7 +17,8 @@ Item {
         "cliphist": 0,
         "thumbs": 0
     })
-    property var sdaUsageData: null
+    property var driveUsageData: ({
+    })
     property real marginLeft: 0
     property real marginRight: 55
     property real marginTop: 0
@@ -58,7 +59,7 @@ Item {
 
     function formatCount(n) {
         var v = Math.round(n) || 0;
-        return v + (v === 1 ? " ITEM" : " ITEMS");
+        return v + (v === 1 ? " item" : " items");
     }
 
     function parseSize(v) {
@@ -77,7 +78,7 @@ Item {
     }
 
     function usageColor(p) {
-        return p >= 90 ? Theme.danger : p >= 75 ? Theme.accent2 : Theme.accent;
+        return p >= 90 ? "#f5f5f5" : p >= 75 ? "#dddddd" : "#c5c5c5";
     }
 
     function usageWidth(p) {
@@ -85,31 +86,51 @@ Item {
     }
 
     function ignoredMount(m) {
-        return ["/proc", "/sys", "/run", "/dev"].some(function(x) {
-            return m.indexOf(x) === 0;
-        });
+        var mount = String(m || "").trim();
+        var lower = mount.toLowerCase();
+        var hiddenMounts = ["/boot", "/efi", "/proc", "/sys", "/dev", "/run/lock"];
+        if (lower === "swap" || lower === "[swap]")
+            return true;
+
+        for (var i = 0; i < hiddenMounts.length; ++i) {
+            var entry = hiddenMounts[i];
+            if (lower === entry || lower.indexOf(entry + "/") === 0)
+                return true;
+
+        }
+        if (lower === "/run" || (lower.indexOf("/run/") === 0 && lower.indexOf("/run/media/") !== 0))
+            return true;
+
+        return false;
     }
 
     function ignoredFilesystem(f) {
-        return ["tmpfs", "devtmpfs", "overlay"].some(function(x) {
-            return f.indexOf(x) === 0;
-        });
+        var filesystem = String(f || "").trim().toLowerCase();
+        var hiddenSources = ["tmpfs", "devtmpfs", "overlay", "zram", "swap", "squashfs", "efivarfs", "proc", "sysfs", "cgroup", "tracefs", "securityfs", "fusectl", "mqueue", "pstore", "configfs", "debugfs", "ramfs"];
+        if (hiddenSources.some(function(x) {
+            return filesystem.indexOf(x) === 0;
+        }))
+            return true;
+
+        return /^\/dev\/(zram|loop|ram|fd)\d+/i.test(filesystem) || filesystem.indexOf("/zram") !== -1 || filesystem.indexOf("/swap") !== -1 || filesystem === "[swap]";
     }
 
     function parseDfLine(line) {
-        var f = line.trim().split(/\s+/);
-        if (f.length < 6)
+        var f = String(line || "").trim().split(/\s+/);
+        if (f.length < 6 || !f[0])
             return null;
 
         var d = {
             "filesystem": f[0],
-            "total": parseInt(f[1]),
-            "used": parseInt(f[2]),
-            "available": parseInt(f[3]),
-            "percent": parseInt(f[4]),
+            "total": parseInt(f[1], 10),
+            "used": parseInt(f[2], 10),
+            "available": parseInt(f[3], 10),
+            "percent": parseInt(String(f[4]).replace("%", ""), 10),
             "mount": f.slice(5).join(" ")
         };
-        if ([d.total, d.used, d.available, d.percent].some(isNaN))
+        if ([d.total, d.used, d.available, d.percent].some(function(n) {
+            return !isFinite(n);
+        }))
             return null;
 
         if (ignoredMount(d.mount) || ignoredFilesystem(d.filesystem))
@@ -118,23 +139,46 @@ Item {
         return d;
     }
 
+    function collectDeviceNames(device, names) {
+        if (!device)
+            return names;
+
+        var name = String(device.name || "");
+        if (name.length > 0 && names.indexOf(name) === -1)
+            names.push(name);
+
+        var children = device.children || [];
+        for (var i = 0; i < children.length; ++i) collectDeviceNames(children[i], names)
+        return names;
+    }
+
     function parseDriveData(data) {
         var disks = [];
         try {
-            var obj = JSON.parse(data);
+            var raw = String(data || "").trim();
+            if (!raw.length)
+                return disks;
+
+            var obj = JSON.parse(raw);
             if (!obj.blockdevices)
                 return disks;
 
             for (var i = 0; i < obj.blockdevices.length; ++i) {
                 var d = obj.blockdevices[i];
-                if (d.type === "disk")
+                var name = String(d.name || "").trim();
+                var lowerName = name.toLowerCase();
+                var type = String(d.type || "").toLowerCase();
+                var size = parseInt(d.size, 10) || 0;
+                var virtualDevice = /^(zram|loop|ram|fd)\d+$/.test(lowerName);
+                if (type === "disk" && name.length > 0 && size > 0 && !virtualDevice)
                     disks.push({
-                    "name": d.name || "",
-                    "model": d.model || "",
-                    "size": parseInt(d.size) || 0,
-                    "type": d.type || "",
-                    "tran": d.tran || ""
-                });
+                        "name": name,
+                        "model": String(d.model || "").trim(),
+                        "size": size,
+                        "type": String(d.type || ""),
+                        "tran": String(d.tran || ""),
+                        "deviceNames": collectDeviceNames(d, [])
+                    });
 
             }
         } catch (e) {
@@ -143,19 +187,43 @@ Item {
         return disks;
     }
 
-    function findSdaUsage() {
-        var used = 0;
-        var found = false;
-        for (var i = 0; i < filesystems.length; ++i) {
-            var fs = filesystems[i];
-            if (fs.filesystem.indexOf("/dev/sda") === 0) {
-                used += fs.used;
-                found = true;
+    function updateDriveUsage() {
+        var usage = ({
+        });
+        for (var i = 0; i < drives.length; ++i) {
+            var drive = drives[i];
+            var names = drive.deviceNames || [drive.name];
+            var used = 0;
+            var found = false;
+            var countedSources = [];
+            for (var j = 0; j < filesystems.length; ++j) {
+                var fs = filesystems[j];
+                var source = String(fs.filesystem || "");
+                if (source.indexOf("/dev/") !== 0)
+                    continue;
+
+                var sourceName = source.slice(5);
+                var matched = names.indexOf(sourceName) !== -1;
+                if (!matched) {
+                    for (var k = 0; k < names.length; ++k) {
+                        var base = String(names[k] || "");
+                        if (base.length > 0 && sourceName.indexOf(base) === 0) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+                if (matched && countedSources.indexOf(source) === -1) {
+                    used += Math.max(0, Number(fs.used) || 0);
+                    countedSources.push(source);
+                    found = true;
+                }
             }
+            if (found && drive.name)
+                usage[drive.name] = used;
+
         }
-        return found ? {
-            "used": used
-        } : null;
+        page.driveUsageData = usage;
     }
 
     function refreshAll() {
@@ -192,11 +260,12 @@ Item {
     Process {
         id: pDrives
 
-        command: ["sh", "-c", "lsblk -J -b -d -o NAME,MODEL,SIZE,TYPE,TRAN 2>/dev/null"]
+        command: ["sh", "-c", "lsblk -J -b -o NAME,MODEL,SIZE,TYPE,TRAN,MOUNTPOINTS,FSTYPE 2>/dev/null"]
 
         stdout: StdioCollector {
             onStreamFinished: {
                 page.drives = page.parseDriveData(text);
+                page.updateDriveUsage();
             }
         }
 
@@ -213,7 +282,8 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: {
                 var fs = [];
-                var lines = text.trim().split("\n");
+                var output = String(text || "").trim();
+                var lines = output.length ? output.split("\n") : [];
                 for (var i = 1; i < lines.length; ++i) {
                     var item = page.parseDfLine(lines[i]);
                     if (item)
@@ -221,7 +291,7 @@ Item {
 
                 }
                 page.filesystems = fs;
-                page.sdaUsageData = page.findSdaUsage();
+                page.updateDriveUsage();
             }
         }
 
@@ -246,7 +316,8 @@ Item {
                     "cliphist": 0,
                     "thumbs": 0
                 };
-                var lines = text.trim().split("\n");
+                var output = String(text || "").trim();
+                var lines = output.length ? output.split("\n") : [];
                 for (var i = 0; i < lines.length; ++i) {
                     var p = lines[i].trim().split(/\s+/);
                     var k = p[0] ? p[0].toLowerCase() : "";
@@ -312,23 +383,47 @@ Item {
         anchors.centerIn: parent
         z: 100
         width: Math.min(parent.width - 30, 420)
-        height: 190
-        radius: Theme.radius
+        height: 200
+        radius: 10
         color: Theme.bg
         border.width: 1
-        border.color: Theme.accent
+        border.color: "#555555"
 
         Column {
             anchors.fill: parent
             anchors.margins: 18
             spacing: 12
 
-            Text {
-                text: page.pendingTitle
-                color: Theme.text
-                font.family: "Noto Sans"
-                font.pixelSize: 17
-                font.bold: true
+            Row {
+                spacing: 10
+
+                Rectangle {
+                    width: 32
+                    height: 32
+                    radius: 8
+                    color: "#292929"
+                    border.width: 1
+                    border.color: "#454545"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰀦"
+                        color: "#eeeeee"
+                        font.family: Theme.iconFont
+                        font.pixelSize: 18
+                    }
+
+                }
+
+                Text {
+                    text: page.pendingTitle
+                    color: Theme.text
+                    font.family: "Noto Sans"
+                    font.pixelSize: 15
+                    font.weight: Font.DemiBold
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
             }
 
             Text {
@@ -336,7 +431,7 @@ Item {
                 text: page.pendingMessage
                 color: Theme.textDim
                 font.family: "Noto Sans"
-                font.pixelSize: 13
+                font.pixelSize: 11
                 wrapMode: Text.WordWrap
             }
 
@@ -371,278 +466,155 @@ Item {
 
     }
 
-    Column {
+    Flickable {
+        id: flick
+
         anchors.fill: parent
         anchors.leftMargin: page.marginLeft
         anchors.rightMargin: page.marginRight
         anchors.topMargin: page.marginTop
         anchors.bottomMargin: page.marginBottom
-        spacing: 14
+        contentWidth: width
+        contentHeight: list.implicitHeight
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
 
-        Text {
-            text: "STORAGE"
-            color: Theme.text
-            font.family: "Noto Sans"
-            font.pixelSize: 19
-            font.letterSpacing: 3
-        }
+        Column {
+            id: list
 
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.border
-        }
+            width: flick.width
+            spacing: 10
 
-        Item {
-            width: parent.width
-            height: Math.max(0, parent.height - y)
+            Column {
+                width: parent.width
+                spacing: 2
 
-            Flickable {
-                id: flick
+                Text {
+                    text: "STORAGE"
+                    color: Theme.text
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 16
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.4
+                }
 
-                anchors.fill: parent
-                clip: true
-                contentWidth: width
-                contentHeight: list.implicitHeight
-                boundsBehavior: Flickable.StopAtBounds
+                Text {
+                    text: "Disk usage and system cleanup"
+                    color: Theme.textFaint
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 9
+                }
 
-                Column {
-                    id: list
+            }
 
-                    width: flick.width
-                    spacing: 10
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Theme.border
+            }
+
+            Column {
+                width: parent.width
+                spacing: 4
+
+                Row {
+                    width: parent.width
+                    spacing: 8
 
                     Text {
                         text: "DRIVES"
-                        color: Theme.text
-                        font.family: "Noto Sans"
-                        font.pixelSize: 15
-                        font.bold: true
-                        font.letterSpacing: 2
+                        color: Theme.textDim
+                        font.family: Theme.monoFont
+                        font.pixelSize: 9
+                        font.weight: Font.DemiBold
+                        font.letterSpacing: 0.6
                     }
+
+                    Text {
+                        text: "· " + page.drives.length
+                        color: Theme.textFaint
+                        font.family: Theme.monoFont
+                        font.pixelSize: 9
+                    }
+
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 4
 
                     Repeater {
                         model: page.drives
 
-                        delegate: Item {
-                            required property var modelData
-                            property bool hasUsage: modelData.name === "sda" && page.sdaUsageData !== null && modelData.size > 0
-                            property real usedPct: hasUsage ? page.sdaUsageData.used / modelData.size * 100 : 0
-
+                        delegate: DriveCard {
                             width: list.width
-                            height: 64
-
-                            Column {
-                                anchors.fill: parent
-                                spacing: 9
-
-                                Row {
-                                    width: parent.width
-                                    height: 17
-
-                                    Text {
-                                        width: parent.width - 70
-                                        text: modelData.model || modelData.name || "SSD/HDD"
-                                        color: Theme.text
-                                        elide: Text.ElideRight
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 13
-                                        font.bold: true
-                                    }
-
-                                    Text {
-                                        width: 70
-                                        text: hasUsage ? Math.round(usedPct) + "%" : "--%"
-                                        color: hasUsage ? page.usageColor(usedPct) : Theme.textDim
-                                        horizontalAlignment: Text.AlignRight
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 12
-                                        font.bold: true
-                                    }
-
-                                }
-
-                                Rectangle {
-                                    width: parent.width
-                                    height: 4
-                                    radius: 2
-                                    color: Theme.alpha(Theme.textDim, 0.15)
-
-                                    Rectangle {
-                                        width: hasUsage ? parent.width * page.usageWidth(usedPct) : 0
-                                        height: parent.height
-                                        radius: 2
-                                        color: hasUsage ? page.usageColor(usedPct) : Theme.accent
-
-                                        Behavior on width {
-                                            NumberAnimation {
-                                                duration: Theme.animMed
-                                            }
-
-                                        }
-
-                                    }
-
-                                }
-
-                                Row {
-                                    width: parent.width
-                                    height: 13
-                                    spacing: 14
-
-                                    Text {
-                                        text: hasUsage ? page.formatBytes(page.sdaUsageData.used) + " USED" : "-- USED"
-                                        color: Theme.textDim
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 11
-                                    }
-
-                                    Text {
-                                        text: hasUsage ? page.formatBytes(Math.max(0, modelData.size - page.sdaUsageData.used)) + " FREE" : "-- FREE"
-                                        color: Theme.textDim
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 11
-                                    }
-
-                                    Text {
-                                        text: page.formatBytes(modelData.size) + " TOTAL"
-                                        color: Theme.textDim
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 11
-                                    }
-
-                                }
-
-                            }
-
                         }
 
                     }
 
                     Text {
-                        text: "FILESYSTEM"
-                        color: Theme.text
-                        topPadding: 4
-                        font.family: "Noto Sans"
-                        font.pixelSize: 15
-                        font.bold: true
-                        font.letterSpacing: 2
+                        visible: page.drives.length === 0
+                        text: pDrives.running ? "SCANNING FOR DRIVES..." : "NO PHYSICAL DRIVES DETECTED"
+                        color: Theme.textFaint
+                        font.family: Theme.monoFont
+                        font.pixelSize: 9
+                        leftPadding: 4
                     }
 
-                    Repeater {
-                        model: page.filesystems
+                }
 
-                        delegate: Item {
-                            required property var modelData
+            }
 
-                            width: list.width
-                            height: 64
+            Column {
+                width: parent.width
+                spacing: 8
 
-                            Column {
-                                anchors.fill: parent
-                                spacing: 9
+                Row {
+                    x: 2
+                    width: parent.width - 2
+                    height: 17
+                    spacing: 8
 
-                                Row {
-                                    width: parent.width
-                                    height: 17
-
-                                    Text {
-                                        width: parent.width - 55
-                                        text: modelData.mount
-                                        color: Theme.text
-                                        elide: Text.ElideRight
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 13
-                                        font.bold: true
-                                    }
-
-                                    Text {
-                                        width: 55
-                                        text: modelData.percent + "%"
-                                        color: page.usageColor(modelData.percent)
-                                        horizontalAlignment: Text.AlignRight
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 12
-                                        font.bold: true
-                                    }
-
-                                }
-
-                                Rectangle {
-                                    width: parent.width
-                                    height: 4
-                                    radius: 2
-                                    color: Theme.alpha(Theme.textDim, 0.15)
-
-                                    Rectangle {
-                                        width: parent.width * page.usageWidth(modelData.percent)
-                                        height: parent.height
-                                        radius: 2
-                                        color: page.usageColor(modelData.percent)
-
-                                        Behavior on width {
-                                            NumberAnimation {
-                                                duration: Theme.animMed
-                                            }
-
-                                        }
-
-                                    }
-
-                                }
-
-                                Row {
-                                    width: parent.width
-                                    height: 13
-                                    spacing: 14
-
-                                    Text {
-                                        text: page.formatBytes(modelData.used) + " USED"
-                                        color: Theme.textDim
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 11
-                                    }
-
-                                    Text {
-                                        text: page.formatBytes(modelData.available) + " FREE"
-                                        color: Theme.textDim
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 11
-                                    }
-
-                                    Text {
-                                        text: page.formatBytes(modelData.total) + " TOTAL"
-                                        color: Theme.textDim
-                                        font.family: "Noto Sans"
-                                        font.pixelSize: 11
-                                    }
-
-                                }
-
-                            }
-
-                        }
-
+                    Text {
+                        text: "󰃢"
+                        color: "#d0d0d0"
+                        font.family: Theme.iconFont
+                        font.pixelSize: 13
+                        anchors.verticalCenter: parent.verticalCenter
                     }
 
                     Text {
                         text: "CLEANUP"
                         color: Theme.text
-                        topPadding: 4
                         font.family: "Noto Sans"
-                        font.pixelSize: 15
-                        font.bold: true
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
                         font.letterSpacing: 2
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Theme.border
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 6
+
+                    Item {
+                        width: 1
+                        height: 4
                     }
 
                     Repeater {
                         model: [{
                             "key": "trash",
                             "label": "TRASH",
+                            "icon": "󰆴",
                             "action": "EMPTY",
                             "title": "EMPTY TRASH?",
                             "message": "Permanently deletes the contents of your trash.",
@@ -650,6 +622,7 @@ Item {
                         }, {
                             "key": "cliphist",
                             "label": "CLIPHIST",
+                            "icon": "󰅇",
                             "action": "WIPE",
                             "title": "WIPE CLIPBOARD HISTORY?",
                             "message": "Clears the clipboard history.",
@@ -657,6 +630,7 @@ Item {
                         }, {
                             "key": "thumbs",
                             "label": "WALLPAPER PICKER",
+                            "icon": "󰋩",
                             "action": "CLEAR",
                             "title": "CLEAR THUMBNAIL CACHE?",
                             "message": "Clears the Quickshell thumbnail cache.",
@@ -664,6 +638,7 @@ Item {
                         }, {
                             "key": "yay",
                             "label": "YAY CACHE",
+                            "icon": "󰏗",
                             "action": "CLEAN",
                             "title": "CLEAR YAY CACHE?",
                             "message": "Deletes the contents of the Yay cache.",
@@ -671,6 +646,7 @@ Item {
                         }, {
                             "key": "pacman",
                             "label": "PACMAN CACHE",
+                            "icon": "󰏖",
                             "action": "CLEAN ALL",
                             "title": "DELETE ALL PACMAN CACHE?",
                             "message": "Permanently deletes all cached package files and download directories. Installed packages are not uninstalled, but cached packages cannot be reinstalled offline.",
@@ -678,6 +654,7 @@ Item {
                         }, {
                             "key": "journal",
                             "label": "JOURNAL",
+                            "icon": "󰆍",
                             "action": "2 DAYS",
                             "title": "VACUUM JOURNAL?",
                             "message": "Keeps journal entries from the last 2 days and removes older archived entries.",
@@ -685,6 +662,7 @@ Item {
                         }, {
                             "key": "flatpak",
                             "label": "FLATPAK UNUSED",
+                            "icon": "󰏆",
                             "action": "CLEAN",
                             "title": "REMOVE UNUSED FLATPAKS?",
                             "message": "Removes unused Flatpak runtimes and packages.",
@@ -696,6 +674,7 @@ Item {
 
                             width: list.width
                             label: modelData.label
+                            icon: modelData.icon
                             value: modelData.key === "cliphist" ? page.formatCount(page.cleanupInfo.cliphist) : page.formatBytes(page.cleanupInfo[modelData.key])
                             actionText: modelData.action
                             onClicked: page.confirmAction(modelData.title, modelData.message, modelData.command)
@@ -705,16 +684,236 @@ Item {
 
                 }
 
-                ScrollBar.vertical: ScrollBar {
+            }
 
-                    background: Rectangle {
-                        color: Theme.alpha(Theme.border, 0)
-                        radius: width / 2
+        }
+
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded
+            width: 6
+
+            background: Rectangle {
+                color: "transparent"
+                radius: width / 2
+            }
+
+            contentItem: Rectangle {
+                color: "transparent"
+                radius: width / 2
+            }
+
+        }
+
+    }
+
+    component DriveCard: Rectangle {
+        id: driveRoot
+
+        required property var modelData
+        property var usageData: page.driveUsageData[modelData.name] !== undefined ? page.driveUsageData[modelData.name] : null
+        property bool hasUsage: usageData !== null && modelData.size > 0
+        property real usedPct: hasUsage ? Math.min(100, Math.max(0, usageData / modelData.size * 100)) : 0
+        property string driveName: String(modelData.model || "").trim().length > 0 ? String(modelData.model).trim() : String(modelData.name || "Storage drive")
+        property string driveType: String(modelData.name || "").toLowerCase().indexOf("nvme") === 0 ? "NVMe" : (String(modelData.tran || "").trim().length > 0 ? String(modelData.tran).toUpperCase() : (/^sd[a-z]+$/i.test(String(modelData.name || "")) ? "SATA / SCSI" : "LOCAL DRIVE"))
+
+        height: 100
+        radius: 10
+        color: driveHover.hovered ? Theme.alpha(Theme.text, 0.035) : Theme.alpha(Theme.text, 0.015)
+        border.width: 1
+        border.color: driveHover.hovered ? Theme.alpha(Theme.text, 0.24) : Theme.alpha(Theme.text, 0.1)
+        clip: true
+
+        HoverHandler {
+            id: driveHover
+        }
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: 7
+            spacing: 4
+
+            Row {
+                id: driveHeader
+
+                width: parent.width
+                height: 36
+                spacing: 10
+
+                Rectangle {
+                    width: 36
+                    height: 36
+                    radius: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Theme.alpha(Theme.text, 0.045)
+                    border.width: 1
+                    border.color: Theme.alpha(Theme.text, 0.1)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰋊"
+                        color: driveRoot.hasUsage ? page.usageColor(driveRoot.usedPct) : "#bdbdbd"
+                        font.family: Theme.iconFont
+                        font.pixelSize: 17
                     }
 
-                    contentItem: Rectangle {
-                        color: Theme.accent
-                        radius: width / 2
+                }
+
+                Column {
+                    width: Math.max(40, driveHeader.width - 36 - driveHeader.spacing * 2 - driveCapacity.width)
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 3
+
+                    Text {
+                        width: parent.width
+                        text: driveRoot.driveName
+                        color: "#f2f2f2"
+                        elide: Text.ElideRight
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: driveRoot.driveType + "  ·  /dev/" + String(driveRoot.modelData.name || "")
+                        color: "#a0a0a0"
+                        elide: Text.ElideRight
+                        font.family: Theme.monoFont
+                        font.pixelSize: 10
+                    }
+
+                }
+
+                Column {
+                    id: driveCapacity
+
+                    width: 104
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 2
+
+                    Text {
+                        width: parent.width
+                        text: page.formatBytes(driveRoot.modelData.size).replace(".0 ", " ")
+                        color: "#f4f4f4"
+                        horizontalAlignment: Text.AlignRight
+                        elide: Text.ElideRight
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: driveRoot.hasUsage ? Math.round(driveRoot.usedPct) + "% USED" : "TOTAL CAPACITY"
+                        color: "#a5a5a5"
+                        horizontalAlignment: Text.AlignRight
+                        font.family: Theme.monoFont
+                        font.pixelSize: 11
+                    }
+
+                }
+
+            }
+
+            Rectangle {
+                id: capacityTrack
+
+                width: parent.width
+                height: 5
+                radius: 3
+                color: Theme.alpha(Theme.text, 0.11)
+                clip: true
+
+                Rectangle {
+                    width: driveRoot.hasUsage ? capacityTrack.width * page.usageWidth(driveRoot.usedPct) : 0
+                    height: parent.height
+                    radius: 3
+                    color: page.usageColor(driveRoot.usedPct)
+
+                    Behavior on width {
+                        NumberAnimation {
+                            duration: Theme.animMed
+                        }
+
+                    }
+
+                }
+
+            }
+
+            Row {
+                width: parent.width
+                height: 33
+                spacing: 8
+
+                Rectangle {
+                    width: (parent.width - parent.spacing) / 2
+                    height: parent.height
+                    radius: 6
+                    color: Theme.alpha(Theme.text, 0.018)
+                    border.width: 1
+                    border.color: Theme.alpha(Theme.text, 0.085)
+
+                    Column {
+                        width: parent.width - 12
+                        anchors.centerIn: parent
+                        spacing: 1
+
+                        Text {
+                            width: parent.width
+                            text: "USED"
+                            color: "#929292"
+                            font.family: Theme.monoFont
+                            font.pixelSize: 8
+                            font.weight: Font.DemiBold
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: driveRoot.hasUsage ? page.formatBytes(driveRoot.usageData).replace(".0 ", " ") : "—"
+                            color: "#f0f0f0"
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            elide: Text.ElideRight
+                        }
+
+                    }
+
+                }
+
+                Rectangle {
+                    width: (parent.width - parent.spacing) / 2
+                    height: parent.height
+                    radius: 6
+                    color: Theme.alpha(Theme.text, 0.018)
+                    border.width: 1
+                    border.color: Theme.alpha(Theme.text, 0.085)
+
+                    Column {
+                        width: parent.width - 12
+                        anchors.centerIn: parent
+                        spacing: 1
+
+                        Text {
+                            width: parent.width
+                            text: "FREE"
+                            color: "#929292"
+                            font.family: Theme.monoFont
+                            font.pixelSize: 8
+                            font.weight: Font.DemiBold
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: driveRoot.hasUsage ? page.formatBytes(Math.max(0, driveRoot.modelData.size - driveRoot.usageData)).replace(".0 ", " ") : "—"
+                            color: "#f0f0f0"
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            elide: Text.ElideRight
+                        }
+
                     }
 
                 }
@@ -723,42 +922,18 @@ Item {
 
         }
 
-    }
+        Behavior on color {
+            ColorAnimation {
+                duration: 130
+            }
 
-    component ToolButton: Rectangle {
-        property string label: ""
-        property bool accent: false
-
-        signal clicked()
-
-        height: 38
-        radius: Theme.radius
-        color: "#00000000"
-        border.width: 1
-        border.color: Theme.border
-
-        Text {
-            anchors.centerIn: parent
-            text: parent.label
-            color: parent.accent ? Theme.accent : Theme.textDim
-            font.family: "Noto Sans"
-            font.pixelSize: 11
-            font.bold: true
-            font.letterSpacing: 0.5
         }
 
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            onEntered: {
-                parent.color = Theme.alpha(Theme.accent, 0.08);
-                parent.border.color = Theme.accent;
+        Behavior on border.color {
+            ColorAnimation {
+                duration: 130
             }
-            onExited: {
-                parent.color = "#00000000";
-                parent.border.color = Theme.border;
-            }
-            onClicked: parent.clicked()
+
         }
 
     }
@@ -767,68 +942,194 @@ Item {
         id: cleanupRoot
 
         required property string label
+        required property string icon
         required property string value
         required property string actionText
 
         signal clicked()
 
-        width: parent.width
-        height: 42
-        radius: Theme.radius
-        color: "#00000000"
+        height: 50
+        radius: 9
+        color: cleanupHover.hovered ? Theme.alpha(Theme.text, 0.035) : Theme.alpha(Theme.text, 0.015)
         border.width: 1
-        border.color: Theme.border
+        border.color: cleanupHover.hovered ? Theme.alpha(Theme.text, 0.24) : Theme.alpha(Theme.text, 0.1)
+        clip: true
 
-        Text {
-            anchors.left: parent.left
-            anchors.leftMargin: 14
-            anchors.verticalCenter: parent.verticalCenter
-            text: cleanupRoot.label
-            color: Theme.textDim
-            font.family: "Noto Sans"
-            font.pixelSize: 13
-            font.bold: true
-            font.letterSpacing: 2
-        }
+        HoverHandler {
+            id: cleanupHover
 
-        Row {
-            anchors.right: parent.right
-            anchors.rightMargin: 14
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 8
-
-            Text {
-                text: cleanupRoot.value
-                color: Theme.textDim
-                font.family: "Noto Sans"
-                font.pixelSize: 12
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Text {
-                text: cleanupRoot.actionText
-                color: Theme.textDim
-                font.family: "Noto Sans"
-                font.pixelSize: 12
-                font.bold: true
-                font.letterSpacing: 1
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
+            cursorShape: Qt.PointingHandCursor
         }
 
         MouseArea {
             anchors.fill: parent
-            hoverEnabled: true
-            onEntered: {
-                parent.color = Theme.alpha(Theme.accent, 0.08);
-                parent.border.color = Theme.accent;
-            }
-            onExited: {
-                parent.color = "#00000000";
-                parent.border.color = Theme.border;
-            }
             onClicked: cleanupRoot.clicked()
+        }
+
+        Row {
+            id: cleanupInfoRow
+
+            anchors.left: parent.left
+            anchors.leftMargin: 10
+            anchors.right: cleanupActions.left
+            anchors.rightMargin: 10
+            anchors.verticalCenter: parent.verticalCenter
+            height: 34
+            spacing: 10
+
+            Rectangle {
+                width: 32
+                height: 32
+                radius: 8
+                anchors.verticalCenter: parent.verticalCenter
+                color: Theme.alpha(Theme.text, 0.045)
+                border.width: 1
+                border.color: Theme.alpha(Theme.text, 0.1)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: cleanupRoot.icon
+                    color: cleanupHover.hovered ? "#f5f5f5" : "#d0d0d0"
+                    font.family: Theme.iconFont
+                    font.pixelSize: 16
+                }
+
+            }
+
+            Column {
+                width: Math.max(40, cleanupInfoRow.width - 32 - cleanupInfoRow.spacing)
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 3
+
+                Text {
+                    width: parent.width
+                    text: cleanupRoot.label
+                    color: "#f0f0f0"
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    width: parent.width
+                    text: "Available to clean"
+                    color: "#929292"
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 9
+                    elide: Text.ElideRight
+                }
+
+            }
+
+        }
+
+        Column {
+            id: cleanupActions
+
+            width: 92
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2
+
+            Text {
+                width: parent.width
+                text: cleanupRoot.value
+                color: "#f4f4f4"
+                horizontalAlignment: Text.AlignRight
+                font.family: Theme.fontFamily
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                elide: Text.ElideLeft
+            }
+
+            Row {
+                width: parent.width
+                spacing: 4
+                layoutDirection: Qt.RightToLeft
+
+                Text {
+                    text: "󰅂"
+                    color: cleanupHover.hovered ? "#ffffff" : "#a5a5a5"
+                    font.family: Theme.iconFont
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    text: cleanupRoot.actionText
+                    color: cleanupHover.hovered ? "#ffffff" : "#bdbdbd"
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 9
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.2
+                }
+
+            }
+
+        }
+
+        Behavior on color {
+            ColorAnimation {
+                duration: 140
+            }
+
+        }
+
+        Behavior on border.color {
+            ColorAnimation {
+                duration: 140
+            }
+
+        }
+
+    }
+
+    component ToolButton: Rectangle {
+        id: btn
+
+        property string label: ""
+        property bool accent: false
+
+        signal clicked()
+
+        height: 38
+        radius: 8
+        color: accent ? (btnHover.hovered ? "#f5f5f5" : "#e5e5e5") : (btnHover.hovered ? "#292929" : "transparent")
+        border.width: 1
+        border.color: accent ? "#f5f5f5" : (btnHover.hovered ? "#606060" : "#414141")
+
+        HoverHandler {
+            id: btnHover
+        }
+
+        Text {
+            anchors.centerIn: parent
+            text: btn.label
+            color: btn.accent ? "#151515" : "#d0d0d0"
+            font.family: "Noto Sans"
+            font.pixelSize: 11
+            font.weight: Font.DemiBold
+            font.letterSpacing: 0.5
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: btn.clicked()
+        }
+
+        Behavior on color {
+            ColorAnimation {
+                duration: 140
+            }
+
+        }
+
+        Behavior on border.color {
+            ColorAnimation {
+                duration: 140
+            }
+
         }
 
     }

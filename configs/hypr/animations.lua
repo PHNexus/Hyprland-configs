@@ -29,7 +29,7 @@ function M.setup()
     hl.animation({ leaf = "windows", enabled = true, speed = 6.8, bezier = "easeoutquint" })
     hl.animation({ leaf = "windowsIn", enabled = true, speed = 6.8, bezier = "emphasizeddeccel" })
     hl.animation({ leaf = "windowsOut", enabled = true, speed = 6.8, bezier = "emphasizedaccel" })
-    hl.animation({ leaf = "windowsMove", enabled = true, speed = 7.0, bezier = "standard", style = "slide" })
+    hl.animation({ leaf = "windowsMove", enabled = true, speed = 7, bezier = "standard", style = "slide" })
 
     -- ============================================================
     -- FADE
@@ -51,14 +51,8 @@ function M.setup()
     -- ============================================================
     -- WORKSPACES
     -- ============================================================
-    hl.animation({ leaf = "workspaces", enabled = true, speed = 4.0, bezier = "almostlinear", style = "slidefade 25%" })
-    hl.animation({
-        leaf = "specialWorkspace",
-        enabled = true,
-        speed = 8.0,
-        spring = "boing",
-        style = "slidefadevert 50%",
-    })
+    hl.animation({ leaf = "workspaces", enabled = true, speed = 4, bezier = "almostlinear", style = "slidefade 25%" })
+    hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 8, spring = "boing", style = "slidefadevert 50%" })
 
     -- ============================================================
     -- BORDER

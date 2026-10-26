@@ -12,6 +12,28 @@ Item {
     property real marginTop: 0
     property real marginBottom: 0
     readonly property string filePath: Quickshell.env("HOME") + "/.config/hypr/general.lua"
+    readonly property string animationFilePath: Quickshell.env("HOME") + "/.config/hypr/animations.lua"
+    property string animationSourceText: ""
+    property bool animationFileReady: false
+    property string animationStatusMessage: "Loading animations.lua..."
+    property bool animationSaveInProgress: false
+    property bool animationQueuedSave: false
+    property string animationQueuedSaveText: ""
+    property bool animationDirty: false
+    property bool animationApplyAfterSave: false
+    property bool animationEnabled: true
+    property string animationPreset: "custom"
+    property string selectedCurveName: ""
+    property real curvePreviewProgress: 0
+    readonly property real curvePreviewSpeed: {
+        const entry = animationEntries.find(function(item) {
+            return item.leaf === "windowsMove";
+        });
+        return entry ? Math.max(1, Number(entry.speed) || 7) : 7;
+    }
+    readonly property int curvePreviewDuration: Math.max(100, Math.min(2000, Math.round(curvePreviewSpeed * 100)))
+    property var animationEntries: []
+    property var curveEntries: []
     property string sourceText: ""
     property bool fileReady: false
     property string statusMessage: "Loading general.lua..."
@@ -232,6 +254,669 @@ Item {
         } catch (e) {
             statusMessage = "Could not prepare setting: " + path;
             console.warn("Settings: could not prepare live apply for " + path + ": " + e);
+        }
+    }
+
+    function findLuaCalls(text, functionName) {
+        const code = luaMask(text, true);
+        const escapedName = functionName.replace(/\./g, "\\.");
+        const expression = new RegExp("\\b" + escapedName + "\\s*\\(", "g");
+        const calls = [];
+        let match;
+        while ((match = expression.exec(code)) !== null) {
+            const open = match.index + match[0].lastIndexOf("(");
+            let depth = 0;
+            let end = -1;
+            for (let i = open; i < code.length; i++) {
+                if (code.charAt(i) === "(") {
+                    depth++;
+                } else if (code.charAt(i) === ")") {
+                    depth--;
+                    if (depth === 0) {
+                        end = i + 1;
+                        break;
+                    }
+                }
+            }
+            if (end < 0)
+                break;
+
+            calls.push({
+                "start": match.index,
+                "end": end,
+                "text": text.slice(match.index, end)
+            });
+            expression.lastIndex = end;
+        }
+        return calls;
+    }
+
+    function luaTableRange(text, startAt, endAt) {
+        const code = luaMask(text, true);
+        const start = code.indexOf("{", startAt);
+        if (start < 0 || start >= endAt)
+            return null;
+
+        let depth = 0;
+        for (let i = start; i < endAt; i++) {
+            if (code.charAt(i) === "{") {
+                depth++;
+            } else if (code.charAt(i) === "}") {
+                depth--;
+                if (depth === 0)
+                    return {
+                    "start": start,
+                    "close": i
+                };
+
+            }
+        }
+        return null;
+    }
+
+    function luaNumberField(text, key, fallback) {
+        const pattern = new RegExp("\\b" + key + "\\s*=\\s*(-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)");
+        const match = luaMask(text, false).match(pattern);
+        return match ? Number(match[1]) : fallback;
+    }
+
+    function luaStringField(text, key, fallback) {
+        const pattern = new RegExp("\\b" + key + "\\s*=\\s*([\\\"'])([^\\\"']*)\\1");
+        const match = luaMask(text, false).match(pattern);
+        return match ? match[2] : fallback;
+    }
+
+    function luaBoolField(text, key, fallback) {
+        const pattern = new RegExp("\\b" + key + "\\s*=\\s*(true|false)");
+        const match = luaMask(text, false).match(pattern);
+        return match ? match[1] === "true" : fallback;
+    }
+
+    function curveGraphPoint(entry, progress) {
+        const t = Math.max(0, Math.min(1, Number(progress) || 0));
+        if (!entry)
+            return {
+            "x": t,
+            "y": t
+        };
+
+        if (entry.type === "spring") {
+            const mass = Math.max(0.1, Number(entry.mass) || 1);
+            const stiffness = Math.max(1, Number(entry.stiffness) || 120);
+            const dampening = Math.max(0, Number(entry.dampening) || 0);
+            const decay = dampening / (2 * mass);
+            const frequency = Math.sqrt(Math.max(0.01, stiffness / mass - decay * decay));
+            const y = 1 - Math.exp(-decay * t) * Math.cos(frequency * t);
+            return {
+                "x": t,
+                "y": y
+            };
+        }
+        const cubic = function cubic(a, b, p) {
+            const u = 1 - p;
+            return 3 * u * u * p * a + 3 * u * p * p * b + p * p * p;
+        };
+        return {
+            "x": cubic(Number(entry.x1) || 0, Number(entry.x2) || 0, t),
+            "y": cubic(Number(entry.y1) || 0, Number(entry.y2) || 0, t)
+        };
+    }
+
+    function readAnimationValues(text) {
+        const code = luaMask(text, true);
+        const enabledMatch = code.match(/\banimations\s*=\s*\{\s*enabled\s*=\s*(true|false)/);
+        if (enabledMatch)
+            animationEnabled = enabledMatch[1] === "true";
+
+        const parsedAnimations = [];
+        const animationCalls = findLuaCalls(text, "hl.animation");
+        for (let i = 0; i < animationCalls.length; i++) {
+            const call = animationCalls[i];
+            const leaf = luaStringField(call.text, "leaf", "");
+            if (!leaf)
+                continue;
+
+            parsedAnimations.push({
+                "leaf": leaf,
+                "enabled": luaBoolField(call.text, "enabled", true),
+                "speed": luaNumberField(call.text, "speed", 5),
+                "bezier": luaStringField(call.text, "bezier", ""),
+                "spring": luaStringField(call.text, "spring", ""),
+                "style": luaStringField(call.text, "style", "")
+            });
+        }
+        animationEntries = parsedAnimations;
+        const parsedCurves = [];
+        const curveCalls = findLuaCalls(text, "hl.curve");
+        const number = "(-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)";
+        for (let i = 0; i < curveCalls.length; i++) {
+            const call = curveCalls[i];
+            const nameMatch = call.text.match(/^hl\.curve\s*\(\s*([\"'])([^\"']+)\1/);
+            if (!nameMatch)
+                continue;
+
+            const type = luaStringField(call.text, "type", "bezier");
+            const entry = {
+                "name": nameMatch[2],
+                "type": type
+            };
+            if (type === "spring") {
+                entry.mass = luaNumberField(call.text, "mass", 1);
+                entry.stiffness = luaNumberField(call.text, "stiffness", 120);
+                entry.dampening = luaNumberField(call.text, "dampening", 16);
+            } else {
+                const plain = luaMask(call.text, false);
+                const pointsPattern = new RegExp("points\\s*=\\s*\\{\\s*\\{\\s*" + number + "\\s*,\\s*" + number + "\\s*\\}\\s*,?\\s*\\{\\s*" + number + "\\s*,\\s*" + number + "\\s*\\}");
+                const points = plain.match(pointsPattern);
+                entry.x1 = points ? Number(points[1]) : 0.2;
+                entry.y1 = points ? Number(points[2]) : 0;
+                entry.x2 = points ? Number(points[3]) : 0.8;
+                entry.y2 = points ? Number(points[4]) : 1;
+            }
+            parsedCurves.push(entry);
+        }
+        curveEntries = parsedCurves;
+        if (!selectedCurveName || !parsedCurves.some(function(entry) {
+            return entry.name === selectedCurveName;
+        }))
+            selectedCurveName = parsedCurves.length > 0 ? parsedCurves[0].name : "";
+
+        animationPreset = detectAnimationPreset();
+        if (animationPreset !== "custom") {
+            const movement = parsedAnimations.find(function(entry) {
+                return entry.leaf === "windowsMove";
+            });
+            const activeCurveName = movement ? (movement.spring || movement.bezier) : "";
+            if (activeCurveName && parsedCurves.some(function(entry) {
+                return entry.name === activeCurveName;
+            }))
+                selectedCurveName = activeCurveName;
+
+        }
+    }
+
+    function animationCurveNames() {
+        const names = ["default"];
+        curveEntries.forEach(function(entry) {
+            if (names.indexOf(entry.name) < 0)
+                names.push(entry.name);
+
+        });
+        return names;
+    }
+
+    function animationNumber(value) {
+        return Number(value).toFixed(3).replace(/0+$/, "").replace(/\.$/, "") || "0";
+    }
+
+    function animationCallText(entry) {
+        const fields = ["leaf = " + luaQuote(entry.leaf), "enabled = " + String(!!entry.enabled), "speed = " + animationNumber(entry.speed)];
+        if (entry.spring)
+            fields.push("spring = " + luaQuote(entry.spring));
+        else if (entry.bezier)
+            fields.push("bezier = " + luaQuote(entry.bezier));
+        if (entry.style)
+            fields.push("style = " + luaQuote(entry.style));
+
+        return "hl.animation({ " + fields.join(", ") + " })";
+    }
+
+    function animationPresetOptions() {
+        return [{
+            "value": "smooth",
+            "label": "SMOOTH",
+            "description": "Slower, fluid motion with gentle easing",
+            "icon": "\uf2d0"
+        }, {
+            "value": "balanced",
+            "label": "BALANCED",
+            "description": "Your original animations.lua timings and curves",
+            "icon": "\uf0c8"
+        }, {
+            "value": "snappy",
+            "label": "SNAPPY",
+            "description": "Very fast, direct transitions",
+            "icon": "\uf0e7"
+        }, {
+            "value": "bouncy",
+            "label": "BOUNCY",
+            "description": "Spring motion with visible bounce",
+            "icon": "\uf1b2"
+        }, {
+            "value": "minimal",
+            "label": "MINIMAL",
+            "description": "Quick, restrained movement without fade effects",
+            "icon": "\uf06e"
+        }];
+    }
+
+    function animationPresetValues(name) {
+        const values = {
+            "global": {
+                "enabled": true,
+                "speed": 6.5,
+                "bezier": "default",
+                "spring": "",
+                "style": ""
+            },
+            "windows": {
+                "enabled": true,
+                "speed": 6.8,
+                "bezier": "easeoutquint",
+                "spring": "",
+                "style": ""
+            },
+            "windowsIn": {
+                "enabled": true,
+                "speed": 6.8,
+                "bezier": "emphasizeddeccel",
+                "spring": "",
+                "style": ""
+            },
+            "windowsOut": {
+                "enabled": true,
+                "speed": 6.8,
+                "bezier": "emphasizedaccel",
+                "spring": "",
+                "style": ""
+            },
+            "windowsMove": {
+                "enabled": true,
+                "speed": 7,
+                "bezier": "standard",
+                "spring": "",
+                "style": "slide"
+            },
+            "fadeIn": {
+                "enabled": true,
+                "speed": 5.5,
+                "bezier": "almostlinear",
+                "spring": "",
+                "style": ""
+            },
+            "fadeOut": {
+                "enabled": true,
+                "speed": 5.5,
+                "bezier": "almostlinear",
+                "spring": "",
+                "style": ""
+            },
+            "fade": {
+                "enabled": true,
+                "speed": 5.5,
+                "bezier": "standard",
+                "spring": "",
+                "style": ""
+            },
+            "fadeDim": {
+                "enabled": true,
+                "speed": 7.5,
+                "bezier": "standard",
+                "spring": "",
+                "style": ""
+            },
+            "layers": {
+                "enabled": true,
+                "speed": 5.8,
+                "bezier": "easeoutquint",
+                "spring": "",
+                "style": ""
+            },
+            "layersIn": {
+                "enabled": true,
+                "speed": 5.8,
+                "bezier": "emphasizeddeccel",
+                "spring": "",
+                "style": ""
+            },
+            "layersOut": {
+                "enabled": true,
+                "speed": 5.8,
+                "bezier": "emphasizedaccel",
+                "spring": "",
+                "style": ""
+            },
+            "fadeLayersIn": {
+                "enabled": true,
+                "speed": 2.5,
+                "bezier": "almostlinear",
+                "spring": "",
+                "style": ""
+            },
+            "fadeLayersOut": {
+                "enabled": true,
+                "speed": 2.5,
+                "bezier": "almostlinear",
+                "spring": "",
+                "style": ""
+            },
+            "workspaces": {
+                "enabled": true,
+                "speed": 4,
+                "bezier": "almostlinear",
+                "spring": "",
+                "style": "slidefade 25%"
+            },
+            "specialWorkspace": {
+                "enabled": true,
+                "speed": 8,
+                "bezier": "",
+                "spring": "boing",
+                "style": "slidefadevert 50%"
+            },
+            "border": {
+                "enabled": true,
+                "speed": 6.5,
+                "bezier": "standard",
+                "spring": "",
+                "style": ""
+            }
+        };
+        if (name === "balanced")
+            return values;
+
+        const set = function set(leaf, speed, curve, style) {
+            if (!values[leaf])
+                return ;
+
+            values[leaf].speed = speed;
+            values[leaf].spring = "";
+            values[leaf].bezier = curve || "";
+            if (style !== undefined)
+                values[leaf].style = style;
+
+        };
+        const spring = function spring(leaf, speed, curve, style) {
+            if (!values[leaf])
+                return ;
+
+            values[leaf].speed = speed;
+            values[leaf].bezier = "";
+            values[leaf].spring = curve;
+            if (style !== undefined)
+                values[leaf].style = style;
+
+        };
+        const disable = function disable(leaves) {
+            leaves.forEach(function(leaf) {
+                if (values[leaf])
+                    values[leaf].enabled = false;
+
+            });
+        };
+        if (name === "smooth") {
+            set("global", 8, "default");
+            set("windows", 7.5, "easeoutquint");
+            set("windowsIn", 8, "emphasizeddeccel");
+            set("windowsOut", 7, "emphasizedaccel");
+            set("windowsMove", 8, "easeinout", "slide");
+            set("fadeIn", 5.2, "easeinout");
+            set("fadeOut", 4.8, "easeinout");
+            set("fade", 5.2, "easeinout");
+            set("fadeDim", 6, "easeinout");
+            set("layers", 6.8, "easeoutquint");
+            set("layersIn", 6.8, "emphasizeddeccel");
+            set("layersOut", 6.2, "emphasizedaccel");
+            set("fadeLayersIn", 4, "almostlinear");
+            set("fadeLayersOut", 3.8, "almostlinear");
+            set("workspaces", 6, "workspaceslide", "slidefade 35%");
+            set("specialWorkspace", 7.8, "easeinout", "slidefadevert 50%");
+            set("border", 5.8, "easeinout");
+        } else if (name === "snappy") {
+            set("global", 1.8, "default");
+            set("windows", 1.8, "almostlinear");
+            set("windowsIn", 1.5, "almostlinear");
+            set("windowsOut", 1.3, "almostlinear");
+            set("windowsMove", 1.7, "almostlinear", "slide");
+            set("fadeIn", 1.2, "almostlinear");
+            set("fadeOut", 1, "almostlinear");
+            set("fade", 1.3, "almostlinear");
+            set("fadeDim", 1.5, "almostlinear");
+            set("layers", 1.8, "almostlinear");
+            set("layersIn", 1.6, "almostlinear");
+            set("layersOut", 1.4, "almostlinear");
+            set("fadeLayersIn", 1, "almostlinear");
+            set("fadeLayersOut", 1, "almostlinear");
+            set("workspaces", 1.8, "almostlinear", "slidefade 8%");
+            set("specialWorkspace", 2.2, "almostlinear", "slidefadevert 12%");
+            set("border", 1.8, "almostlinear");
+        } else if (name === "bouncy") {
+            set("global", 4, "easeoutquint");
+            set("windows", 4, "easeoutquint");
+            spring("windowsIn", 3.3, "boing");
+            spring("windowsOut", 3.1, "stiffboing");
+            spring("windowsMove", 3.8, "boing", "slide");
+            set("fadeIn", 2.7, "easeinout");
+            set("fadeOut", 2.5, "emphasizedaccel");
+            set("fade", 2.8, "easeinout");
+            set("fadeDim", 3.2, "standard");
+            set("layers", 3.8, "easeoutquint");
+            spring("layersIn", 3.3, "stiffboing");
+            spring("layersOut", 3.2, "boing");
+            set("fadeLayersIn", 1.8, "almostlinear");
+            set("fadeLayersOut", 1.7, "almostlinear");
+            set("workspaces", 3.6, "workspaceslide", "slidefade 35%");
+            spring("specialWorkspace", 4.5, "boing", "slidefadevert 65%");
+            set("border", 3.4, "easeinout");
+        } else if (name === "minimal") {
+            // Short, restrained motion: quicker than Balanced, but not as abrupt as Snappy.
+            // Keep movement visible while removing fade and spring effects.
+            set("global", 2.8, "default");
+            set("windows", 2.8, "standard");
+            set("windowsIn", 2.5, "almostlinear");
+            set("windowsOut", 2.3, "almostlinear");
+            set("windowsMove", 2.8, "almostlinear", "slide");
+            set("fadeIn", 2, "almostlinear");
+            set("fadeOut", 1.8, "almostlinear");
+            set("fade", 2, "standard");
+            set("fadeDim", 2.2, "standard");
+            set("layers", 2.8, "standard");
+            set("layersIn", 2.5, "almostlinear");
+            set("layersOut", 2.3, "almostlinear");
+            set("fadeLayersIn", 1.8, "almostlinear");
+            set("fadeLayersOut", 1.6, "almostlinear");
+            set("workspaces", 2.8, "almostlinear", "slidefade 5%");
+            set("specialWorkspace", 3.2, "almostlinear", "slidefadevert 8%");
+            set("border", 2.6, "standard");
+            disable(["fadeIn", "fadeOut", "fade", "fadeDim", "fadeLayersIn", "fadeLayersOut"]);
+        } else {
+            return null;
+        }
+        return values;
+    }
+
+    function animationPresetMatches(name) {
+        if (!animationEnabled)
+            return false;
+
+        const expected = animationPresetValues(name);
+        if (!expected)
+            return false;
+
+        const currentByLeaf = ({
+        });
+        animationEntries.forEach(function(entry) {
+            currentByLeaf[entry.leaf] = entry;
+        });
+        const leaves = Object.keys(expected);
+        for (let i = 0; i < leaves.length; i++) {
+            const leaf = leaves[i];
+            const current = currentByLeaf[leaf];
+            const target = expected[leaf];
+            if (!current || current.enabled !== target.enabled || Math.abs(Number(current.speed) - target.speed) > 0.011)
+                return false;
+
+            if ((current.bezier || "") !== (target.bezier || "") || (current.spring || "") !== (target.spring || "") || (current.style || "") !== (target.style || ""))
+                return false;
+
+        }
+        return true;
+    }
+
+    function detectAnimationPreset() {
+        const names = ["smooth", "balanced", "snappy", "bouncy", "minimal"];
+        for (let i = 0; i < names.length; i++) {
+            if (animationPresetMatches(names[i]))
+                return names[i];
+
+        }
+        return "custom";
+    }
+
+    function applyAnimationPreset(name) {
+        if (!animationFileReady)
+            return ;
+
+        const values = animationPresetValues(name);
+        if (!values)
+            return ;
+
+        let updatedText = animationSourceText;
+        const calls = findLuaCalls(updatedText, "hl.animation");
+        for (let i = calls.length - 1; i >= 0; i--) {
+            const leaf = luaStringField(calls[i].text, "leaf", "");
+            const target = values[leaf];
+            if (!target)
+                continue;
+
+            const replacement = animationCallText(Object.assign({
+                "leaf": leaf
+            }, target));
+            updatedText = updatedText.slice(0, calls[i].start) + replacement + updatedText.slice(calls[i].end);
+        }
+        const code = luaMask(updatedText, true);
+        const enabledPattern = /\banimations\s*=\s*\{\s*\benabled\s*=\s*(true|false)/;
+        const enabledMatch = enabledPattern.exec(code);
+        if (!enabledMatch) {
+            animationStatusMessage = "Could not find animations.enabled in animations.lua";
+            return ;
+        }
+        const enabledValue = enabledMatch[1];
+        const enabledStart = enabledMatch.index + enabledMatch[0].lastIndexOf(enabledValue);
+        updatedText = updatedText.slice(0, enabledStart) + "true" + updatedText.slice(enabledStart + enabledValue.length);
+        const liveCalls = ["hl.config({ animations = { enabled = true } })"];
+        animationEntries.forEach(function(entry) {
+            const target = values[entry.leaf];
+            if (target)
+                liveCalls.push(animationCallText(Object.assign({
+                "leaf": entry.leaf
+            }, target)));
+
+        });
+        finishAnimationEdit(updatedText, liveCalls.join("; "), "preset " + name);
+    }
+
+    function curveCallText(entry) {
+        if (entry.type === "spring")
+            return "hl.curve(" + luaQuote(entry.name) + ", { type = \"spring\", mass = " + animationNumber(entry.mass) + ", stiffness = " + animationNumber(entry.stiffness) + ", dampening = " + animationNumber(entry.dampening) + " })";
+
+        return "hl.curve(" + luaQuote(entry.name) + ", { type = \"bezier\", points = { { " + animationNumber(entry.x1) + ", " + animationNumber(entry.y1) + " }, { " + animationNumber(entry.x2) + ", " + animationNumber(entry.y2) + " } } })";
+    }
+
+    function scheduleAnimationSave() {
+        animationStatusMessage = "Saving animations.lua...";
+        animationSaveTimer.restart();
+    }
+
+    function finishAnimationEdit(updatedText, expression, label) {
+        animationSourceText = updatedText;
+        readAnimationValues(animationSourceText);
+        animationDirty = true;
+        scheduleAnimationSave();
+        if (expression) {
+            pendingLiveExpression = expression;
+            pendingLivePath = "animation: " + label;
+            liveApplyTimer.restart();
+        }
+    }
+
+    function setAnimationMasterEnabled(enabled) {
+        if (!animationFileReady)
+            return ;
+
+        const code = luaMask(animationSourceText, true);
+        const pattern = /\banimations\s*=\s*\{\s*\benabled\s*=\s*(true|false)/;
+        const match = pattern.exec(code);
+        if (!match) {
+            animationStatusMessage = "Could not find animations.enabled in animations.lua";
+            return ;
+        }
+        const currentValue = match[1];
+        const valueStart = match.index + match[0].lastIndexOf(currentValue);
+        const updatedText = animationSourceText.slice(0, valueStart) + String(enabled) + animationSourceText.slice(valueStart + currentValue.length);
+        finishAnimationEdit(updatedText, "hl.config({ animations = { enabled = " + String(enabled) + " } })", "global animations");
+    }
+
+    function setAnimationField(leaf, key, value, isBool, isStr, isInt) {
+        if (!animationFileReady)
+            return ;
+
+        const calls = findLuaCalls(animationSourceText, "hl.animation");
+        for (let i = 0; i < calls.length; i++) {
+            const call = calls[i];
+            if (luaStringField(call.text, "leaf", "") !== leaf)
+                continue;
+
+            const table = luaTableRange(animationSourceText, call.start, call.end);
+            if (!table)
+                return ;
+
+            let rendered;
+            if (isBool)
+                rendered = String(value);
+            else if (isStr)
+                rendered = luaQuote(value);
+            else if (isInt)
+                rendered = String(Math.round(Number(value)));
+            else
+                rendered = animationNumber(value);
+            const body = animationSourceText.slice(table.start + 1, table.close);
+            const updatedBody = replaceInBlock(body, key, rendered, isBool, isStr, isInt);
+            const updatedText = animationSourceText.slice(0, table.start + 1) + updatedBody + animationSourceText.slice(table.close);
+            finishAnimationEdit(updatedText, "", leaf);
+            const updatedEntry = animationEntries.find(function(entry) {
+                return entry.leaf === leaf;
+            });
+            if (updatedEntry) {
+                pendingLiveExpression = animationCallText(updatedEntry);
+                pendingLivePath = "animation: " + leaf;
+                liveApplyTimer.restart();
+            }
+            return ;
+        }
+        animationStatusMessage = "Could not find animation: " + leaf;
+    }
+
+    function setAnimationCurve(leaf, curveName) {
+        if (!animationFileReady)
+            return ;
+
+        const entry = animationEntries.find(function(item) {
+            return item.leaf === leaf;
+        });
+        if (!entry)
+            return ;
+
+        const curve = curveEntries.find(function(item) {
+            return item.name === curveName;
+        });
+        const updatedEntry = Object.assign({
+        }, entry);
+        if (curve && curve.type === "spring") {
+            updatedEntry.spring = curveName;
+            updatedEntry.bezier = "";
+        } else {
+            updatedEntry.bezier = curveName;
+            updatedEntry.spring = "";
+        }
+        const calls = findLuaCalls(animationSourceText, "hl.animation");
+        for (let i = 0; i < calls.length; i++) {
+            if (luaStringField(calls[i].text, "leaf", "") !== leaf)
+                continue;
+
+            const updatedText = animationSourceText.slice(0, calls[i].start) + animationCallText(updatedEntry) + animationSourceText.slice(calls[i].end);
+            finishAnimationEdit(updatedText, animationCallText(updatedEntry), leaf);
+            return ;
         }
     }
 
@@ -471,18 +1156,94 @@ Item {
         saveTimer.restart();
     }
 
+    function applyGapPreset(gapIn, gapOut) {
+        gapsIn = gapIn;
+        gapsOut = gapOut;
+        setBlockField("general", "gaps_in", gapIn, false, false, true);
+        setBlockField("general", "gaps_out", gapOut, false, false, true);
+    }
+
+    function applyVisualPreset(preset) {
+        const target = preset === "soft" ? {
+            "rounding": 20,
+            "activeOpacity": 0.94,
+            "inactiveOpacity": 0.86,
+            "blurEnabled": true,
+            "blurSize": 8,
+            "blurPasses": 3,
+            "shadowEnabled": true,
+            "shadowRange": 18,
+            "shadowRenderPower": 4
+        } : preset === "sharp" ? {
+            "rounding": 6,
+            "activeOpacity": 1,
+            "inactiveOpacity": 0.9,
+            "blurEnabled": false,
+            "blurSize": 4,
+            "blurPasses": 2,
+            "shadowEnabled": false,
+            "shadowRange": 12,
+            "shadowRenderPower": 3
+        } : {
+            "rounding": 16,
+            "activeOpacity": 0.9,
+            "inactiveOpacity": 0.9,
+            "blurEnabled": true,
+            "blurSize": 6,
+            "blurPasses": 4,
+            "shadowEnabled": true,
+            "shadowRange": 16,
+            "shadowRenderPower": 6
+        };
+        setBlockField("decoration", "rounding", target.rounding, false, false, true);
+        setBlockField("decoration", "active_opacity", target.activeOpacity, false, false, false);
+        setBlockField("decoration", "inactive_opacity", target.inactiveOpacity, false, false, false);
+        setBlockField("blur", "enabled", target.blurEnabled, true);
+        setBlockField("blur", "size", target.blurSize, false, false, true);
+        setBlockField("blur", "passes", target.blurPasses, false, false, true);
+        setBlockField("shadow", "enabled", target.shadowEnabled, true);
+        setBlockField("shadow", "range", target.shadowRange, false, false, true);
+        setBlockField("shadow", "render_power", target.shadowRenderPower, false, false, true);
+        readValues(sourceText);
+    }
+
     function runApply() {
         reloadProcess.command = ["hyprctl", "reload"];
         reloadProcess.running = true;
         statusMessage = "Reloading Hyprland...";
     }
 
+    function maybeRunDeferredApply() {
+        if (!applyAfterSave && !animationApplyAfterSave)
+            return ;
+
+        if (dirty || saveInProgress || saveTimer.running)
+            return ;
+
+        if (animationApplyAfterSave && (animationDirty || animationSaveInProgress || animationSaveTimer.running))
+            return ;
+
+        applyAfterSave = false;
+        animationApplyAfterSave = false;
+        runApply();
+    }
+
     function forceApply() {
-        if (dirty || saveInProgress || saveTimer.running) {
-            applyAfterSave = true;
+        const generalPending = dirty || saveInProgress || saveTimer.running;
+        const animationsPending = animationDirty || animationSaveInProgress || animationSaveTimer.running;
+        if (generalPending || animationsPending) {
+            if (generalPending)
+                applyAfterSave = true;
+
+            if (animationsPending)
+                animationApplyAfterSave = true;
+
             statusMessage = "Saving changes before applying...";
             if (dirty && !saveInProgress && !saveTimer.running)
                 saveTimer.restart();
+
+            if (animationDirty && !animationSaveInProgress && !animationSaveTimer.running)
+                animationSaveTimer.restart();
 
             return ;
         }
@@ -492,6 +1253,22 @@ Item {
     function forceReloadFile() {
         generalFile.reload();
         statusMessage = "Reloading general.lua...";
+    }
+
+    Connections {
+        function onCurvePreviewProgressChanged() {
+            curveGraph.requestPaint();
+        }
+
+        function onSelectedCurveNameChanged() {
+            curveGraph.requestPaint();
+        }
+
+        function onCurveEntriesChanged() {
+            curveGraph.requestPaint();
+        }
+
+        target: page
     }
 
     Timer {
@@ -514,6 +1291,25 @@ Item {
     }
 
     Timer {
+        id: animationSaveTimer
+
+        interval: 250
+        repeat: false
+        onTriggered: {
+            if (!page.animationDirty)
+                return ;
+
+            if (page.animationSaveInProgress) {
+                page.animationQueuedSave = true;
+                page.animationQueuedSaveText = page.animationSourceText;
+                return ;
+            }
+            page.animationSaveInProgress = true;
+            animationFile.setText(page.animationSourceText);
+        }
+    }
+
+    Timer {
         id: liveApplyTimer
 
         interval: 35
@@ -526,7 +1322,10 @@ Item {
 
         onExited: (code) => {
             if (code !== 0) {
-                page.statusMessage = "Live apply failed: " + page.activeLivePath;
+                if (page.activeLivePath.indexOf("animation:") === 0)
+                    page.animationStatusMessage = "Live apply failed: " + page.activeLivePath;
+                else
+                    page.statusMessage = "Live apply failed: " + page.activeLivePath;
                 console.warn("Settings: hyprctl eval exited with " + code + " for " + page.activeLivePath);
             }
             if (page.pendingLiveExpression !== "")
@@ -538,7 +1337,10 @@ Item {
             onStreamFinished: {
                 const output = text.trim();
                 if (output && /(error|failed|invalid|unknown)/i.test(output)) {
-                    page.statusMessage = "Live apply reported an error: " + page.activeLivePath;
+                    if (page.activeLivePath.indexOf("animation:") === 0)
+                        page.animationStatusMessage = "Live apply reported an error: " + page.activeLivePath;
+                    else
+                        page.statusMessage = "Live apply reported an error: " + page.activeLivePath;
                     console.warn("Settings: live apply output for " + page.activeLivePath + ": " + output);
                 }
             }
@@ -548,7 +1350,10 @@ Item {
             onStreamFinished: {
                 const output = text.trim();
                 if (output) {
-                    page.statusMessage = "Live apply reported an error: " + page.activeLivePath;
+                    if (page.activeLivePath.indexOf("animation:") === 0)
+                        page.animationStatusMessage = "Live apply reported an error: " + page.activeLivePath;
+                    else
+                        page.statusMessage = "Live apply reported an error: " + page.activeLivePath;
                     console.warn("Settings: live apply error for " + page.activeLivePath + ": " + output);
                 }
             }
@@ -595,9 +1400,11 @@ Item {
                 page.readValues(page.sourceText);
             } catch (e) {
             }
-            if (page.applyAfterSave) {
-                page.applyAfterSave = false;
-                page.runApply();
+            if (page.applyAfterSave || page.animationApplyAfterSave) {
+                page.maybeRunDeferredApply();
+                if (page.statusMessage !== "Reloading Hyprland..." && !page.animationApplyAfterSave)
+                    page.statusMessage = "Saved";
+
             } else {
                 page.statusMessage = "Saved";
             }
@@ -605,8 +1412,61 @@ Item {
         onSaveFailed: (error) => {
             page.saveInProgress = false;
             page.applyAfterSave = false;
+            page.animationApplyAfterSave = false;
             page.statusMessage = "Could not save general.lua: " + error;
             console.warn("General: could not save " + page.filePath + ": " + error);
+        }
+    }
+
+    FileView {
+        id: animationFile
+
+        path: page.animationFilePath
+        preload: true
+        watchChanges: false
+        atomicWrites: true
+        onLoaded: {
+            try {
+                page.animationSourceText = animationFile.text();
+                page.readAnimationValues(page.animationSourceText);
+                page.animationFileReady = true;
+                page.animationStatusMessage = "animations.lua loaded · " + page.animationEntries.length + " animations · " + page.curveEntries.length + " curves";
+            } catch (e) {
+                page.animationFileReady = false;
+                page.animationStatusMessage = "Error: " + e.message;
+            }
+        }
+        onLoadFailed: (error) => {
+            page.animationFileReady = false;
+            page.animationStatusMessage = "Unable to load animations.lua: " + error;
+            console.warn("General: could not load " + page.animationFilePath + ": " + error);
+        }
+        onSaved: {
+            page.animationSaveInProgress = false;
+            if (page.animationQueuedSave) {
+                const next = page.animationQueuedSaveText;
+                page.animationQueuedSave = false;
+                page.animationQueuedSaveText = "";
+                page.animationSaveInProgress = true;
+                animationFile.setText(next);
+                return ;
+            }
+            page.animationDirty = false;
+            page.animationSourceText = animationFile.text();
+            try {
+                page.readAnimationValues(page.animationSourceText);
+                page.animationStatusMessage = "Animations saved · " + page.animationEntries.length + " animations · " + page.curveEntries.length + " curves";
+            } catch (e) {
+                page.animationStatusMessage = "Saved animations.lua";
+            }
+            if (page.applyAfterSave || page.animationApplyAfterSave)
+                page.maybeRunDeferredApply();
+
+        }
+        onSaveFailed: (error) => {
+            page.animationSaveInProgress = false;
+            page.animationStatusMessage = "Could not save animations.lua: " + error;
+            console.warn("General: could not save " + page.animationFilePath + ": " + error);
         }
     }
 
@@ -633,11 +1493,32 @@ Item {
             id: content
 
             width: parent.width
-            spacing: 10
+            spacing: 11
+
+            Column {
+                width: parent.width
+                spacing: 4
+
+                Text {
+                    text: "GENERAL"
+                    color: Theme.text
+                    font.family: "Noto Sans"
+                    font.pixelSize: 19
+                    font.weight: Font.Normal
+                }
+
+                Text {
+                    text: "Window layout, borders and visual effects"
+                    color: Theme.textFaint
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 10
+                }
+
+            }
 
             Row {
                 width: parent.width
-                height: 26
+                height: 30
                 spacing: 8
 
                 Rectangle {
@@ -649,7 +1530,7 @@ Item {
                 }
 
                 Text {
-                    width: parent.width - 160
+                    width: Math.max(20, parent.width - 217)
                     text: page.statusMessage
                     color: Theme.textFaint
                     font.family: Theme.monoFont
@@ -658,89 +1539,110 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
-                Rectangle {
-                    width: reloadBtnG.width + 12
-                    height: 22
-                    radius: Theme.radiusXs
-                    color: reloadBtnG.containsMouse ? Theme.alpha(Theme.accent, 0.08) : "transparent"
-                    border.width: 1
-                    border.color: reloadBtnG.containsMouse ? Theme.accent : Theme.border
-                    anchors.verticalCenter: parent.verticalCenter
+                Button {
+                    text: "Reload"
+                    implicitHeight: 28
+                    implicitWidth: 70
+                    enabled: page.fileReady
+                    onClicked: page.forceReloadFile()
 
-                    Text {
-                        id: reloadBtnG
-
-                        property bool containsMouse: false
-
-                        anchors.centerIn: parent
-                        text: "RELOAD"
-                        color: Theme.textDim
-                        font.family: Theme.monoFont
-                        font.pixelSize: 9
-                        font.letterSpacing: 1
+                    background: Rectangle {
+                        radius: 7
+                        color: parent.hovered ? Theme.bgPanel : Theme.bgCard
+                        border.width: 1
+                        border.color: Theme.border
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onEntered: reloadBtnG.containsMouse = true
-                        onExited: reloadBtnG.containsMouse = false
-                        onClicked: page.forceReloadFile()
+                    contentItem: Text {
+                        text: parent.text
+                        color: Theme.text
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 11
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
 
                 }
 
-                Rectangle {
-                    width: applyBtnG.width + 12
-                    height: 22
-                    radius: Theme.radiusXs
-                    color: applyBtnG.containsMouse ? Theme.alpha(Theme.accent, 0.12) : Theme.alpha(Theme.accent, 0.06)
-                    border.width: 1
-                    border.color: Theme.accent
-                    anchors.verticalCenter: parent.verticalCenter
+                Button {
+                    text: "Apply"
+                    implicitHeight: 28
+                    implicitWidth: 116
+                    enabled: page.fileReady
+                    onClicked: page.forceApply()
 
-                    Text {
-                        id: applyBtnG
-
-                        property bool containsMouse: false
-
-                        anchors.centerIn: parent
-                        text: "APPLY"
-                        color: Theme.accent
-                        font.family: Theme.monoFont
-                        font.pixelSize: 9
-                        font.bold: true
-                        font.letterSpacing: 1
+                    background: Rectangle {
+                        radius: 9
+                        color: parent.hovered ? Qt.lighter(Theme.accent, 1.08) : Theme.accent
+                        border.width: 1
+                        border.color: Qt.lighter(Theme.accent, 1.12)
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onEntered: applyBtnG.containsMouse = true
-                        onExited: applyBtnG.containsMouse = false
-                        onClicked: page.forceApply()
+                    contentItem: Text {
+                        text: parent.text
+                        color: "#101116"
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
 
                 }
 
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: Theme.border
             }
 
             Text {
                 text: "GAPS"
                 color: Theme.text
                 font.family: Theme.fontFamily
-                font.pixelSize: 14
-                font.bold: true
-                font.letterSpacing: 2
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.8
                 topPadding: 4
+            }
+
+            Text {
+                text: "SPACING PRESETS"
+                color: Theme.textDim
+                font.family: Theme.monoFont
+                font.pixelSize: 10
+                font.letterSpacing: 1.1
+            }
+
+            Flow {
+                width: parent.width
+                spacing: 7
+
+                Repeater {
+                    model: [{
+                        "label": "COMPACT",
+                        "gapIn": 2,
+                        "gapOut": 6,
+                        "icon": "\uf066"
+                    }, {
+                        "label": "BALANCED",
+                        "gapIn": 5,
+                        "gapOut": 10,
+                        "icon": "\uf0c8"
+                    }, {
+                        "label": "SPACIOUS",
+                        "gapIn": 8,
+                        "gapOut": 16,
+                        "icon": "\uf065"
+                    }]
+
+                    delegate: Segment {
+                        required property var modelData
+
+                        icon: modelData.icon
+                        label: modelData.label
+                        selected: page.gapsIn === modelData.gapIn && page.gapsOut === modelData.gapOut
+                        onClicked: page.applyGapPreset(modelData.gapIn, modelData.gapOut)
+                    }
+
+                }
+
             }
 
             SliderRow {
@@ -827,20 +1729,13 @@ Item {
                 onClicked: colorPopup.openFor("inactive")
             }
 
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: Theme.border
-                anchors.topMargin: 4
-            }
-
             Text {
                 text: "LAYOUT"
                 color: Theme.text
                 font.family: Theme.fontFamily
-                font.pixelSize: 14
-                font.bold: true
-                font.letterSpacing: 2
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.8
                 topPadding: 4
             }
 
@@ -853,26 +1748,54 @@ Item {
             }
 
             Flow {
+                id: generalSelector1
+
                 width: parent.width
-                spacing: 6
+                spacing: 7
 
                 Repeater {
-                    model: ["scrolling", "dwindle", "master"]
+                    model: [{
+                        "value": "scrolling",
+                        "label": "SCROLLING",
+                        "icon": "\uf07e",
+                        "description": "Horizontal columns"
+                    }, {
+                        "value": "dwindle",
+                        "label": "DWINDLE",
+                        "icon": "\uf00a",
+                        "description": "Dynamic tiling"
+                    }, {
+                        "value": "master",
+                        "label": "MASTER",
+                        "icon": "\uf2d0",
+                        "description": "Master + stack"
+                    }]
 
-                    delegate: Segment {
-                        required property string modelData
+                    delegate: LayoutOption {
+                        required property var modelData
 
-                        label: modelData.toUpperCase()
-                        selected: page.layout === modelData
+                        label: modelData.label
+                        description: modelData.description
+                        icon: modelData.icon
+                        selected: page.layout === modelData.value
                         onClicked: {
-                            page.layout = modelData;
-                            page.applyLive("general:layout", modelData);
-                            page.setBlockField("general", "layout", modelData, false, true);
+                            page.layout = modelData.value;
+                            page.applyLive("general:layout", modelData.value);
+                            page.setBlockField("general", "layout", modelData.value, false, true);
                         }
                     }
 
                 }
 
+            }
+
+            Text {
+                width: parent.width
+                text: page.layout === "scrolling" ? "Best for keyboard-driven column workflows. Configure column width, direction, follow-focus and explicit width presets below." : (page.layout === "dwindle" ? "Automatically split space as windows open. Preserve split direction with the option in Dwindle / Master." : "Keep one primary window with additional windows arranged as a stack.")
+                color: Theme.textFaint
+                font.family: Theme.fontFamily
+                font.pixelSize: 10
+                wrapMode: Text.WordWrap
             }
 
             Text {
@@ -885,8 +1808,10 @@ Item {
             }
 
             Flow {
+                id: generalSelector2
+
                 width: parent.width
-                spacing: 6
+                spacing: 7
 
                 Repeater {
                     model: ["left", "right", "up", "down"]
@@ -943,15 +1868,6 @@ Item {
                 }
             }
 
-            Text {
-                text: "EXPLICIT COLUMN WIDTHS"
-                color: Theme.textDim
-                font.family: Theme.monoFont
-                font.pixelSize: 10
-                font.letterSpacing: 1.2
-                topPadding: 4
-            }
-
             WidthChips {
                 value: page.explicitColumnWidths
                 onChanged: (v) => {
@@ -961,20 +1877,13 @@ Item {
                 }
             }
 
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: Theme.border
-                anchors.topMargin: 4
-            }
-
             Text {
                 text: "DWINDLE / MASTER"
                 color: Theme.text
                 font.family: Theme.fontFamily
-                font.pixelSize: 14
-                font.bold: true
-                font.letterSpacing: 2
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.8
                 topPadding: 4
             }
 
@@ -995,44 +1904,95 @@ Item {
                 font.letterSpacing: 1.2
             }
 
-            Flow {
+            Rectangle {
                 width: parent.width
-                spacing: 6
+                height: generalSelector3.implicitHeight + 14
+                radius: 9
+                color: Theme.alpha(Theme.text, 0.018)
+                border.width: 1
+                border.color: Theme.border
 
-                Repeater {
-                    model: ["master", "slave", "inherit"]
+                Flow {
+                    id: generalSelector3
 
-                    delegate: Segment {
-                        required property string modelData
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.leftMargin: 7
+                    anchors.rightMargin: 7
+                    anchors.topMargin: 7
+                    height: implicitHeight
+                    spacing: 6
 
-                        label: modelData.toUpperCase()
-                        selected: page.masterStatus === modelData
-                        onClicked: {
-                            page.masterStatus = modelData;
-                            page.applyLive("master:new_status", modelData);
-                            page.setBlockField("master", "new_status", modelData, false, true);
+                    Repeater {
+                        model: ["master", "slave", "inherit"]
+
+                        delegate: Segment {
+                            required property string modelData
+
+                            label: modelData.toUpperCase()
+                            selected: page.masterStatus === modelData
+                            onClicked: {
+                                page.masterStatus = modelData;
+                                page.applyLive("master:new_status", modelData);
+                                page.setBlockField("master", "new_status", modelData, false, true);
+                            }
                         }
+
                     }
 
                 }
 
             }
 
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: Theme.border
-                anchors.topMargin: 4
-            }
-
             Text {
                 text: "DECORATION"
                 color: Theme.text
                 font.family: Theme.fontFamily
-                font.pixelSize: 14
-                font.bold: true
-                font.letterSpacing: 2
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.8
                 topPadding: 4
+            }
+
+            Text {
+                text: "VISUAL PRESETS"
+                color: Theme.textDim
+                font.family: Theme.monoFont
+                font.pixelSize: 10
+                font.letterSpacing: 1.1
+            }
+
+            Flow {
+                width: parent.width
+                spacing: 7
+
+                Repeater {
+                    model: [{
+                        "label": "SOFT",
+                        "value": "soft",
+                        "icon": "\uf2d0"
+                    }, {
+                        "label": "BALANCED",
+                        "value": "balanced",
+                        "icon": "\uf0c8"
+                    }, {
+                        "label": "SHARP",
+                        "value": "sharp",
+                        "icon": "\uf0c1"
+                    }]
+
+                    delegate: Segment {
+                        required property var modelData
+
+                        icon: modelData.icon
+                        label: modelData.label
+                        selected: modelData.value === "balanced" ? (page.rounding === 16 && Math.abs(page.activeOpacity - 0.9) < 0.001 && Math.abs(page.inactiveOpacity - 0.9) < 0.001 && page.blurEnabled && page.blurSize === 6 && page.blurPasses === 4 && page.shadowEnabled && page.shadowRange === 16 && page.shadowRenderPower === 6) : (modelData.value === "soft" ? (page.rounding === 20 && page.blurSize === 8 && page.shadowRange === 18) : (page.rounding === 6 && !page.blurEnabled && !page.shadowEnabled))
+                        onClicked: page.applyVisualPreset(modelData.value)
+                    }
+
+                }
+
             }
 
             SliderRow {
@@ -1197,20 +2157,13 @@ Item {
                 }
             }
 
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: Theme.border
-                anchors.topMargin: 4
-            }
-
             Text {
                 text: "MISC / XWAYLAND"
                 color: Theme.text
                 font.family: Theme.fontFamily
-                font.pixelSize: 14
-                font.bold: true
-                font.letterSpacing: 2
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.8
                 topPadding: 4
             }
 
@@ -1232,6 +2185,337 @@ Item {
                 }
             }
 
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Theme.alpha(Theme.border, 0.55)
+            }
+
+            Text {
+                text: "ANIMATIONS & CURVES"
+                color: Theme.text
+                font.family: Theme.fontFamily
+                font.pixelSize: 13
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.8
+                topPadding: 5
+            }
+
+            Text {
+                text: "Configure window, fade, layer and workspace transitions"
+                color: Theme.textFaint
+                font.family: Theme.fontFamily
+                font.pixelSize: 10
+                wrapMode: Text.WordWrap
+            }
+
+            Row {
+                width: parent.width
+                height: 28
+                spacing: 8
+
+                Rectangle {
+                    width: 7
+                    height: 7
+                    radius: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: page.animationFileReady ? (page.animationDirty ? "#e5b567" : Theme.ok) : Theme.danger
+                }
+
+                Text {
+                    width: Math.max(30, parent.width - 100)
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: page.animationStatusMessage
+                    color: Theme.textFaint
+                    font.family: Theme.monoFont
+                    font.pixelSize: 9
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    text: page.animationFileReady ? "RELOAD" : ""
+                    color: reloadAnimationsMouse.containsMouse ? Theme.accent : Theme.textDim
+                    anchors.verticalCenter: parent.verticalCenter
+                    font.family: Theme.monoFont
+                    font.pixelSize: 9
+
+                    MouseArea {
+                        id: reloadAnimationsMouse
+
+                        anchors.fill: parent
+                        anchors.margins: -5
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (!page.animationDirty && !page.animationSaveInProgress && !animationSaveTimer.running) {
+                                animationFile.reload();
+                                page.animationStatusMessage = "Reloading animations.lua...";
+                            }
+                        }
+                    }
+
+                }
+
+            }
+
+            ToggleRow {
+                visible: page.animationFileReady
+                label: "ENABLE ALL ANIMATIONS"
+                checked: page.animationEnabled
+                onToggled: (enabled) => {
+                    return page.setAnimationMasterEnabled(enabled);
+                }
+            }
+
+            Text {
+                visible: page.animationFileReady
+                text: "ANIMATION PRESETS"
+                color: Theme.textDim
+                font.family: Theme.monoFont
+                font.pixelSize: 10
+                font.letterSpacing: 1.1
+                topPadding: 4
+            }
+
+            Flow {
+                visible: page.animationFileReady
+                width: parent.width
+                spacing: 7
+
+                Repeater {
+                    model: page.animationPresetOptions()
+
+                    delegate: LayoutOption {
+                        required property var modelData
+
+                        label: modelData.label
+                        description: modelData.description
+                        icon: modelData.icon
+                        selected: page.animationPreset === modelData.value
+                        onClicked: page.applyAnimationPreset(modelData.value)
+                    }
+
+                }
+
+            }
+
+            Text {
+                visible: page.animationFileReady
+                text: page.animationPreset === "custom" ? "CUSTOM ANIMATION CONFIGURATION" : ("ACTIVE PRESET  ·  " + page.animationPreset.toUpperCase())
+                color: page.animationPreset === "custom" ? Theme.textFaint : Theme.accent
+                font.family: Theme.monoFont
+                font.pixelSize: 9
+                font.letterSpacing: 0.7
+            }
+
+            Text {
+                visible: page.animationFileReady
+                text: "CURVE VISUALIZER"
+                color: Theme.textDim
+                font.family: Theme.monoFont
+                font.pixelSize: 10
+                font.letterSpacing: 1.1
+                topPadding: 5
+            }
+
+            Text {
+                visible: page.animationFileReady
+                text: "GLOBAL VIEW · SELECT A CURVE TO HIGHLIGHT IT"
+                color: Theme.textFaint
+                font.family: Theme.monoFont
+                font.pixelSize: 9
+                font.letterSpacing: 0.45
+            }
+
+            Flow {
+                visible: page.animationFileReady && page.curveEntries.length > 0
+                width: parent.width
+                spacing: 6
+
+                Repeater {
+                    model: page.animationFileReady ? page.curveEntries : []
+
+                    delegate: Segment {
+                        required property var modelData
+
+                        label: modelData.name.toUpperCase()
+                        selected: page.selectedCurveName === modelData.name
+                        onClicked: {
+                            page.selectedCurveName = modelData.name;
+                            curveGraph.requestPaint();
+                        }
+                    }
+
+                }
+
+            }
+
+            Rectangle {
+                visible: page.animationFileReady && page.curveEntries.length > 0
+                width: parent.width
+                height: 260
+                radius: 12
+                color: Theme.alpha(Theme.text, 0.018)
+                border.width: 1
+                border.color: Theme.border
+
+                Column {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 6
+
+                    Row {
+                        width: parent.width
+                        height: 23
+                        spacing: 8
+
+                        Text {
+                            width: parent.width - curveTypeBadge.implicitWidth - 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: page.selectedCurveName ? page.selectedCurveName.toUpperCase() : "CURVE"
+                            color: Theme.text
+                            font.family: Theme.monoFont
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            id: curveTypeBadge
+
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: {
+                                const entry = page.curveEntries.find(function(item) {
+                                    return item.name === page.selectedCurveName;
+                                });
+                                return entry ? entry.type.toUpperCase() : "";
+                            }
+                            color: Theme.accent
+                            font.family: Theme.monoFont
+                            font.pixelSize: 9
+                            font.letterSpacing: 0.6
+                        }
+
+                    }
+
+                    Canvas {
+                        id: curveGraph
+
+                        width: parent.width
+                        height: 190
+                        antialiasing: true
+                        onPaint: {
+                            const ctx = getContext("2d");
+                            ctx.clearRect(0, 0, width, height);
+                            const left = 24;
+                            const right = 8;
+                            const top = 8;
+                            const bottom = 19;
+                            const plotWidth = Math.max(1, width - left - right);
+                            const plotHeight = Math.max(1, height - top - bottom);
+                            const yMin = -0.2;
+                            const yMax = 1.2;
+                            const px = function px(x) {
+                                return left + Math.max(0, Math.min(1, x)) * plotWidth;
+                            };
+                            const py = function py(y) {
+                                return top + (yMax - y) / (yMax - yMin) * plotHeight;
+                            };
+                            ctx.lineWidth = 1;
+                            ctx.strokeStyle = Theme.alpha(Theme.border, 0.7);
+                            ctx.fillStyle = Theme.textFaint;
+                            ctx.font = "9px monospace";
+                            ctx.textAlign = "right";
+                            ctx.textBaseline = "middle";
+                            [0, 0.5, 1].forEach(function(value) {
+                                const y = py(value);
+                                ctx.beginPath();
+                                ctx.moveTo(left, y);
+                                ctx.lineTo(left + plotWidth, y);
+                                ctx.stroke();
+                                ctx.fillText(value.toFixed(1), left - 5, y);
+                            });
+                            ctx.textAlign = "center";
+                            ctx.textBaseline = "top";
+                            [0, 0.25, 0.5, 0.75, 1].forEach(function(value) {
+                                const x = px(value);
+                                ctx.beginPath();
+                                ctx.moveTo(x, top);
+                                ctx.lineTo(x, top + plotHeight);
+                                ctx.stroke();
+                                ctx.fillText(value === 0 || value === 1 ? value.toFixed(0) : value.toFixed(2), x, top + plotHeight + 4);
+                            });
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.rect(left, top, plotWidth, plotHeight);
+                            ctx.clip();
+                            const drawCurve = function drawCurve(entry, color, lineWidth) {
+                                if (!entry)
+                                    return ;
+
+                                ctx.beginPath();
+                                for (let i = 0; i <= 100; i++) {
+                                    const point = page.curveGraphPoint(entry, i / 100);
+                                    const x = px(point.x);
+                                    const y = py(point.y);
+                                    if (i === 0)
+                                        ctx.moveTo(x, y);
+                                    else
+                                        ctx.lineTo(x, y);
+                                }
+                                ctx.strokeStyle = color;
+                                ctx.lineWidth = lineWidth;
+                                ctx.stroke();
+                            };
+                            page.curveEntries.forEach(function(entry) {
+                                if (entry.name !== page.selectedCurveName)
+                                    drawCurve(entry, Theme.alpha(Theme.text, 0.16), 1.1);
+
+                            });
+                            const selected = page.curveEntries.find(function(entry) {
+                                return entry.name === page.selectedCurveName;
+                            });
+                            if (selected) {
+                                drawCurve(selected, Theme.alpha(Theme.accent, 0.95), 2.4);
+                                const point = page.curveGraphPoint(selected, page.curvePreviewProgress);
+                                const cx = px(point.x);
+                                const cy = py(point.y);
+                                ctx.beginPath();
+                                ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+                                ctx.fillStyle = Theme.alpha(Theme.accent, 0.2);
+                                ctx.fill();
+                                ctx.beginPath();
+                                ctx.arc(cx, cy, 3.2, 0, Math.PI * 2);
+                                ctx.fillStyle = Theme.accent;
+                                ctx.fill();
+                            }
+                            ctx.restore();
+                        }
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: "PROFILE PREVIEW  ·  WINDOWS MOVE  ·  SPEED " + Number(page.curvePreviewSpeed).toFixed(1) + "  ·  " + page.animationPreset.toUpperCase()
+                        color: Theme.textFaint
+                        font.family: Theme.monoFont
+                        font.pixelSize: 8
+                        font.letterSpacing: 0.35
+                        horizontalAlignment: Text.AlignRight
+                    }
+
+                }
+
+            }
+
+            Text {
+                visible: !page.animationFileReady
+                text: page.animationStatusMessage
+                color: Theme.textFaint
+                font.family: Theme.monoFont
+                font.pixelSize: 10
+                wrapMode: Text.WordWrap
+            }
+
         }
 
     }
@@ -1246,12 +2530,16 @@ Item {
         readonly property color previewColor: Qt.hsla(hue, sat, light, 1)
 
         function parseColor(str) {
-            var m = str.match(/rgb\(([0-9a-fA-F]{6})\)/i) || str.match(/#([0-9a-fA-F]{6})/);
+            var m = str.match(/rgba?\(([0-9a-fA-F]{6,8})\)/i) || str.match(/#([0-9a-fA-F]{6,8})/i);
             if (m) {
-                var c = Qt.color("#" + m[1]);
+                var c = Qt.color("#" + m[1].slice(0, 6));
                 hue = c.hslHue;
                 sat = c.hslSaturation;
                 light = c.hslLightness;
+            } else {
+                hue = 0;
+                sat = 0;
+                light = 0.5;
             }
         }
 
@@ -1293,10 +2581,10 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
-            color: "#202228"
+            color: Qt.rgba(0, 0, 0, 0.8)
             radius: 18
             border.width: 1
-            border.color: "#3a3d46"
+            border.color: Theme.border
         }
 
         contentItem: Column {
@@ -1314,7 +2602,7 @@ Item {
                     radius: 10
                     color: colorPopup.previewColor
                     border.width: 1
-                    border.color: "#444853"
+                    border.color: Theme.border
                 }
 
                 Column {
@@ -1323,7 +2611,7 @@ Item {
 
                     Text {
                         text: colorPopup.target === "active" ? "ACTIVE BORDER" : "INACTIVE BORDER"
-                        color: "#888"
+                        color: Theme.textFaint
                         font.family: Theme.monoFont
                         font.pixelSize: 9
                         font.letterSpacing: 2
@@ -1339,7 +2627,7 @@ Item {
 
                     Text {
                         text: "drag to preview live"
-                        color: "#666"
+                        color: Theme.textGhost
                         font.family: Theme.monoFont
                         font.pixelSize: 9
                         font.italic: true
@@ -1355,7 +2643,7 @@ Item {
 
                 Text {
                     text: "HUE"
-                    color: "#888"
+                    color: Theme.textFaint
                     font.family: Theme.monoFont
                     font.pixelSize: 9
                     font.letterSpacing: 1.5
@@ -1441,7 +2729,7 @@ Item {
 
                 Text {
                     text: "SATURATION"
-                    color: "#888"
+                    color: Theme.textFaint
                     font.family: Theme.monoFont
                     font.pixelSize: 9
                     font.letterSpacing: 1.5
@@ -1502,7 +2790,7 @@ Item {
 
                 Text {
                     text: "LIGHTNESS"
-                    color: "#888"
+                    color: Theme.textFaint
                     font.family: Theme.monoFont
                     font.pixelSize: 9
                     font.letterSpacing: 1.5
@@ -1562,11 +2850,6 @@ Item {
 
             }
 
-            Item {
-                width: parent.width
-                height: 1
-            }
-
             Row {
                 width: parent.width
                 spacing: 10
@@ -1618,7 +2901,7 @@ Item {
                     radius: 9
                     color: cancelClick.containsMouse ? "#2b2e36" : "#24262d"
                     border.width: 1
-                    border.color: "#41444e"
+                    border.color: Theme.border
 
                     Text {
                         anchors.centerIn: parent
@@ -1651,22 +2934,51 @@ Item {
 
     }
 
+    NumberAnimation on curvePreviewProgress {
+        from: 0
+        to: 1
+        duration: page.curvePreviewDuration
+        loops: Animation.Infinite
+        running: page.animationFileReady && page.curveEntries.length > 0
+    }
+
     component ColorRow: Item {
         id: colorRowRoot
 
         property string label: ""
         property string colorValue: ""
+        property bool hovered: false
 
         signal clicked()
 
         width: parent.width
-        height: 38
+        height: 42
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 8
+            color: colorRowRoot.hovered ? Theme.alpha(Theme.accent, 0.035) : "transparent"
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 140
+                }
+
+            }
+
+        }
+
+        HoverHandler {
+            onHoveredChanged: colorRowRoot.hovered = hovered
+        }
 
         Text {
+            id: colorLabel
+
             anchors.left: parent.left
-            anchors.leftMargin: 34
+            anchors.leftMargin: 12
             anchors.verticalCenter: parent.verticalCenter
-            width: 130
+            width: Math.max(94, Math.min(130, colorRowRoot.width * 0.27))
             text: colorRowRoot.label
             color: Theme.textDim
             font.family: Theme.monoFont
@@ -1678,8 +2990,8 @@ Item {
         Rectangle {
             id: swatch
 
-            anchors.left: parent.left
-            anchors.leftMargin: 172
+            anchors.left: colorLabel.right
+            anchors.leftMargin: 8
             anchors.verticalCenter: parent.verticalCenter
             width: 26
             height: 26
@@ -1693,8 +3005,7 @@ Item {
                 var rgb = colorRowRoot.colorValue.match(/rgb\(([0-9a-fA-F]{6})\)/i) || colorRowRoot.colorValue.match(/#([0-9a-fA-F]{6})/);
                 return rgb ? Qt.color("#" + rgb[1]) : "#ffffff";
             }
-            border.width: 1
-            border.color: Theme.border
+            border.width: 0
 
             MouseArea {
                 anchors.fill: parent
@@ -1708,10 +3019,11 @@ Item {
             anchors.left: swatch.right
             anchors.leftMargin: 10
             anchors.right: parent.right
+            anchors.rightMargin: 10
             anchors.verticalCenter: parent.verticalCenter
             height: 32
-            radius: Theme.radiusSm
-            color: rowHover.containsMouse ? Theme.bgElev : Theme.bgCard
+            radius: 7
+            color: Theme.alpha(Theme.text, 0.025)
             border.width: 1
             border.color: rowHover.containsMouse ? Theme.accent : Theme.border
 
@@ -1722,7 +3034,10 @@ Item {
             Text {
                 anchors.left: parent.left
                 anchors.leftMargin: 10
+                anchors.right: parent.right
+                anchors.rightMargin: 30
                 anchors.verticalCenter: parent.verticalCenter
+                elide: Text.ElideRight
                 text: colorRowRoot.colorValue
                 color: Theme.text
                 font.family: Theme.monoFont
@@ -1776,17 +3091,17 @@ Item {
 
         function buildString() {
             return widths.map(function(n) {
-                var s = Number(n).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
-                return s === "" ? "0" : s;
+                var valueText = Number(n).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+                return valueText === "" ? "0" : valueText;
             }).join(",");
         }
 
         function updateAt(idx, newVal) {
-            if (idx < 0 || idx >= widths.length)
+            if (idx < 0 || idx >= widths.length || !isFinite(newVal))
                 return ;
 
             var arr = widths.slice();
-            arr[idx] = newVal;
+            arr[idx] = Math.max(0.1, Math.min(1, newVal));
             widths = arr;
             changed(buildString());
         }
@@ -1801,136 +3116,196 @@ Item {
             changed(buildString());
         }
 
-        function add() {
+        function addPreset(value) {
+            if (widths.some(function(n) {
+                return Math.abs(n - value) < 0.005;
+            }))
+                return ;
+
             var arr = widths.slice();
-            arr.push(0.5);
+            arr.push(value);
             widths = arr;
             changed(buildString());
         }
 
+        function add() {
+            addPreset(0.5);
+        }
+
         width: parent.width
-        height: 40
+        height: chipColumn.implicitHeight + 4
         onValueChanged: parseWidths()
         Component.onCompleted: parseWidths()
 
-        Flow {
+        Column {
+            id: chipColumn
+
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 6
+            anchors.top: parent.top
+            spacing: 7
 
-            Repeater {
-                model: chipsRoot.widths
+            Text {
+                text: "QUICK WIDTHS"
+                color: Theme.textGhost
+                font.family: Theme.monoFont
+                font.pixelSize: 9
+                font.letterSpacing: 1.1
+            }
 
-                delegate: Item {
-                    id: chip
+            Flow {
+                width: parent.width
+                spacing: 5
 
-                    required property real modelData
-                    required property int index
-                    property bool editing: false
+                Repeater {
+                    model: [{
+                        "label": "⅓",
+                        "value": 0.333
+                    }, {
+                        "label": "½",
+                        "value": 0.5
+                    }, {
+                        "label": "⅔",
+                        "value": 0.667
+                    }, {
+                        "label": "¾",
+                        "value": 0.75
+                    }, {
+                        "label": "FULL",
+                        "value": 1
+                    }]
 
-                    width: editing ? 90 : (chipLabel.implicitWidth + 38)
-                    height: 32
+                    delegate: Segment {
+                        required property var modelData
 
-                    Rectangle {
-                        visible: !chip.editing
-                        anchors.fill: parent
-                        radius: 8
-                        color: chipMouse.containsMouse ? Theme.bgElev : Theme.bgCard
-                        border.width: 1
-                        border.color: chipMouse.containsMouse ? Theme.accent : Theme.border
+                        label: modelData.label
+                        selected: chipsRoot.widths.some(function(n) {
+                            return Math.abs(n - modelData.value) < 0.005;
+                        })
+                        onClicked: chipsRoot.addPreset(modelData.value)
+                    }
 
-                        Text {
-                            id: chipLabel
+                }
 
-                            anchors.left: parent.left
-                            anchors.leftMargin: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: {
-                                var s = Number(chip.modelData).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
-                                return s === "" ? "0" : s;
-                            }
-                            color: Theme.text
-                            font.family: Theme.monoFont
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
+            }
+
+            Text {
+                text: "EXPLICIT COLUMN WIDTHS"
+                color: Theme.textGhost
+                font.family: Theme.monoFont
+                font.pixelSize: 9
+                font.letterSpacing: 1.1
+            }
+
+            Flow {
+                id: chipFlow
+
+                width: parent.width
+                spacing: 6
+
+                Repeater {
+                    model: chipsRoot.widths
+
+                    delegate: Item {
+                        id: chip
+
+                        required property real modelData
+                        required property int index
+                        property bool editing: false
+
+                        width: editing ? 88 : (chipLabel.implicitWidth + 42)
+                        height: 32
 
                         Rectangle {
-                            visible: chipMouse.containsMouse
-                            anchors.right: parent.right
-                            anchors.rightMargin: 4
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 18
-                            height: 18
-                            radius: 4
-                            color: removeHover.containsMouse ? Theme.alpha("#ff5555", 0.2) : "transparent"
+                            visible: !chip.editing
+                            anchors.fill: parent
+                            radius: 9
+                            color: chipMouse.containsMouse ? Theme.alpha(Theme.accent, 0.12) : Theme.alpha(Theme.text, 0.045)
 
                             Text {
-                                anchors.centerIn: parent
-                                text: "×"
-                                color: removeHover.containsMouse ? "#ff5555" : Theme.textDim
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 14
+                                id: chipLabel
+
+                                anchors.left: parent.left
+                                anchors.leftMargin: 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: {
+                                    var n = Number(chip.modelData).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+                                    return n === "" ? "0" : n;
+                                }
+                                color: Theme.text
+                                font.family: Theme.monoFont
+                                font.pixelSize: 11
                                 font.bold: true
                             }
 
-                            HoverHandler {
-                                id: removeHover
+                            Text {
+                                visible: chipMouse.containsMouse || removeArea.containsMouse
+                                anchors.right: parent.right
+                                anchors.rightMargin: 5
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "×"
+                                color: removeArea.containsMouse ? "#ff7777" : Theme.textDim
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 15
                             }
 
                             MouseArea {
+                                id: chipMouse
+
                                 anchors.fill: parent
+                                anchors.rightMargin: 24
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: chip.editing = true
+                            }
+
+                            MouseArea {
+                                id: removeArea
+
+                                anchors.right: parent.right
+                                anchors.rightMargin: 2
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 22
+                                height: 26
+                                hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: chipsRoot.removeAt(chip.index)
                             }
 
                         }
 
-                        MouseArea {
-                            id: chipMouse
-
+                        Rectangle {
+                            visible: chip.editing
                             anchors.fill: parent
-                            anchors.rightMargin: 24
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: chip.editing = true
-                        }
+                            radius: 8
+                            color: Theme.alpha(Theme.accent, 0.08)
 
-                    }
+                            TextField {
+                                id: editField
 
-                    Rectangle {
-                        visible: chip.editing
-                        anchors.fill: parent
-                        radius: 8
-                        color: Theme.bgCard
-                        border.width: 1
-                        border.color: Theme.accent
+                                anchors.fill: parent
+                                anchors.margins: 3
+                                text: String(chip.modelData)
+                                color: Theme.text
+                                font.family: Theme.monoFont
+                                font.pixelSize: 11
+                                selectByMouse: true
+                                focus: chip.editing
+                                onEditingFinished: {
+                                    var v = parseFloat(text);
+                                    if (!isNaN(v))
+                                        chipsRoot.updateAt(chip.index, v);
 
-                        TextField {
-                            id: editField
+                                    chip.editing = false;
+                                }
+                                Keys.onEscapePressed: (event) => {
+                                    chip.editing = false;
+                                    event.accepted = true;
+                                }
 
-                            anchors.fill: parent
-                            anchors.margins: 4
-                            text: chip.modelData
-                            color: Theme.text
-                            font.family: Theme.monoFont
-                            font.pixelSize: 12
-                            selectByMouse: true
-                            focus: chip.editing
-                            onEditingFinished: {
-                                var v = parseFloat(text);
-                                if (!isNaN(v))
-                                    chipsRoot.updateAt(chip.index, v);
+                                background: Item {
+                                }
 
-                                chip.editing = false;
-                            }
-                            Keys.onEscapePressed: (event) => {
-                                chip.editing = false;
-                                event.accepted = true;
-                            }
-
-                            background: Item {
                             }
 
                         }
@@ -1939,37 +3314,125 @@ Item {
 
                 }
 
+                Rectangle {
+                    width: 32
+                    height: 32
+                    radius: 9
+                    color: addHover.containsMouse ? Theme.alpha(Theme.accent, 0.14) : Theme.alpha(Theme.text, 0.045)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "+"
+                        color: addHover.containsMouse ? Theme.accent : Theme.textDim
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 16
+                        font.bold: true
+                    }
+
+                    HoverHandler {
+                        id: addHover
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: chipsRoot.add()
+                    }
+
+                }
+
             }
 
-            Rectangle {
-                width: 32
-                height: 32
-                radius: 8
-                color: addHover.containsMouse ? Theme.alpha(Theme.accent, 0.12) : Theme.bgCard
-                border.width: 1
-                border.color: addHover.containsMouse ? Theme.accent : Theme.border
+        }
+
+    }
+
+    component LayoutOption: Item {
+        id: layoutOptionRoot
+
+        property string label: ""
+        property string description: ""
+        property string icon: ""
+        property bool selected: false
+        property bool hovered: false
+
+        signal clicked()
+
+        width: Math.max(118, (parent.width - 14) / 3)
+        height: 78
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 12
+            color: layoutOptionRoot.selected ? Theme.alpha(Theme.accent, 0.12) : (layoutOptionRoot.hovered ? Theme.alpha(Theme.text, 0.045) : "transparent")
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 130
+                }
+
+            }
+
+        }
+
+        Row {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 9
+
+            Column {
+                width: parent.width
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 7
+
+                Row {
+                    spacing: 7
+
+                    Text {
+                        text: layoutOptionRoot.icon
+                        color: layoutOptionRoot.selected ? Theme.accent : Theme.textDim
+                        font.family: Theme.iconFont
+                        font.pixelSize: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: layoutOptionRoot.label
+                        color: layoutOptionRoot.selected ? Theme.accent : Theme.text
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 10
+                        font.weight: Font.DemiBold
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                }
 
                 Text {
-                    anchors.centerIn: parent
-                    text: "+"
-                    color: addHover.containsMouse ? Theme.accent : Theme.textDim
+                    width: parent.width
+                    text: layoutOptionRoot.description
+                    color: Theme.textFaint
                     font.family: Theme.fontFamily
-                    font.pixelSize: 16
-                    font.bold: true
-                }
-
-                HoverHandler {
-                    id: addHover
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: chipsRoot.add()
+                    font.pixelSize: 10
+                    wrapMode: Text.WordWrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
                 }
 
             }
 
+        }
+
+        HoverHandler {
+            onHoveredChanged: layoutOptionRoot.hovered = hovered
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: layoutOptionRoot.clicked()
+            onEntered: layoutOptionRoot.hovered = true
+            onExited: layoutOptionRoot.hovered = false
         }
 
     }
@@ -1983,12 +3446,31 @@ Item {
         property string displayText: ""
         property bool resettable: false
         property real resetValue: 0
+        property bool hovered: false
 
         signal moved(real v)
         signal committed(real v)
 
         width: parent.width
-        height: 38
+        height: 42
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 8
+            color: sliderRoot.hovered ? Theme.alpha(Theme.accent, 0.035) : "transparent"
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 140
+                }
+
+            }
+
+        }
+
+        HoverHandler {
+            onHoveredChanged: sliderRoot.hovered = hovered
+        }
 
         Rectangle {
             id: iconBox
@@ -1997,8 +3479,9 @@ Item {
             height: 26
             radius: 8
             anchors.left: parent.left
+            anchors.leftMargin: 10
             anchors.verticalCenter: parent.verticalCenter
-            color: Theme.alpha(Theme.accent, 0.1)
+            color: Theme.bgPanel
             border.width: 1
             border.color: Theme.border
 
@@ -2018,12 +3501,12 @@ Item {
             anchors.left: iconBox.right
             anchors.leftMargin: 8
             anchors.verticalCenter: parent.verticalCenter
-            width: 110
+            width: Math.max(78, Math.min(110, sliderRoot.width * 0.25))
             text: sliderRoot.label
-            color: Theme.accent
+            color: Theme.textDim
             font.family: Theme.fontFamily
             font.pixelSize: 11
-            font.letterSpacing: 1.5
+            font.letterSpacing: 1.2
             elide: Text.ElideRight
         }
 
@@ -2031,6 +3514,7 @@ Item {
             anchors.left: labelText.right
             anchors.leftMargin: 8
             anchors.right: parent.right
+            anchors.rightMargin: 10
             anchors.verticalCenter: parent.verticalCenter
             label: ""
             icon: ""
@@ -2053,17 +3537,36 @@ Item {
 
         property string label: ""
         property bool checked: false
+        property bool hovered: false
 
         signal toggled(bool value)
 
         width: parent.width
-        height: 34
+        height: 38
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 8
+            color: toggleRoot.hovered ? Theme.alpha(Theme.accent, 0.035) : "transparent"
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 140
+                }
+
+            }
+
+        }
+
+        HoverHandler {
+            onHoveredChanged: toggleRoot.hovered = hovered
+        }
 
         Text {
             anchors.left: parent.left
-            anchors.leftMargin: 34
+            anchors.leftMargin: 12
             anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - 34 - 48
+            width: Math.max(30, parent.width - 12 - 38 - 28)
             text: toggleRoot.label
             color: Theme.textDim
             font.family: Theme.fontFamily
@@ -2077,10 +3580,10 @@ Item {
             height: 20
             radius: 10
             anchors.right: parent.right
+            anchors.rightMargin: 10
             anchors.verticalCenter: parent.verticalCenter
             color: toggleRoot.checked ? Theme.accent : Theme.bgPanel
-            border.width: 1
-            border.color: toggleRoot.checked ? Qt.lighter(Theme.accent, 1.15) : Theme.border
+            border.width: 0
 
             Rectangle {
                 x: toggleRoot.checked ? parent.width - width - 2 : 2
@@ -2111,22 +3614,23 @@ Item {
 
     component Segment: Rectangle {
         property string label: ""
+        property string icon: ""
         property bool selected: false
 
         signal clicked()
 
-        width: segText.implicitWidth + 24
-        height: 28
+        width: segText.implicitWidth + (icon !== "" ? 34 : 24)
+        height: 30
         radius: Theme.radiusXs
-        color: selected ? Theme.alpha(Theme.accent, 0.12) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.06) : "transparent")
+        color: selected ? Theme.alpha(Theme.accent, 0.075) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.035) : "transparent")
         border.width: 1
-        border.color: selected || segMouse.containsMouse ? Theme.accent : Theme.border
+        border.color: selected ? Theme.alpha(Theme.accent, 0.62) : (segMouse.containsMouse ? Theme.alpha(Theme.accent, 0.34) : Theme.border)
 
         Text {
             id: segText
 
             anchors.centerIn: parent
-            text: parent.label
+            text: parent.icon !== "" ? parent.icon + "  " + parent.label : parent.label
             color: parent.selected ? Theme.accent : Theme.textDim
             font.family: Theme.monoFont
             font.pixelSize: 10
