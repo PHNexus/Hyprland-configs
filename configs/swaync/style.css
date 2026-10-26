@@ -1,5 +1,5 @@
 .notification-row {
-  transition: all 300ms ease;
+  transition: all 180ms ease;
   outline: none;
   margin-bottom: 4px;
   border-radius: 12px;
@@ -10,8 +10,14 @@
   border-radius: 12px;
   padding: 12px;
   color: #fafafa;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: none;
+  transition: all 180ms ease;
+}
+
+.notification-row:hover .notification {
+  background: rgba(24, 24, 30, 0.66);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .notification * {
@@ -32,6 +38,10 @@
   color: #9a9a9a;
 }
 
+.notification.critical {
+  border-color: rgba(255, 69, 69, 0.7);
+}
+
 /* ============================================================================== */
 /* =============================== CONTROL CENTER =============================== */
 /* ============================================================================== */
@@ -43,7 +53,7 @@
   margin: 6px;
   padding: 12px;
   color: #fafafa;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .control-center * {
@@ -51,21 +61,25 @@
 }
 
 .control-center-clear-all {
-  transition: all 400ms ease;
-  background: rgba(255, 255, 255, 0.02);
+  transition: all 180ms ease;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 8px;
   box-shadow: none;
 }
 
 .control-center-dnd {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px;
   box-shadow: none;
+  transition: all 180ms ease;
 }
 
 .widget-dnd > switch {
   background: rgba(255, 255, 255, 0.04);
   border-radius: 10px;
+  transition: all 180ms ease;
 }
 
 .widget-dnd > switch:checked {
@@ -93,7 +107,7 @@
 }
 
 .widget-menubar {
-  background: rgba(255, 255, 255, 0.015);
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 10px;
   padding: 8px;
   margin: 10px;
@@ -101,31 +115,48 @@
   box-shadow: none;
 }
 
-.widget-menubar > box > .menu-button-bar > .widget-menubar-container > button,
+/* Top-level menu buttons: Power and Settings */
+.widget-menubar .menu-button-bar .widget-menubar-container > button,
+.widget-menubar > .menu-button-bar > .widget-menubar-container > button,
+.widget-menubar > box > .menu-button-bar > .widget-menubar-container > button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px 10px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #fafafa;
+  box-shadow: none;
+  transition: all 180ms ease;
+}
+
+/* Dropdown actions opened by the top-level menu buttons */
 .widget-menubar > revealer button {
   min-width: 100px;
   background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 8px;
   color: #fafafa;
+  box-shadow: none;
+  transition: all 180ms ease;
 }
 
-.widget-menubar > .menu-button-bar > .widget-menubar-container button {
-  padding: 6px 36px;
-}
-
+.widget-menubar .menu-button-bar .widget-menubar-container > button:hover,
+.widget-menubar > .menu-button-bar > .widget-menubar-container > button:hover,
 .widget-menubar
   > box
   > .menu-button-bar
   > .widget-menubar-container
   > button:hover,
 .widget-menubar > revealer button:hover {
-  background: #16161a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  color: #fafafa;
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
+.widget-menubar .menu-button-bar .widget-menubar-container > button label,
+.widget-menubar > .menu-button-bar > .widget-menubar-container > button label,
 .widget-menubar
   > box
   > .menu-button-bar
@@ -175,7 +206,7 @@
 .widget-volume scale slider,
 .widget-backlight scale slider {
   background: #222121a9;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: none;
   min-height: 12px;
   min-width: 12px;
@@ -188,22 +219,28 @@
 }
 
 /* ============================================================================== */
-/* BUTTONS GRID (toggle buttons like wifi, bluetooth, mute)                       */
+/* ======================= BUTTONS GRID (WIFI, BLUETOOTH) ======================= */
 /* ============================================================================== */
 
 .widget-buttons-grid flowboxchild > button {
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   padding: 8px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.025);
   margin: 4px;
   border-radius: 10px;
   box-shadow: none;
+  transition: all 180ms ease;
+}
+
+.widget-buttons-grid flowboxchild > button:hover {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .widget-buttons-grid flowboxchild > button.toggle:checked,
 .widget-buttons-grid flowboxchild > button.active {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #18181c;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.085);
 }
 
 /* Override the font size for buttons in the widget-buttons-grid */
@@ -216,14 +253,15 @@
 /* =================================== HOVER ==================================== */
 /* ============================================================================== */
 
-.control-center-clear-all:hover {
-  transition: all 400ms ease;
-  background: #16161a;
+.control-center-clear-all:hover,
+.control-center-dnd:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  transition: all 180ms ease;
 }
 
-.control-center-dnd:hover,
 .widget-dnd > switch:checked:hover,
 .widget-dnd > switch:hover {
-  background: #16161a;
-  transition: all 400ms ease;
+  background: #202024;
+  transition: all 180ms ease;
 }
