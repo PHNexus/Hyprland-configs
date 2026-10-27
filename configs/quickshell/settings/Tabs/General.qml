@@ -1410,42 +1410,42 @@ Item {
     function visualPresetValues(preset) {
         if (preset === "midnight")
             return {
-                "rounding": 10,
-                "activeOpacity": 0.97,
-                "inactiveOpacity": 0.88,
-                "blurEnabled": true,
-                "blurSize": 6,
-                "blurPasses": 3,
-                "shadowEnabled": true,
-                "shadowRange": 14,
-                "shadowRenderPower": 3
-            };
+            "rounding": 10,
+            "activeOpacity": 0.97,
+            "inactiveOpacity": 0.88,
+            "blurEnabled": true,
+            "blurSize": 6,
+            "blurPasses": 3,
+            "shadowEnabled": true,
+            "shadowRange": 14,
+            "shadowRenderPower": 3
+        };
 
         if (preset === "balanced")
             return {
-                "rounding": 16,
-                "activeOpacity": 0.9,
-                "inactiveOpacity": 0.9,
-                "blurEnabled": true,
-                "blurSize": 6,
-                "blurPasses": 4,
-                "shadowEnabled": true,
-                "shadowRange": 16,
-                "shadowRenderPower": 6
-            };
+            "rounding": 16,
+            "activeOpacity": 0.9,
+            "inactiveOpacity": 0.9,
+            "blurEnabled": true,
+            "blurSize": 6,
+            "blurPasses": 4,
+            "shadowEnabled": true,
+            "shadowRange": 16,
+            "shadowRenderPower": 6
+        };
 
         if (preset === "monolith")
             return {
-                "rounding": 2,
-                "activeOpacity": 1,
-                "inactiveOpacity": 0.96,
-                "blurEnabled": false,
-                "blurSize": 4,
-                "blurPasses": 2,
-                "shadowEnabled": false,
-                "shadowRange": 12,
-                "shadowRenderPower": 3
-            };
+            "rounding": 2,
+            "activeOpacity": 1,
+            "inactiveOpacity": 0.96,
+            "blurEnabled": false,
+            "blurSize": 4,
+            "blurPasses": 2,
+            "shadowEnabled": false,
+            "shadowRange": 12,
+            "shadowRenderPower": 3
+        };
 
         return null;
     }
@@ -4075,7 +4075,7 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
-            color: Qt.rgba(0, 0, 0, 0.8)
+            color: "#111216"
             radius: 18
             border.width: 1
             border.color: "#393939"
