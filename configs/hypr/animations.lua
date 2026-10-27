@@ -36,7 +36,7 @@ function M.setup()
     -- ============================================================
     hl.animation({ leaf = "fadeIn", enabled = true, speed = 5.5, bezier = "almostlinear" })
     hl.animation({ leaf = "fadeOut", enabled = true, speed = 5.5, bezier = "almostlinear" })
-    hl.animation({ leaf = "fade", enabled = true, speed = 5.5, bezier = "standard" })
+    hl.animation({ leaf = "fade", enabled = true, speed = 5.5, bezier = "default" })
     hl.animation({ leaf = "fadeDim", enabled = true, speed = 7.5, bezier = "standard" })
 
     -- ============================================================
