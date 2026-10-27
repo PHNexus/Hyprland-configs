@@ -56,14 +56,13 @@ function M.setup()
             rounding_power = 10,
             active_opacity = 0.9,
             inactive_opacity = 0.9,
-            shadow = { enabled = true, range = 16, render_power = 6, color = "rgb(15161e)" },
             blur = {
                 enabled = true,
                 size = 6,
                 passes = 4,
                 vibrancy = 0.35,
                 brightness = 0.9,
-                noise = 0.0,
+                noise = 0,
                 ignore_opacity = true,
                 contrast = 2,
                 vibrancy_darkness = 0.35,
@@ -87,3 +86,5 @@ end
 
 return M
 -- phnexus-explicit-column-widths-default-v1
+
+
