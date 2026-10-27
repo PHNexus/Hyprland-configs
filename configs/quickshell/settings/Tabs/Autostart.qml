@@ -795,9 +795,49 @@ Item {
                                     implicitHeight: 28
                                     hoverEnabled: true
                                     onClicked: page.removeEntry(entryCard.modelData)
-                                    ToolTip.visible: hovered
-                                    ToolTip.text: "Remove command"
-                                    ToolTip.delay: 500
+
+                                    ToolTip {
+                                        id: removeCommandTooltip
+
+                                        parent: removeButton
+                                        visible: removeButton.hovered
+                                        text: "Remove command"
+                                        delay: 450
+                                        timeout: -1
+                                        padding: 9
+                                        x: Math.round((parent.width - width) / 2)
+                                        y: parent.height + 7
+
+                                        contentItem: Row {
+                                            spacing: 7
+
+                                            Rectangle {
+                                                width: 3
+                                                height: 12
+                                                radius: 2
+                                                color: Theme.danger
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+
+                                            Text {
+                                                text: removeCommandTooltip.text
+                                                color: Theme.text
+                                                font.family: Theme.fontFamily
+                                                font.pixelSize: 10
+                                                font.weight: Font.Medium
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+
+                                        }
+
+                                        background: Rectangle {
+                                            radius: 8
+                                            color: "#111216"
+                                            border.width: 1
+                                            border.color: "#393939"
+                                        }
+
+                                    }
 
                                     background: Rectangle {
                                         radius: 7
