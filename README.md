@@ -46,7 +46,7 @@
       <img src="https://github.com/user-attachments/assets/373099dd-5ab3-429a-bf8e-992e91df6b5d" alt="Hyprland desktop screenshot" width="100%">
     </td>
     <td width="50%">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/72c03cd1-28d7-43a8-b144-d10cf8f93244" />
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/949550b1-db1e-4564-995e-8f07bf70ec5a" />
     </td>
   </tr>
   <tr>
