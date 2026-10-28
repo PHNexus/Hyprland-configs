@@ -14,7 +14,7 @@ function M.setup()
             allow_tearing = true,
             layout = "scrolling",
             col = {
-                active_border = "rgb(bebebe)",
+                active_border = "rgb(19749f)",
                 inactive_border = "rgb(000000)",
             },
         },
