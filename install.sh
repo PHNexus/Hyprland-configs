@@ -2302,9 +2302,11 @@ echo
 echo "Installer reached the end. Review any warnings above for components that were skipped or need attention."
 echo "Reloading Hyprland configurations..."
 hyprctl reload 2>/dev/null || true
-read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
-reboot_choice="${reboot_choice:-Y}"
 
-if [[ "$reboot_choice" =~ ^[Yy]$ ]]; then
-    sudo reboot
+if [[ -t 0 ]]; then
+    read -rp "Would you like to reboot now? [Y/n]: " reboot_choice
+    reboot_choice="${reboot_choice:-Y}"
+    if [[ "$reboot_choice" =~ ^[Yy]$ ]]; then
+        sudo reboot
+    fi
 fi

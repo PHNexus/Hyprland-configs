@@ -11,6 +11,8 @@ Item {
     property string displayText: ""
     property bool resettable: false
     property real resetValue: 0
+    property real _dragValue: value
+    readonly property real currentValue: dragArea.pressed ? root._dragValue : root.value
     readonly property bool hasIcon: root.icon !== ""
     readonly property bool hasLabel: root.label !== ""
     readonly property bool hasDisplay: root.displayText !== ""
@@ -20,7 +22,7 @@ Item {
 
     function setFromRatio(v) {
         const clamped = Math.max(0, Math.min(1, v));
-        root.value = clamped;
+        root._dragValue = clamped;
         root.moved(clamped);
     }
 
@@ -53,7 +55,7 @@ Item {
             cursorShape: root.resettable ? Qt.PointingHandCursor : Qt.ArrowCursor
             onClicked: {
                 root.setFromRatio(root.resetValue);
-                root.committed(root.value);
+                root.committed(root.resetValue);
             }
         }
 
@@ -112,7 +114,7 @@ Item {
             Rectangle {
                 id: fill
 
-                width: track.width * Math.max(0, Math.min(1, root.value))
+                width: track.width * Math.max(0, Math.min(1, root.currentValue))
                 height: parent.height
                 radius: 2
                 color: root.accentColor
@@ -176,7 +178,7 @@ Item {
                     id: bubbleText
 
                     anchors.centerIn: parent
-                    text: Math.round(root.value * 100) + "%"
+                    text: Math.round(root.currentValue * 100) + "%"
                     color: Theme.text
                     font.family: Theme.fontFamily
                     font.pixelSize: 10
@@ -201,7 +203,7 @@ Item {
                     root.setFromRatio(mouse.x / track.width);
 
             }
-            onReleased: root.committed(root.value)
+            onReleased: root.committed(root._dragValue)
         }
 
     }
