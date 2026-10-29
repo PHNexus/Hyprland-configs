@@ -1,10 +1,10 @@
 {
-  "background": "#0e1514",
-  "on_primary": "#003734",
-  "on_surface": "#dde4e2",
-  "on_surface_variant": "#bec9c6",
-  "outline_variant": "#3f4947",
-  "primary": "#81d5cd",
-  "shadow": "#00000",
-  "surface_container_high": "#252b2a"
+  "background": "#000000",
+  "on_primary": "#000000",
+  "on_surface": "#ffffff",
+  "on_surface_variant": "#cccccc",
+  "outline_variant": "#333333",
+  "primary": "#ffffff",
+  "shadow": "#000000",
+  "surface_container_high": "#1a1a1a"
 }
