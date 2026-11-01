@@ -1,16 +1,14 @@
 {
-    "cpu": {
-        "interval": 2,
-        "format": "{usage}% "
-    },
-
-    "memory": {
-        "interval": 2,
-        "format": "{}% "
-    },
-
-    "temperature": {
-        "interval": 2,
-        "format": "{temperatureC}°C "
-    }
+  "cpu": {
+    "interval": 2,
+    "format": "{usage}% "
+  },
+  "memory": {
+    "interval": 2,
+    "format": "{}% "
+  },
+  "temperature": {
+    "interval": 2,
+    "format": "{temperatureC}°C "
+  }
 }
