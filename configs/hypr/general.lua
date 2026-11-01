@@ -56,7 +56,7 @@ function M.setup()
             rounding_power = 10,
             active_opacity = 0.9,
             inactive_opacity = 0.9,
-            shadow = { enabled = true, range = 10, render_power = 6, color = "rgb(15161e)" },
+            shadow = { enabled = true, range = 16, render_power = 6, color = "rgb(15161e)" },
             blur = {
                 enabled = true,
                 size = 6,
