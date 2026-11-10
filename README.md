@@ -46,12 +46,11 @@
       <img src="https://github.com/user-attachments/assets/373099dd-5ab3-429a-bf8e-992e91df6b5d" alt="Hyprland desktop screenshot" width="100%">
     </td>
     <td width="50%">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/949550b1-db1e-4564-995e-8f07bf70ec5a" />
-    </td>
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/116bcc0f-5abe-4430-9268-9bb3ad109626" />    </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="https://github.com/user-attachments/assets/0c3f0ce9-8959-4e09-9067-3a4f16e2d51c" alt="Hyprland desktop screenshot" width="100%">
+      <img src="https://github.com/user-attachments/assets/8e3ba053-675d-4517-90e4-89ed8a9cc581" alt="Hyprland desktop screenshot" width="100%">
     </td>
     <td width="50%">
       <img src="https://github.com/user-attachments/assets/0bb1dacf-c88e-4139-a640-a3df4abe5eb2" alt="Hyprlock" width="100%">
