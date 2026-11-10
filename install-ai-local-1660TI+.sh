@@ -2,7 +2,7 @@
 # ============================================================
 # Local AI Installer — Arch Linux + NVIDIA (1660 Ti+)
 # ============================================================
-# Installs llama.cpp with CUDA, downloads LFM2.5-8B-A1B-Uncensored,
+# Installs llama.cpp with CUDA, downloads Gemma-4-E4B-Uncensored,
 # sets up systemd, and configures OpenCode.
 #
 # Usage: ./install-ai-local.sh [--skip-models] [--no-opencode]
@@ -19,13 +19,14 @@ SERVICE_NAME="llama-server.service"
 PORT=8080
 OPENCODE_CONFIG="$HOME/.config/opencode/opencode.json"
 
-# Model — LFM2.5-8B-A1B-Uncensored
-MODEL_FILE="LFM2.5-8B-A1B-Uncensored-Q3_K_M.gguf"
-MODEL_REPO="zaakirio/LFM2.5-8B-A1B-Uncensored-GGUF"
+# Model — Gemma-4-E4B-Uncensored-HauhauCS-Aggressive
+# NOTE: verify MODEL_REPO matches the actual Hugging Face repository.
+MODEL_FILE="Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf"
+MODEL_REPO="HauhauCS/Gemma-4-E4B-Uncensored-Aggressive-GGUF"
 
 # Model id exposed by llama-server at /v1/models
-MODEL_ID="LFM2.5-8B-A1B-Uncensored-Q3_K_M"
-MODEL_LABEL="LFM2.5 8B A1B Uncensored Q3_K_M (local)"
+MODEL_ID="Gemma-4-E4B-Uncensored-HauhauCS-Aggressive-Q2_K_P"
+MODEL_LABEL="Gemma-4 E4B Uncensored HauhauCS-Aggressive Q2_K_P (local)"
 
 # Context and generation
 CTX_SIZE=32768
@@ -213,12 +214,12 @@ if [[ $SKIP_MODELS -eq 1 ]]; then
 elif [[ ! -f "$MODELS_DIR/$MODEL_FILE" ]]; then
     say "Downloading $MODEL_FILE ..."
     if hf download "$MODEL_REPO" --include "$MODEL_FILE" --local-dir "$MODELS_DIR" --quiet; then
-        ok "LFM2.5-8B-A1B-Uncensored downloaded"
+        ok "Gemma-4-E4B-Uncensored downloaded"
     else
         die "Failed to download $MODEL_FILE"
     fi
 else
-    ok "LFM2.5-8B-A1B-Uncensored already present"
+    ok "Gemma-4-E4B-Uncensored already present"
 fi
 
 # ─── Step 6: Server script + systemd ─────────────────────────
@@ -253,7 +254,7 @@ ok "ai-server created at $BIN_DIR/ai-server"
 mkdir -p "$SERVICE_DIR"
 cat > "$SERVICE_DIR/$SERVICE_NAME" <<EOF
 [Unit]
-Description=llama.cpp server (Local AI — LFM2.5-8B-A1B-Uncensored)
+Description=llama.cpp server (Local AI — Gemma-4-E4B-Uncensored-HauhauCS-Aggressive)
 After=network.target
 
 [Service]
