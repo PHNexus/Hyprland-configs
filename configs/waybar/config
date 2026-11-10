@@ -83,33 +83,8 @@
     "orientation": "horizontal",
     "modules": [
       "pulseaudio",
-      "pulseaudio/slider",
-      "backlight",
-      "backlight/slider"
+      "pulseaudio/slider"
     ]
-  },
-  "backlight": {
-    "format": "{icon} {percent}%",
-    "format-icons": [
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      ""
-    ],
-    "on-scroll-up": "brightnessctl set 1%+",
-    "on-scroll-down": "brightnessctl set 1%-",
-    "on-click": "$HOME/.local/bin/nightlight_toggle.sh",
-    "tooltip-format": "Brightness: {percent}%"
-  },
-  "backlight/slider": {
-    "min": 10,
-    "max": 100,
-    "orientation": "horizontal"
   },
   "battery": {
     "states": {
@@ -163,8 +138,8 @@
     }
   },
   "pulseaudio": {
-    "format": "{icon} {volume}%",
-    "format-muted": "󰝟 ",
+    "format": "{volume}%",
+    "format-muted": "Muted",
     "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
     "on-click-right": "pavucontrol",
     "tooltip-format": "Volume: {volume}%"

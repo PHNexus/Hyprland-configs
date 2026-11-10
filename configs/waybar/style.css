@@ -138,8 +138,7 @@ window#waybar {
 #battery,
 #power-profiles-daemon,
 #tray,
-#pulseaudio,
-#backlight {
+#pulseaudio {
   background-color: transparent;
   color: rgb(255, 255, 255);
   margin: 2px;
@@ -152,7 +151,6 @@ window#waybar {
 /* ============================================================================== */
 /* SLIDERS                                                                        */
 /* ============================================================================== */
-#backlight-slider slider,
 #pulseaudio-slider slider {
   opacity: 0;
   background-image: none;
@@ -161,7 +159,6 @@ window#waybar {
   background: none;
 }
 
-#backlight-slider trough,
 #pulseaudio-slider trough {
   min-width: 40px;
   min-height: 5px;
@@ -170,7 +167,6 @@ window#waybar {
   margin: 0 3px;
 }
 
-#backlight-slider highlight,
 #pulseaudio-slider highlight {
   min-width: 5px;
   border-radius: 3px;
@@ -206,8 +202,7 @@ window#waybar {
 #memory:hover,
 #temperature:hover,
 #battery:hover,
-#pulseaudio:hover,
-#backlight:hover {
+#pulseaudio:hover {
   border-radius: 7px;
   min-width: 45px;
   padding: 0 11px;
