@@ -1250,12 +1250,8 @@ if [[ "${SELECTED_OPTIONAL["artcraft-launcher"]:-0}" -eq 1 ]]; then
         echo "Warning: curl and jq are required. Skipping ArtCraft Launcher."
     else
         case "$(uname -m)" in
-            x86_64|amd64)
-                ARTCRAFT_ARCH="x86_64"
-                ;;
-            aarch64|arm64)
-                ARTCRAFT_ARCH="aarch64"
-                ;;
+            x86_64|amd64)  ARTCRAFT_ARCH="x86_64" ;;
+            aarch64|arm64) ARTCRAFT_ARCH="aarch64" ;;
             *)
                 ARTCRAFT_ARCH=""
                 echo "Warning: Unsupported architecture. Skipping ArtCraft Launcher."
@@ -1297,17 +1293,43 @@ if [[ "${SELECTED_OPTIONAL["artcraft-launcher"]:-0}" -eq 1 ]]; then
 
                     if [[ "$ARTCRAFT_VALID" -eq 1 && -s "$ARTCRAFT_TMP" ]]; then
                         chmod 755 "$ARTCRAFT_TMP"
+                        mv -f "$ARTCRAFT_TMP" "$ARTCRAFT_APP"
+                        echo "  - Downloaded: $ARTCRAFT_APP"
 
-                        if mv -f "$ARTCRAFT_TMP" "$ARTCRAFT_APP"; then
-                            echo "ArtCraft Launcher downloaded: $ARTCRAFT_APP"
-                            INSTALLED_OPTIONAL["artcraft-launcher"]=1
+                        # The AppManager CLI was created earlier in this same
+                        # shell session. Bash caches "command not found" results,
+                        # so we must invalidate that cache and refresh PATH
+                        # before probing again.
+                        hash -r
+                        export PATH="$HOME/.local/bin:$PATH"
 
-                            if command -v app-manager &>/dev/null; then
-                                app-manager install "$ARTCRAFT_APP" \
-                                    || echo "Warning: AppManager import failed; AppImage is available manually."
+                        if command -v app-manager >/dev/null 2>&1; then
+                            echo "  - Registering via AppManager..."
+                            if app-manager install "$ARTCRAFT_APP" >/dev/null 2>&1; then
+                                ARTCRAFT_REGISTERED=0
+                                if [[ -f "$HOME/.local/share/app-manager/installations.json" ]] && command -v jq >/dev/null 2>&1; then
+                                    ARTCRAFT_DESKTOP="$(jq -r '
+                                        .installations[]?
+                                        | select(.name | test("ArtCraft"; "i"))
+                                        | .desktop_file // empty
+                                    ' "$HOME/.local/share/app-manager/installations.json" 2>/dev/null | head -1)"
+                                    if [[ -n "$ARTCRAFT_DESKTOP" && -f "$ARTCRAFT_DESKTOP" ]]; then
+                                        ARTCRAFT_REGISTERED=1
+                                        echo "  - Registered: $ARTCRAFT_DESKTOP"
+                                    fi
+                                fi
+                                if [[ "$ARTCRAFT_REGISTERED" -eq 0 ]]; then
+                                    echo "  - Warning: AppManager reported success but no .desktop was found"
+                                fi
                             else
-                                echo "AppManager CLI not found; AppImage was saved without importing."
+                                echo "  - Warning: AppManager install failed; AppImage left at $ARTCRAFT_APP"
                             fi
+                            INSTALLED_OPTIONAL["artcraft-launcher"]=1
+                        else
+                            echo "  - Warning: app-manager CLI not available after install"
+                            echo "  - AppImage left at $ARTCRAFT_APP"
+                            echo "  - Register manually: app-manager install \"$ARTCRAFT_APP\""
+                            INSTALLED_OPTIONAL["artcraft-launcher"]=1
                         fi
                     fi
                 else
