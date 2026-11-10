@@ -2,7 +2,7 @@
   "monitors": {
     "DP-1": {
       "mode": "1920x1080@180.00",
-      "position": "0x0",
+      "position": "0x5",
       "disabled": false,
       "scale": 1
     },
