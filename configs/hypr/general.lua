@@ -77,6 +77,11 @@ function M.setup()
     -- MISC
     -- ============================================================
     hl.config({ misc = { animate_manual_resizes = true, force_default_wallpaper = -1, disable_hyprland_logo = true } })
+    hl.config({
+        cursor = {
+            no_hardware_cursors = true
+        }
+    })
     -- See https://wiki.hypr.land/Configuring/Variables/#misc
 
     -- ============================================================

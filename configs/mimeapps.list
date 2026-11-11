@@ -4,6 +4,8 @@ x-scheme-handler/mailto=helium.desktop
 x-scheme-handler/bitwarden=bitwarden.desktop
 application/vnd.openxmlformats-officedocument.wordprocessingml.document=org.onlyoffice.desktopeditors.desktop
 x-scheme-handler/jetbrains=jetbrainsd.desktop
+text/markdown=com.microsoft.VSCode.desktop
 
 [Added Associations]
 application/vnd.openxmlformats-officedocument.wordprocessingml.document=ai.storyteller.pdfcraft.desktop;helium.desktop;org.onlyoffice.desktopeditors.desktop;
+text/markdown=com.microsoft.VSCode.desktop;
