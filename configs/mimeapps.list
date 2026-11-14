@@ -7,6 +7,7 @@ x-scheme-handler/jetbrains=jetbrainsd.desktop
 text/markdown=com.microsoft.VSCode.desktop
 x-scheme-handler/tonsite=org.telegram.desktop.desktop
 x-scheme-handler/ton=org.telegram.desktop.desktop
+x-scheme-handler/rootapp=rootapp.desktop
 
 [Added Associations]
 application/vnd.openxmlformats-officedocument.wordprocessingml.document=ai.storyteller.pdfcraft.desktop;helium.desktop;org.onlyoffice.desktopeditors.desktop;
