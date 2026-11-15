@@ -22,6 +22,121 @@ Item {
     property bool dialogIsEdit: false
     property bool closeEditorAfterSave: false
     readonly property string filePath: Quickshell.env("HOME") + "/.config/hypr/autostart.lua"
+    property var filteredEntriesCache: []
+    readonly property var knownCommands: [{
+        "pattern": /(^|[\s/])waybar(?=[\s/]|$)/,
+        "title": "Waybar"
+    }, {
+        "pattern": /(^|[\s/])dock-bar(?=[\s/]|$)/,
+        "title": "Dock Bar"
+    }, {
+        "pattern": /(^|[\s/])swaync-client(?=[\s/]|$)|(^|[\s/])swaync(?=[\s/]|$)/,
+        "title": "SwayNC"
+    }, {
+        "pattern": /(^|[\s/])hypridle(?=[\s/]|$)/,
+        "title": "Hypridle"
+    }, {
+        "pattern": /(^|[\s/])hyprlock(?=[\s/]|$)/,
+        "title": "Hyprlock"
+    }, {
+        "pattern": /(^|[\s/])hyprpaper(?=[\s/]|$)/,
+        "title": "Hyprpaper"
+    }, {
+        "pattern": /(^|[\s/])hyprsunset(?=[\s/]|$)/,
+        "title": "Hyprsunset"
+    }, {
+        "pattern": /(^|[\s/])quickshell(?=[\s/]|$)/,
+        "title": "Quickshell"
+    }, {
+        "pattern": /(^|[\s/])nm-applet(?=[\s/]|$)/,
+        "title": "Network Manager Applet"
+    }, {
+        "pattern": /(^|[\s/])blueman-applet(?=[\s/]|$)/,
+        "title": "Bluetooth Applet"
+    }, {
+        "pattern": /(^|[\s/])udiskie(?=[\s/]|$)/,
+        "title": "Removable Drives"
+    }, {
+        "pattern": /(^|[\s/])polkit-gnome-authentication-agent-1(?=[\s/]|$)/,
+        "title": "Polkit Authentication Agent"
+    }, {
+        "pattern": /(^|[\s/])wl-paste(?=[\s/]|$)/,
+        "title": "Clipboard Monitor"
+    }, {
+        "pattern": /(^|[\s/])kdeconnect-indicator(?=[\s/]|$)/,
+        "title": "KDE Connect"
+    }, {
+        "pattern": /(^|[\s/])easyeffects(?=[\s/]|$)/,
+        "title": "Easy Effects"
+    }, {
+        "pattern": /(^|[\s/])spotify(?=[\s/]|$)/,
+        "title": "Spotify"
+    }, {
+        "pattern": /(^|[\s/])steam(?=[\s/]|$)/,
+        "title": "Steam"
+    }, {
+        "pattern": /(^|[\s/])kitty(?=[\s/]|$)/,
+        "title": "Terminal"
+    }, {
+        "pattern": /(^|[\s/])swww(?=[\s/]|$)/,
+        "title": "Swww"
+    }, {
+        "pattern": /(^|[\s/])mpvpaper(?=[\s/]|$)/,
+        "title": "Video Wallpaper"
+    }, {
+        "pattern": /(^|[\s/])wlsunset(?=[\s/]|$)/,
+        "title": "Night Light"
+    }, {
+        "pattern": /(^|[\s/])hyprquickpaper(?=[\s/]|$)/,
+        "title": "Wallpaper picker"
+    }, {
+        "pattern": /(^|[\s/])hyprshot(?=[\s/]|$)/,
+        "title": "Screenshot"
+    }, {
+        "pattern": /(^|[\s/])wf-recorder(?=[\s/]|$)/,
+        "title": "Recorder"
+    }, {
+        "pattern": /(^|[\s/])playerctl(?=[\s/]|$)/,
+        "title": "Media Controls"
+    }, {
+        "pattern": /(^|[\s/])brightnessctl(?=[\s/]|$)/,
+        "title": "Brightness"
+    }, {
+        "pattern": /(^|[\s/])cliphist(?=[\s/]|$)/,
+        "title": "Clipboard History"
+    }, {
+        "pattern": /(^|[\s/])thunar(?=[\s/]|$)/,
+        "title": "File Manager"
+    }, {
+        "pattern": /(^|[\s/])helium-browser(?=[\s/]|$)/,
+        "title": "Browser"
+    }, {
+        "pattern": /(^|[\s/])code(?=[\s/]|$)/,
+        "title": "Visual Studio Code"
+    }, {
+        "pattern": /(^|[\s/])wofi(?=[\s/]|$)/,
+        "title": "Application Launcher"
+    }, {
+        "pattern": /(^|[\s/])gsettings(?=[\s/]|$)/,
+        "title": "GNOME Settings"
+    }, {
+        "pattern": /(^|[\s/])xwaylandvideobridge(?=[\s/]|$)/,
+        "title": "XWayland Video Bridge"
+    }, {
+        "pattern": /(^|[\s/])settings(?=[\s/]|$)/,
+        "title": "Settings"
+    }]
+
+    function updateFilteredCache() {
+        const query = searchText.trim().toLowerCase();
+        if (!query) {
+            filteredEntriesCache = entries;
+            return ;
+        }
+        filteredEntriesCache = entries.filter(function(entry) {
+            return entry.command.toLowerCase().indexOf(query) !== -1 || commandTitle(entry.command).toLowerCase().indexOf(query) !== -1;
+        });
+    }
 
     function luaDecode(s) {
         return s.replace(/\\(u\{[0-9a-fA-F]+\}|x[0-9a-fA-F]{2}|[0-9]{1,3}|z\s*|[\s\S])/g, function(match, escape) {
@@ -129,9 +244,9 @@ Item {
 
     function commandTitle(command) {
         function findKnownTitle(text) {
-            for (var i = 0; i < knownCommands.length; i++) {
-                if (knownCommands[i].pattern.test(text))
-                    return knownCommands[i].title;
+            for (var i = 0; i < page.knownCommands.length; i++) {
+                if (page.knownCommands[i].pattern.test(text))
+                    return page.knownCommands[i].title;
 
             }
             return "";
@@ -154,109 +269,6 @@ Item {
         if (/set-random\.sh/.test(lower))
             return "Random Wallpaper";
 
-        var knownCommands = [{
-            "pattern": /(^|[\s/])waybar(?=[\s/]|$)/,
-            "title": "Waybar"
-        }, {
-            "pattern": /(^|[\s/])dock-bar(?=[\s/]|$)/,
-            "title": "Dock Bar"
-        }, {
-            "pattern": /(^|[\s/])swaync-client(?=[\s/]|$)|(^|[\s/])swaync(?=[\s/]|$)/,
-            "title": "SwayNC"
-        }, {
-            "pattern": /(^|[\s/])hypridle(?=[\s/]|$)/,
-            "title": "Hypridle"
-        }, {
-            "pattern": /(^|[\s/])hyprlock(?=[\s/]|$)/,
-            "title": "Hyprlock"
-        }, {
-            "pattern": /(^|[\s/])hyprpaper(?=[\s/]|$)/,
-            "title": "Hyprpaper"
-        }, {
-            "pattern": /(^|[\s/])hyprsunset(?=[\s/]|$)/,
-            "title": "Hyprsunset"
-        }, {
-            "pattern": /(^|[\s/])quickshell(?=[\s/]|$)/,
-            "title": "Quickshell"
-        }, {
-            "pattern": /(^|[\s/])nm-applet(?=[\s/]|$)/,
-            "title": "Network Manager Applet"
-        }, {
-            "pattern": /(^|[\s/])blueman-applet(?=[\s/]|$)/,
-            "title": "Bluetooth Applet"
-        }, {
-            "pattern": /(^|[\s/])udiskie(?=[\s/]|$)/,
-            "title": "Removable Drives"
-        }, {
-            "pattern": /(^|[\s/])polkit-gnome-authentication-agent-1(?=[\s/]|$)/,
-            "title": "Polkit Authentication Agent"
-        }, {
-            "pattern": /(^|[\s/])wl-paste(?=[\s/]|$)/,
-            "title": "Clipboard Monitor"
-        }, {
-            "pattern": /(^|[\s/])kdeconnect-indicator(?=[\s/]|$)/,
-            "title": "KDE Connect"
-        }, {
-            "pattern": /(^|[\s/])easyeffects(?=[\s/]|$)/,
-            "title": "Easy Effects"
-        }, {
-            "pattern": /(^|[\s/])spotify(?=[\s/]|$)/,
-            "title": "Spotify"
-        }, {
-            "pattern": /(^|[\s/])steam(?=[\s/]|$)/,
-            "title": "Steam"
-        }, {
-            "pattern": /(^|[\s/])kitty(?=[\s/]|$)/,
-            "title": "Terminal"
-        }, {
-            "pattern": /(^|[\s/])swww(?=[\s/]|$)/,
-            "title": "Swww"
-        }, {
-            "pattern": /(^|[\s/])mpvpaper(?=[\s/]|$)/,
-            "title": "Video Wallpaper"
-        }, {
-            "pattern": /(^|[\s/])wlsunset(?=[\s/]|$)/,
-            "title": "Night Light"
-        }, {
-            "pattern": /(^|[\s/])hyprquickpaper(?=[\s/]|$)/,
-            "title": "Wallpaper picker"
-        }, {
-            "pattern": /(^|[\s/])hyprshot(?=[\s/]|$)/,
-            "title": "Screenshot"
-        }, {
-            "pattern": /(^|[\s/])wf-recorder(?=[\s/]|$)/,
-            "title": "Recorder"
-        }, {
-            "pattern": /(^|[\s/])playerctl(?=[\s/]|$)/,
-            "title": "Media Controls"
-        }, {
-            "pattern": /(^|[\s/])brightnessctl(?=[\s/]|$)/,
-            "title": "Brightness"
-        }, {
-            "pattern": /(^|[\s/])cliphist(?=[\s/]|$)/,
-            "title": "Clipboard History"
-        }, {
-            "pattern": /(^|[\s/])thunar(?=[\s/]|$)/,
-            "title": "File Manager"
-        }, {
-            "pattern": /(^|[\s/])helium-browser(?=[\s/]|$)/,
-            "title": "Browser"
-        }, {
-            "pattern": /(^|[\s/])code(?=[\s/]|$)/,
-            "title": "Visual Studio Code"
-        }, {
-            "pattern": /(^|[\s/])wofi(?=[\s/]|$)/,
-            "title": "Application Launcher"
-        }, {
-            "pattern": /(^|[\s/])gsettings(?=[\s/]|$)/,
-            "title": "GNOME Settings"
-        }, {
-            "pattern": /(^|[\s/])xwaylandvideobridge(?=[\s/]|$)/,
-            "title": "XWayland Video Bridge"
-        }, {
-            "pattern": /(^|[\s/])settings(?=[\s/]|$)/,
-            "title": "Settings"
-        }];
         var knownTitle = findKnownTitle(lower);
         if (knownTitle)
             return knownTitle;
@@ -303,14 +315,11 @@ Item {
         return humanizeExecutable(executable);
     }
 
-    function filteredEntries() {
-        var query = searchText.trim().toLowerCase();
-        if (!query)
-            return entries;
+    function entryStillValid(entry) {
+        if (!entry)
+            return false;
 
-        return entries.filter(function(entry) {
-            return entry.command.toLowerCase().indexOf(query) !== -1 || commandTitle(entry.command).toLowerCase().indexOf(query) !== -1;
-        });
+        return sourceText.substr(entry.start, entry.end - entry.start) === entry.line;
     }
 
     function saveText(nextText, message) {
@@ -323,7 +332,13 @@ Item {
             return true;
         }
         saveInProgress = true;
-        autostartFile.setText(nextText);
+        try {
+            autostartFile.setText(nextText);
+        } catch (e) {
+            saveInProgress = false;
+            statusMessage = "Failed to write autostart.lua: " + e;
+            return false;
+        }
         return true;
     }
 
@@ -365,6 +380,10 @@ Item {
             statusMessage = "Enter a command";
             return false;
         }
+        if (!entryStillValid(entry)) {
+            statusMessage = "File changed externally; reopen the editor";
+            return false;
+        }
         var replacement = entry.indent + (entry.enabled ? "" : "-- ") + "hl.exec_cmd(" + luaEncode(command.trim()) + ")";
         var next = sourceText.slice(0, entry.start) + replacement + sourceText.slice(entry.end);
         return saveText(next, "Updating startup command...");
@@ -374,6 +393,10 @@ Item {
         if (!entry)
             return ;
 
+        if (!entryStillValid(entry)) {
+            statusMessage = "File changed externally; reload first";
+            return ;
+        }
         var replacement = entry.indent + (entry.enabled ? "-- " : "") + "hl.exec_cmd(" + luaEncode(entry.command) + ")";
         var next = sourceText.slice(0, entry.start) + replacement + sourceText.slice(entry.end);
         saveText(next, entry.enabled ? "Disabling startup command..." : "Enabling startup command...");
@@ -383,6 +406,10 @@ Item {
         if (!entry)
             return ;
 
+        if (!entryStillValid(entry)) {
+            statusMessage = "File changed externally; reload first";
+            return ;
+        }
         var start = entry.start;
         var end = entry.end;
         var previousLineEnd = start > 0 && sourceText.charAt(start - 1) === "\n" ? start - 1 : start;
@@ -402,17 +429,26 @@ Item {
         saveText(next, "Removing startup command...");
     }
 
+    onSearchTextChanged: updateFilteredCache()
+    onEntriesChanged: updateFilteredCache()
+
     FileView {
         id: autostartFile
 
         path: page.filePath
         preload: true
-        watchChanges: false
+        watchChanges: true
         atomicWrites: true
         onLoaded: {
             page.reloadFromText(autostartFile.text());
             page.fileReady = true;
             page.statusMessage = page.entries.length + " startup commands detected";
+        }
+        onFileChanged: {
+            if (page.saveInProgress || !page.fileReady)
+                return ;
+
+            page.reloadFromText(autostartFile.text());
         }
         onLoadFailed: (error) => {
             page.fileReady = false;
@@ -472,7 +508,7 @@ Item {
                 Text {
                     text: "AUTOSTART"
                     color: Theme.text
-                    font.family: "Noto Sans"
+                    font.family: Theme.fontFamily
                     font.pixelSize: 19
                     font.weight: Font.Normal
                 }
@@ -480,7 +516,7 @@ Item {
                 Text {
                     text: page.entries.length + " startup commands · autostart.lua"
                     color: Theme.textFaint
-                    font.family: "Noto Sans"
+                    font.family: Theme.fontFamily
                     font.pixelSize: 10
                 }
 
@@ -597,7 +633,7 @@ Item {
                     Repeater {
                         id: entriesRepeater
 
-                        model: page.filteredEntries()
+                        model: page.filteredEntriesCache
 
                         delegate: Rectangle {
                             id: entryCard
@@ -885,7 +921,7 @@ Item {
             Column {
                 anchors.centerIn: parent
                 spacing: 8
-                visible: page.fileReady && page.filteredEntries().length === 0
+                visible: page.fileReady && page.filteredEntriesCache.length === 0
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter

@@ -111,6 +111,18 @@ FloatingWindow {
         return navEntries[idx].group !== navEntries[idx - 1].group;
     }
 
+    function openPage(page) {
+        const key = String(page || "").toLowerCase();
+        const idx = root.navEntries.findIndex((e) => {
+            return e.page.toLowerCase() === key;
+        });
+        if (idx < 0)
+            return ;
+
+        root.selectedIndex = idx;
+        root.show();
+    }
+
     title: "Settings"
     color: "transparent"
     visible: showing
@@ -128,6 +140,9 @@ FloatingWindow {
             card.opacity = 0;
             card.scale = 0.96;
             openAnimation.start();
+            Qt.callLater(() => {
+                return card.forceActiveFocus();
+            });
         }
     }
 
@@ -181,58 +196,47 @@ FloatingWindow {
         }
 
         function sound() {
-            root.selectedIndex = 1;
-            root.show();
+            root.openPage("Sound");
         }
 
         function display() {
-            root.selectedIndex = 0;
-            root.show();
+            root.openPage("Display");
         }
 
         function network() {
-            root.selectedIndex = 2;
-            root.show();
+            root.openPage("Network");
         }
 
         function bluetooth() {
-            root.selectedIndex = 3;
-            root.show();
+            root.openPage("Bluetooth");
         }
 
         function storage() {
-            root.selectedIndex = 4;
-            root.show();
+            root.openPage("Storage");
         }
 
         function power() {
-            root.selectedIndex = 5;
-            root.show();
+            root.openPage("Power");
         }
 
         function general() {
-            root.selectedIndex = 6;
-            root.show();
+            root.openPage("General");
         }
 
         function input() {
-            root.selectedIndex = 7;
-            root.show();
+            root.openPage("Input");
         }
 
         function keybinds() {
-            root.selectedIndex = 8;
-            root.show();
+            root.openPage("Keybinds");
         }
 
         function autostart() {
-            root.selectedIndex = 9;
-            root.show();
+            root.openPage("Autostart");
         }
 
         function configs() {
-            root.selectedIndex = 10;
-            root.show();
+            root.openPage("Configs");
         }
 
         target: "settings"
@@ -253,6 +257,20 @@ FloatingWindow {
         opacity: 0
         scale: 0.96
         transformOrigin: Item.Center
+        focus: true
+        Keys.onPressed: (event) => {
+            if (event.text.length !== 1)
+                return ;
+
+            const idx = root.navEntries.findIndex((n) => {
+                return n.short === event.text;
+            });
+            if (idx < 0)
+                return ;
+
+            root.selectedIndex = idx;
+            event.accepted = true;
+        }
 
         Rectangle {
             anchors.fill: parent
@@ -685,13 +703,6 @@ FloatingWindow {
                                     easing.type: Easing.OutCubic
                                 }
 
-                            }
-
-                        }
-
-                        Behavior on opacity {
-                            NumberAnimation {
-                                duration: Theme.animMed
                             }
 
                         }

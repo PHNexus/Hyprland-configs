@@ -26,6 +26,9 @@ Item {
         root.moved(clamped);
     }
 
+    Accessible.role: Accessible.Slider
+    Accessible.name: root.label || "Slider"
+    Accessible.description: root.displayText
     implicitHeight: 38
 
     Rectangle {
@@ -196,7 +199,7 @@ Item {
             anchors.margins: -6
             preventStealing: true
             onPressed: (mouse) => {
-                return root.setFromRatio(mouse.x / track.width);
+                root.setFromRatio(mouse.x / track.width);
             }
             onPositionChanged: (mouse) => {
                 if (pressed)

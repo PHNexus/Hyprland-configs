@@ -375,11 +375,12 @@ Item {
             console.warn("Display: no existing hl.monitor entry found for " + output);
             return false;
         }
-        if (updatedSource !== source) {
-            page.pendingMonitorConfigText = updatedSource;
-            page.monitorConfigWritePending = true;
-            monitorConfigWriteTimer.restart();
-        }
+        if (updatedSource === source)
+            return false;
+
+        page.pendingMonitorConfigText = updatedSource;
+        page.monitorConfigWritePending = true;
+        monitorConfigWriteTimer.restart();
         return true;
     }
 
@@ -595,7 +596,7 @@ Item {
                 "disabled": false
             });
             const configUpdated = updateMonitorConfig(mon.name, mode, position, scale, false);
-            if (!configUpdated)
+            if (!configUpdated && !page.monitorConfigWritePending && !page.monitorConfigWriteInProgress)
                 return ;
 
             if (!page.monitorConfigWritePending && !page.monitorConfigWriteInProgress)
@@ -612,7 +613,7 @@ Item {
                 "disabled": true
             });
             const configUpdated = updateMonitorConfig(mon.name, monitorMode(mon), mon.x + "x" + mon.y, mon.scale !== undefined ? mon.scale : 1, true);
-            if (!configUpdated)
+            if (!configUpdated && !page.monitorConfigWritePending && !page.monitorConfigWriteInProgress)
                 return ;
 
             cmds.push("hyprctl keyword monitor '" + mon.name + ",disable'");
@@ -642,11 +643,8 @@ Item {
         const options = [];
         const width = mon.width;
         const height = mon.height;
-        for (let i = 84; i <= 1560; i++) {
+        for (let i = 84; i <= 156; i++) {
             const scale = i / 120;
-            if (scale < 0.7 || scale > 1.3)
-                continue;
-
             const logicalWidth = width / scale;
             const logicalHeight = height / scale;
             if (Math.abs(logicalWidth - Math.round(logicalWidth)) < 0.01 && Math.abs(logicalHeight - Math.round(logicalHeight)) < 0.01)
@@ -839,12 +837,6 @@ Item {
 
         path: page.stateDir + "/display.json"
         blockLoading: true
-    }
-
-    FileView {
-        id: displayLua
-
-        path: page.stateDir + "/display.lua"
     }
 
     FileView {
@@ -1280,7 +1272,7 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: monitorTile.modelData.name
                                 color: Theme.text
-                                font.family: "Noto Sans"
+                                font.family: Theme.fontFamily
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
                             }
@@ -1297,7 +1289,7 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: monitorTile.modelData.width + " × " + monitorTile.modelData.height
                                 color: Theme.textDim
-                                font.family: "Noto Sans"
+                                font.family: Theme.fontFamily
                                 font.pixelSize: 9
                             }
 
@@ -1496,7 +1488,7 @@ Item {
                                         visible: !card.off
                                         text: card.modelData.width + "x" + card.modelData.height + " @ " + Math.round(card.modelData.refreshRate) + "Hz"
                                         color: Theme.textDim
-                                        font.family: "Noto Sans"
+                                        font.family: Theme.fontFamily
                                         font.pixelSize: 12
                                     }
 
@@ -1521,7 +1513,7 @@ Item {
                                             anchors.centerIn: parent
                                             text: card.main ? "MAIN" : "SET MAIN"
                                             color: card.main ? Theme.accent : Theme.text
-                                            font.family: "Noto Sans"
+                                            font.family: Theme.fontFamily
                                             font.pixelSize: 11
                                             font.bold: true
                                         }
@@ -1560,7 +1552,7 @@ Item {
                                             anchors.centerIn: parent
                                             text: card.off ? "ENABLE" : "DISABLE"
                                             color: Theme.text
-                                            font.family: "Noto Sans"
+                                            font.family: Theme.fontFamily
                                             font.pixelSize: 11
                                             font.bold: true
                                         }
@@ -1598,7 +1590,7 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "SCALE"
                                     color: Theme.textDim
-                                    font.family: "Noto Sans"
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: 11
                                 }
 
@@ -1655,7 +1647,7 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "Only 1.00x available on this resolution"
                                     color: Theme.textFaint
-                                    font.family: "Noto Sans"
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: 10
                                     font.italic: true
                                     elide: Text.ElideRight
@@ -1667,7 +1659,7 @@ Item {
                                     horizontalAlignment: Text.AlignRight
                                     text: (card.modelData.scale || 1).toFixed(2) + "×"
                                     color: Theme.text
-                                    font.family: "Noto Sans"
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: 11
                                 }
 
@@ -1684,7 +1676,7 @@ Item {
                                     verticalAlignment: Text.AlignVCenter
                                     text: "RES"
                                     color: Theme.textDim
-                                    font.family: "Noto Sans"
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: 11
                                 }
 
@@ -1713,7 +1705,7 @@ Item {
                                                 anchors.centerIn: parent
                                                 text: resButton.modelData
                                                 color: resButton.current ? Theme.accent : Theme.text
-                                                font.family: "Noto Sans"
+                                                font.family: Theme.fontFamily
                                                 font.pixelSize: 11
                                                 font.bold: true
                                             }
@@ -1766,7 +1758,7 @@ Item {
                                     verticalAlignment: Text.AlignVCenter
                                     text: "HZ"
                                     color: Theme.textDim
-                                    font.family: "Noto Sans"
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: 11
                                 }
 
@@ -1795,7 +1787,7 @@ Item {
                                                 anchors.centerIn: parent
                                                 text: rateButton.modelData.toFixed(2)
                                                 color: rateButton.current ? Theme.accent : Theme.text
-                                                font.family: "Noto Sans"
+                                                font.family: Theme.fontFamily
                                                 font.pixelSize: 11
                                                 font.bold: true
                                             }
@@ -1875,7 +1867,7 @@ Item {
                     anchors.centerIn: parent
                     text: "RESET TO CONFIG"
                     color: Theme.text
-                    font.family: "Noto Sans"
+                    font.family: Theme.fontFamily
                     font.pixelSize: 12
                     font.bold: true
                 }

@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Bluetooth
+import Quickshell.Io
 
 Item {
     id: page
@@ -31,6 +32,8 @@ Item {
     property real marginTop: 0
     property real marginBottom: 0
     property bool manualOff: false
+    property bool _stateLoaded: false
+    readonly property string statePath: Quickshell.env("HOME") + "/.config/quickshell/state/bluetooth.json"
     property bool powerRequestPending: false
     property bool requestedPower: false
     property bool discoveryCommandPending: false
@@ -253,9 +256,16 @@ Item {
             page.setStatus(page.powered ? "Bluetooth on" : "Bluetooth off");
 
     }
+    onManualOffChanged: {
+        if (!page._stateLoaded)
+            return ;
+
+        saveStateTimer.restart();
+    }
     Component.onCompleted: {
         page.tryAutoPower();
         page.syncDiscovery();
+        mkdirState.running = true;
     }
     Component.onDestruction: {
         page.setDiscovering(false);
@@ -313,6 +323,47 @@ Item {
                 page.requestPower(true);
 
         }
+    }
+
+    Timer {
+        id: saveStateTimer
+
+        interval: 200
+        repeat: false
+        onTriggered: {
+            try {
+                stateFile.setText(JSON.stringify({
+                    "manualOff": page.manualOff
+                }));
+            } catch (e) {
+                console.warn("Bluetooth: failed to persist state: " + e);
+            }
+        }
+    }
+
+    Process {
+        id: mkdirState
+
+        command: ["mkdir", "-p", Quickshell.env("HOME") + "/.config/quickshell/state"]
+        onExited: stateFile.reload()
+    }
+
+    FileView {
+        id: stateFile
+
+        path: page.statePath
+        onLoaded: {
+            try {
+                const parsed = JSON.parse(stateFile.text() || "{}");
+                if (parsed && typeof parsed.manualOff === "boolean")
+                    page.manualOff = parsed.manualOff;
+
+            } catch (e) {
+                console.warn("Bluetooth: failed to load state: " + e);
+            }
+            page._stateLoaded = true;
+        }
+        onLoadFailed: page._stateLoaded = true
     }
 
     Connections {

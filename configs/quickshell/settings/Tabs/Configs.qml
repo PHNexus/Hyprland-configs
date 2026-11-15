@@ -30,7 +30,7 @@ Item {
             exec >>"$logFile" 2>&1
             echo "=== $(date): $file ==="
 
-            for dependency in nvim kitty flock hyprctl jq; do
+            for dependency in nvim kitty flock hyprctl jq timeout; do
                 if ! command -v "$dependency" >/dev/null 2>&1; then
                     echo "ERROR: Required command not found: $dependency"
                     settings hide
@@ -42,15 +42,15 @@ Item {
             flock -x 9 || exit 1
 
             server_found() {
-                nvim --server "$socket" --remote-expr '1' >/dev/null 2>&1
+                timeout 5 nvim --server "$socket" --remote-expr '1' >/dev/null 2>&1
             }
 
             if server_found; then
-                if nvim --server "$socket" --remote "$file"; then
+                if timeout 10 nvim --server "$socket" --remote "$file"; then
                     echo "Remote request succeeded."
                 else
                     result=$?
-                    echo "ERROR: Remote request failed with exit code: $result"
+                    echo "ERROR: Remote request failed/timed out with exit code: $result"
                     flock -u 9
                     exec 9>&-
                     settings hide
@@ -126,7 +126,7 @@ Item {
                 Text {
                     text: "CONFIGS"
                     color: Theme.text
-                    font.family: "Noto Sans"
+                    font.family: Theme.fontFamily
                     font.pixelSize: 19
                     font.weight: Font.Normal
                 }
@@ -134,7 +134,7 @@ Item {
                 Text {
                     text: "Edit your Hyprland & Wofi configuration files"
                     color: Theme.textFaint
-                    font.family: "Noto Sans"
+                    font.family: Theme.fontFamily
                     font.pixelSize: 10
                 }
 
@@ -166,7 +166,7 @@ Item {
                     Text {
                         text: "HYPRLAND"
                         color: Theme.text
-                        font.family: "Noto Sans"
+                        font.family: Theme.fontFamily
                         font.pixelSize: 12
                         font.weight: Font.DemiBold
                         font.letterSpacing: 2
@@ -228,7 +228,7 @@ Item {
                     Text {
                         text: "WOFI"
                         color: Theme.text
-                        font.family: "Noto Sans"
+                        font.family: Theme.fontFamily
                         font.pixelSize: 12
                         font.weight: Font.DemiBold
                         font.letterSpacing: 2
@@ -282,21 +282,16 @@ Item {
         width: parent.width
         height: 52
         radius: 10
-        color: hover.hovered ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
+        color: cardMouseArea.containsMouse ? Theme.alpha(Theme.accent, 0.05) : Theme.alpha(Theme.text, 0.015)
         border.width: 1
         border.color: cardMouseArea.containsMouse ? "#555555" : "#393939"
-
-        HoverHandler {
-            id: hover
-
-            cursorShape: Qt.PointingHandCursor
-        }
 
         MouseArea {
             id: cardMouseArea
 
             anchors.fill: parent
             hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
             onClicked: page.editConfig(card.path)
         }
 
@@ -332,7 +327,7 @@ Item {
                 Text {
                     text: card.label
                     color: Theme.text
-                    font.family: "Noto Sans"
+                    font.family: Theme.fontFamily
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     font.letterSpacing: 1
