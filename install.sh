@@ -114,19 +114,14 @@ bluetooth_module_service_exists() {
 bluetooth_module_adapter_detected() {
     local controller usb_iface interface_class interface_subclass
 
-    # Most reliable signal: the kernel has registered a Bluetooth controller.
     for controller in /sys/class/bluetooth/hci*; do
         [[ -e "$controller" ]] && return 0
     done
 
-    # Covers USB adapters already bound to the standard Linux btusb driver,
-    # including models with vendor-specific USB IDs.
     for usb_iface in /sys/bus/usb/drivers/btusb/*:*; do
         [[ -e "$usb_iface" ]] && return 0
     done
 
-    # Also catch class-compliant USB Bluetooth interfaces before an HCI
-    # controller appears, so BlueZ can be installed/configured when needed.
     for usb_iface in /sys/bus/usb/devices/*:*; do
         [[ -r "$usb_iface/bInterfaceClass" &&
             -r "$usb_iface/bInterfaceSubClass" ]] || continue
@@ -159,7 +154,6 @@ configure_bluetooth_module() {
     echo
     echo "Configuring Bluetooth (service found: $has_service; adapter found: $has_adapter)..."
 
-    # BlueZ provides bluetooth.service. Install it only after the detection gate.
     if ! pacman -Q bluez bluez-utils >/dev/null 2>&1; then
         if ! sudo pacman -S --needed --noconfirm bluez bluez-utils; then
             warn "Could not install BlueZ; skipping the Bluetooth configuration."
@@ -187,8 +181,6 @@ configure_bluetooth_module() {
         : > "$conf_tmp"
     fi
 
-    # Preserve existing settings. ControllerMode stays at bredr as requested;
-    # FastConnectable belongs in [General] and AutoEnable belongs in [Policy].
     if ! awk '
         function add_general() {
             if (!general_written) {
@@ -260,9 +252,6 @@ configure_bluetooth_module() {
     fi
     rm -f "$conf_tmp" "$conf_updated"
 
-    # Do not hard-code a USB vendor/product ID. These rules match USB
-    # interfaces handled by btusb and standard Bluetooth-class interfaces.
-    # This keeps the power-management rule usable across different dongles.
     local rule="/etc/udev/rules.d/50-bluetooth.rules"
     local rule_line usb_iface
     local -a rule_lines=(
@@ -291,8 +280,6 @@ configure_bluetooth_module() {
     if command -v udevadm >/dev/null 2>&1; then
         sudo udevadm control --reload-rules || warn "Could not reload udev rules."
 
-        # Re-apply only to interfaces already bound to btusb; avoid retriggering
-        # unrelated USB devices. New adapters will match when plugged in.
         for usb_iface in /sys/bus/usb/drivers/btusb/*:*; do
             [[ -e "$usb_iface" ]] || continue
             if sudo test -e "$usb_iface/power/control"; then
@@ -303,7 +290,6 @@ configure_bluetooth_module() {
             sudo udevadm trigger --action=add "$usb_iface" 2>/dev/null || true
         done
 
-        # This selector is limited to standard Bluetooth-class USB interfaces.
         sudo udevadm trigger --action=add --subsystem-match=usb \
             --attr-match=bInterfaceClass=e0 --attr-match=bInterfaceSubClass=01 \
             2>/dev/null || true
@@ -756,10 +742,10 @@ if [[ -n "${SEEN_PACKAGES["cloudflare-warp-bin"]:-}" ]] && pacman -Q cloudflare-
 fi
 
 HAS_HELIUM_BROWSER=0
-if [[ "${INSTALLED_OPTIONAL["helium-browser-bin"]:-0}" -eq 1 ]] &&
-    pacman -Q helium-browser-bin >/dev/null 2>&1 &&
-    command -v helium-browser >/dev/null 2>&1; then
+HELIUM_CMD=""
+if pacman -Q helium-browser-bin >/dev/null 2>&1; then
     HAS_HELIUM_BROWSER=1
+    HELIUM_CMD="$(command -v helium-browser || command -v helium || true)"
 fi
 
 HAS_EASYEFFECTS=0
@@ -894,7 +880,6 @@ fi
 if command -v awww &>/dev/null && [[ -f "$DEFAULT_WALLPAPER" ]]; then
     if [[ -n "$MONITORS" ]]; then
 
-        # Start the daemon only if it is not responding.
         if ! awww query >/dev/null 2>&1; then
             if command -v awww-daemon &>/dev/null; then
                 awww-daemon >/dev/null 2>&1 &
@@ -1296,10 +1281,6 @@ if [[ "${SELECTED_OPTIONAL["artcraft-launcher"]:-0}" -eq 1 ]]; then
                         mv -f "$ARTCRAFT_TMP" "$ARTCRAFT_APP"
                         echo "  - Downloaded: $ARTCRAFT_APP"
 
-                        # The AppManager CLI was created earlier in this same
-                        # shell session. Bash caches "command not found" results,
-                        # so we must invalidate that cache and refresh PATH
-                        # before probing again.
                         hash -r
                         export PATH="$HOME/.local/bin:$PATH"
 
@@ -1372,8 +1353,6 @@ echo "Detecting connected monitors..."
 MONITORS_LUA_CONFIG="$CONFIG_DIR/hypr/monitors.lua"
 KEYBINDS_LUA_CONFIG="$CONFIG_DIR/hypr/keybinds.lua"
 
-# --- Gather monitor info ---
-# Priority: hyprctl (running Hyprland) -> sysfs (fresh install, no WM yet)
 monitor_entries=()
 
 if command -v hyprctl &>/dev/null && command -v jq &>/dev/null && monitors_json="$(hyprctl monitors -j 2>/dev/null)" && jq -e 'type == "array"' >/dev/null <<<"$monitors_json"; then
@@ -1404,7 +1383,6 @@ else
     done
 fi
 
-# --- Sort monitors by area (largest resolution = primary at 0x0) ---
 if [[ ${#monitor_entries[@]} -gt 1 ]]; then
     sorted_entries=()
     for entry in "${monitor_entries[@]}"; do
@@ -1416,10 +1394,8 @@ if [[ ${#monitor_entries[@]} -gt 1 ]]; then
         sorted_entries+=("${area}|${name}|${mode}")
     done
 
-    # Sort descending by area
     mapfile -t sorted_entries < <(printf '%s\n' "${sorted_entries[@]}" | sort -t'|' -k1,1 -rn)
 
-    # Rebuild monitor_entries in sorted order (largest first)
     monitor_entries=()
     for entry in "${sorted_entries[@]}"; do
         name=$(echo "$entry" | cut -d'|' -f2)
@@ -1428,7 +1404,6 @@ if [[ ${#monitor_entries[@]} -gt 1 ]]; then
     done
 fi
 
-# --- Write the file ---
 mkdir -p "$(dirname "$MONITORS_LUA_CONFIG")"
 
 {
@@ -1528,8 +1503,6 @@ SYSCTL_KEY="vm.max_map_count"
 SYSCTL_VALUE="1048576"
 SYSCTL_TMP="$(mktemp)"
 
-# Preserve other settings and remove previous active assignments
-# to vm.max_map_count from the managed file.
 if [[ -f "$SYSCTL_CONF" ]]; then
     if ! awk \
         '!/^[[:space:]]*vm[.]max_map_count[[:space:]]*=/' \
@@ -1552,7 +1525,6 @@ if [[ -n "$SYSCTL_TMP" ]]; then
         rm -f "$SYSCTL_TMP"
         SYSCTL_TMP=""
 
-        # Apply the system sysctl configuration.
         if sudo sysctl --system; then
             CURRENT_VALUE="$(sysctl -n "$SYSCTL_KEY" 2>/dev/null || true)"
 
@@ -1798,220 +1770,224 @@ if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
     echo
     echo "Starting Helium DRM Fixer setup..."
 
-    sudo pacman -S --needed --noconfirm bun
+    if ! sudo pacman -S --needed --noconfirm bun; then
+        warn "Could not install bun; skipping Helium DRM fixer."
+    else
+        HELIUM_DRM_DIR="/tmp/helium-drm-fixer"
+        HELIUM_PROFILE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/net.imput.helium"
+        HELIUM_BOOTSTRAP_LOG="${TMPDIR:-/tmp}/helium-drm-bootstrap-$$.log"
+        HELIUM_BOOTSTRAP_PID=""
+        CHROME_WAS_INSTALLED=0
+        CHROME_INSTALLED_BY_SCRIPT=0
 
-    HELIUM_DRM_DIR="/tmp/helium-drm-fixer"
-    HELIUM_PROFILE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/net.imput.helium"
-    HELIUM_BOOTSTRAP_LOG="${TMPDIR:-/tmp}/helium-drm-bootstrap-$$.log"
-    HELIUM_BOOTSTRAP_PID=""
-    CHROME_WAS_INSTALLED=0
-    CHROME_INSTALLED_BY_SCRIPT=0
+        if pacman -Qi google-chrome &>/dev/null; then
+            CHROME_WAS_INSTALLED=1
+        fi
 
-    if pacman -Qi google-chrome &>/dev/null; then
-        CHROME_WAS_INSTALLED=1
-    fi
+        helium_profile_files_ready() {
+            [[ -s "$HELIUM_PROFILE_DIR/Local State" &&
+                -s "$HELIUM_PROFILE_DIR/Default/Preferences" ]]
+        }
 
-    helium_profile_files_ready() {
-        [[ -s "$HELIUM_PROFILE_DIR/Local State" &&
-            -s "$HELIUM_PROFILE_DIR/Default/Preferences" ]]
-    }
+        collect_helium_bootstrap_tree() {
+            local parent_pid="$1"
+            local child_pid
 
-    collect_helium_bootstrap_tree() {
-        local parent_pid="$1"
-        local child_pid
+            while IFS= read -r child_pid; do
+                [[ -n "$child_pid" ]] || continue
+                HELIUM_BOOTSTRAP_TREE+=("$child_pid")
+                collect_helium_bootstrap_tree "$child_pid"
+            done < <(pgrep -P "$parent_pid" 2>/dev/null || true)
+        }
 
-        while IFS= read -r child_pid; do
-            [[ -n "$child_pid" ]] || continue
-            HELIUM_BOOTSTRAP_TREE+=("$child_pid")
-            collect_helium_bootstrap_tree "$child_pid"
-        done < <(pgrep -P "$parent_pid" 2>/dev/null || true)
-    }
+        stop_helium_bootstrap() {
+            [[ -n "$HELIUM_BOOTSTRAP_PID" ]] || return 0
 
-    stop_helium_bootstrap() {
-        [[ -n "$HELIUM_BOOTSTRAP_PID" ]] || return 0
+            if kill -0 "$HELIUM_BOOTSTRAP_PID" 2>/dev/null; then
+                local -a HELIUM_BOOTSTRAP_TREE=()
+                local -a HELIUM_BOOTSTRAP_TARGETS=()
+                local pid
+                local running
 
-        if kill -0 "$HELIUM_BOOTSTRAP_PID" 2>/dev/null; then
-            local -a HELIUM_BOOTSTRAP_TREE=()
-            local -a HELIUM_BOOTSTRAP_TARGETS=()
-            local pid
-            local running
+                collect_helium_bootstrap_tree "$HELIUM_BOOTSTRAP_PID"
+                HELIUM_BOOTSTRAP_TARGETS=(
+                    "${HELIUM_BOOTSTRAP_TREE[@]}"
+                    "$HELIUM_BOOTSTRAP_PID"
+                )
 
-            collect_helium_bootstrap_tree "$HELIUM_BOOTSTRAP_PID"
-            HELIUM_BOOTSTRAP_TARGETS=(
-                "${HELIUM_BOOTSTRAP_TREE[@]}"
-                "$HELIUM_BOOTSTRAP_PID"
-            )
+                kill -TERM "${HELIUM_BOOTSTRAP_TARGETS[@]}" 2>/dev/null || true
 
-            kill -TERM "${HELIUM_BOOTSTRAP_TARGETS[@]}" 2>/dev/null || true
+                for _ in {1..10}; do
+                    running=0
 
-            for _ in {1..10}; do
-                running=0
+                    for pid in "${HELIUM_BOOTSTRAP_TARGETS[@]}"; do
+                        if kill -0 "$pid" 2>/dev/null; then
+                            running=1
+                            break
+                        fi
+                    done
 
-                for pid in "${HELIUM_BOOTSTRAP_TARGETS[@]}"; do
-                    if kill -0 "$pid" 2>/dev/null; then
-                        running=1
-                        break
-                    fi
+                    [[ "$running" -eq 1 ]] || break
+                    sleep 1
                 done
 
-                [[ "$running" -eq 1 ]] || break
-                sleep 1
-            done
+                for pid in "${HELIUM_BOOTSTRAP_TARGETS[@]}"; do
+                    kill -KILL "$pid" 2>/dev/null || true
+                done
+            fi
 
-            for pid in "${HELIUM_BOOTSTRAP_TARGETS[@]}"; do
-                kill -KILL "$pid" 2>/dev/null || true
-            done
-        fi
+            wait "$HELIUM_BOOTSTRAP_PID" 2>/dev/null || true
+            HELIUM_BOOTSTRAP_PID=""
+        }
 
-        wait "$HELIUM_BOOTSTRAP_PID" 2>/dev/null || true
-        HELIUM_BOOTSTRAP_PID=""
-    }
+        prepare_helium_profile() {
+            local HELIUM_LAUNCHER
+            local PROFILE_READY=0
 
-    prepare_helium_profile() {
-        local HELIUM_LAUNCHER
-        local PROFILE_READY=0
+            if helium_profile_files_ready; then
+                echo "  - Helium profile files already exist."
+                return 0
+            fi
 
-        if helium_profile_files_ready; then
-            echo "  - Helium profile files already exist."
-            return 0
-        fi
+            if [[ -L "$HELIUM_PROFILE_DIR/SingletonLock" ||
+                  -e "$HELIUM_PROFILE_DIR/SingletonLock" ||
+                  -L "$HELIUM_PROFILE_DIR/SingletonSocket" ||
+                  -e "$HELIUM_PROFILE_DIR/SingletonSocket" ]]; then
 
-        if [[ -L "$HELIUM_PROFILE_DIR/SingletonLock" ||
-              -e "$HELIUM_PROFILE_DIR/SingletonLock" ||
-              -L "$HELIUM_PROFILE_DIR/SingletonSocket" ||
-              -e "$HELIUM_PROFILE_DIR/SingletonSocket" ]]; then
+                echo "  - Helium profile appears to be in use."
+                echo "  - Waiting for the profile files without launching another instance..."
 
-            echo "  - Helium profile appears to be in use."
-            echo "  - Waiting for the profile files without launching another instance..."
+                for _ in {1..30}; do
+                    if helium_profile_files_ready; then
+                        echo "  - Helium profile files verified."
+                        return 0
+                    fi
+
+                    sleep 1
+                done
+
+                warn "Helium profile is in use, but the required files are missing."
+                return 1
+            fi
+
+            HELIUM_LAUNCHER="${HELIUM_CMD:-}"
+
+            if [[ -z "$HELIUM_LAUNCHER" ]]; then
+                warn "Helium launcher was not found."
+                return 1
+            fi
+
+            mkdir -p "$HELIUM_PROFILE_DIR" || {
+                warn "Could not create the Helium profile directory."
+                return 1
+            }
+
+            : > "$HELIUM_BOOTSTRAP_LOG"
+
+            echo "  - Starting Helium in the background..."
+            echo "  - Waiting for profile files..."
+            echo "  - Log: $HELIUM_BOOTSTRAP_LOG"
+
+            "$HELIUM_LAUNCHER" \
+                --headless \
+                --disable-gpu \
+                --no-first-run \
+                --no-default-browser-check \
+                --user-data-dir="$HELIUM_PROFILE_DIR" \
+                about:blank \
+                > >(tee -a "$HELIUM_BOOTSTRAP_LOG") 2>&1 &
+
+            HELIUM_BOOTSTRAP_PID=$!
 
             for _ in {1..30}; do
                 if helium_profile_files_ready; then
-                    echo "  - Helium profile files verified."
-                    return 0
+                    PROFILE_READY=1
+                    break
+                fi
+
+                if ! kill -0 "$HELIUM_BOOTSTRAP_PID" 2>/dev/null; then
+                    break
                 fi
 
                 sleep 1
             done
 
-            warn "Helium profile is in use, but the required files are missing."
-            return 1
-        fi
+            stop_helium_bootstrap
 
-        HELIUM_LAUNCHER="$(command -v helium-browser || true)"
+            if [[ "$PROFILE_READY" -eq 1 ]]; then
+                echo "  - Helium profile files verified."
+                return 0
+            fi
 
-        if [[ -z "$HELIUM_LAUNCHER" ]]; then
-            warn "Helium launcher was not found."
-            return 1
-        fi
-
-        mkdir -p "$HELIUM_PROFILE_DIR" || {
-            warn "Could not create the Helium profile directory."
+            warn "Helium did not create the required profile files."
+            warn "Check the bootstrap log: $HELIUM_BOOTSTRAP_LOG"
             return 1
         }
 
-        : > "$HELIUM_BOOTSTRAP_LOG"
+        cleanup_helium_drm() {
+            stop_helium_bootstrap
+            rm -rf -- "$HELIUM_DRM_DIR"
 
-        echo "  - Starting Helium in the background..."
-        echo "  - Waiting for profile files..."
-        echo "  - Log: $HELIUM_BOOTSTRAP_LOG"
+            if [[ "$CHROME_INSTALLED_BY_SCRIPT" -eq 1 ]]; then
+                sudo pacman -Rns --noconfirm google-chrome &>/dev/null || true
 
-        "$HELIUM_LAUNCHER" \
-            --headless \
-            --disable-gpu \
-            --no-first-run \
-            --no-default-browser-check \
-            --user-data-dir="$HELIUM_PROFILE_DIR" \
-            about:blank \
-            > >(tee -a "$HELIUM_BOOTSTRAP_LOG") 2>&1 &
-
-        HELIUM_BOOTSTRAP_PID=$!
-
-        for _ in {1..30}; do
-            if helium_profile_files_ready; then
-                PROFILE_READY=1
-                break
+                if [[ "$AUR_HELPER" == "yay" ]]; then
+                    rm -rf -- "$HOME/.cache/yay/google-chrome"
+                elif [[ "$AUR_HELPER" == "paru" ]]; then
+                    rm -rf -- "$HOME/.cache/paru/clone/google-chrome"
+                fi
             fi
+        }
 
-            if ! kill -0 "$HELIUM_BOOTSTRAP_PID" 2>/dev/null; then
-                break
-            fi
+        trap cleanup_helium_drm EXIT
 
-            sleep 1
-        done
-
-        stop_helium_bootstrap
-
-        if [[ "$PROFILE_READY" -eq 1 ]]; then
-            echo "  - Helium profile files verified."
-            return 0
-        fi
-
-        warn "Helium did not create the required profile files."
-        warn "Check the bootstrap log: $HELIUM_BOOTSTRAP_LOG"
-        return 1
-    }
-
-    cleanup_helium_drm() {
-        stop_helium_bootstrap
         rm -rf -- "$HELIUM_DRM_DIR"
 
-        if [[ "$CHROME_INSTALLED_BY_SCRIPT" -eq 1 ]]; then
-            sudo pacman -Rns --noconfirm google-chrome &>/dev/null || true
+        if git clone https://github.com/PHNexus/helium-drm-fixer.git "$HELIUM_DRM_DIR"; then
+            if [[ "$CHROME_WAS_INSTALLED" -eq 0 ]]; then
+                echo "Installing Google Chrome temporarily via $AUR_HELPER..."
 
-            if [[ "$AUR_HELPER" == "yay" ]]; then
-                rm -rf -- "$HOME/.cache/yay/google-chrome"
-            elif [[ "$AUR_HELPER" == "paru" ]]; then
-                rm -rf -- "$HOME/.cache/paru/clone/google-chrome"
-            fi
-        fi
-    }
-
-    trap cleanup_helium_drm EXIT
-
-    rm -rf -- "$HELIUM_DRM_DIR"
-
-    if git clone https://github.com/PHNexus/helium-drm-fixer.git "$HELIUM_DRM_DIR"; then
-        if [[ "$CHROME_WAS_INSTALLED" -eq 0 ]]; then
-            echo "Installing Google Chrome temporarily via $AUR_HELPER..."
-
-            if printf 'Y\n' | aur_install google-chrome; then
-                CHROME_INSTALLED_BY_SCRIPT=1
-            else
-                warn "Could not install temporary Google Chrome."
-            fi
-        else
-            echo "  - Existing Google Chrome installation detected."
-        fi
-
-        if pacman -Qi google-chrome &>/dev/null; then
-            if prepare_helium_profile; then
-                if (
-                    cd "$HELIUM_DRM_DIR" &&
-                    bun install &&
-                    bun run cli.ts
-                ); then
-                    echo "  - Helium DRM Fixer completed."
+                if printf 'Y\n' | aur_install google-chrome; then
+                    CHROME_INSTALLED_BY_SCRIPT=1
                 else
-                    warn "Helium DRM Fixer failed; continuing."
+                    warn "Could not install temporary Google Chrome."
                 fi
             else
-                warn "Helium profile initialization failed; skipping the DRM fixer."
+                echo "  - Existing Google Chrome installation detected."
+            fi
+
+            if pacman -Qi google-chrome &>/dev/null; then
+                if prepare_helium_profile; then
+                    if (
+                        cd "$HELIUM_DRM_DIR" &&
+                        bun install &&
+                        bun run cli.ts
+                    ); then
+                        echo "  - Helium DRM Fixer completed."
+                    else
+                        warn "Helium DRM Fixer failed; continuing."
+                    fi
+                else
+                    warn "Helium profile initialization failed; skipping the DRM fixer."
+                fi
+            else
+                warn "Google Chrome is unavailable; skipping the DRM fixer."
             fi
         else
-            warn "Google Chrome is unavailable; skipping the DRM fixer."
+            warn "Could not clone Helium DRM Fixer; skipping this optional step."
         fi
-    else
-        warn "Could not clone Helium DRM Fixer; skipping this optional step."
+
+        cleanup_helium_drm
+        trap - EXIT
+
+        echo "Helium DRM Fixer step finished."
     fi
+fi
 
-    cleanup_helium_drm
-    trap - EXIT
-
-    echo "Helium DRM Fixer step finished."
-
-    # --------------------------------------------
-    # Configure Helium Browser Flags
-    # --------------------------------------------
+# --------------------------------------------
+# Configure Helium Browser Flags
+# --------------------------------------------
+if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
     echo
     echo "Configuring Helium browser flags..."
 
@@ -2028,16 +2004,41 @@ if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
 EOF
 
     echo "  - Created helium-browser-flags.conf successfully."
+fi
 
-    # --------------------------------------------
-    # Configure Helium Cookie Exceptions via Policy
-    # --------------------------------------------
+# --------------------------------------------
+# Configure Helium Cookie Exceptions via Policy
+# --------------------------------------------
+if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
     echo
     echo "Configuring Helium cookie exceptions..."
 
-    sudo mkdir -p /etc/chromium/policies/managed
+    HELIUM_POLICY_DIRS=(
+        "/etc/chromium/policies/managed"
+        "/etc/helium/policies/managed"
+        "/etc/helium-browser/policies/managed"
+        "/etc/net.imput.helium/policies/managed"
+    )
 
-    sudo tee /etc/chromium/policies/managed/cookie_exceptions.json >/dev/null <<'EOF'
+    if [[ -n "$HELIUM_CMD" ]]; then
+        HELIUM_BIN_REAL="$(readlink -f "$HELIUM_CMD" 2>/dev/null || true)"
+        if [[ -n "$HELIUM_BIN_REAL" ]] && command -v strings >/dev/null 2>&1; then
+            DETECTED_POLICY_DIR="$(strings "$HELIUM_BIN_REAL" 2>/dev/null |
+                grep -oE '/etc/[a-zA-Z0-9._-]+/policies/managed' |
+                sort -u | head -1 || true)"
+            if [[ -n "$DETECTED_POLICY_DIR" ]]; then
+                HELIUM_POLICY_DIRS=("$DETECTED_POLICY_DIR" "${HELIUM_POLICY_DIRS[@]}")
+            fi
+        fi
+    fi
+
+    declare -A HELIUM_SEEN_POLICY_DIRS=()
+    for dir in "${HELIUM_POLICY_DIRS[@]}"; do
+        [[ -n "${HELIUM_SEEN_POLICY_DIRS["$dir"]:-}" ]] && continue
+        HELIUM_SEEN_POLICY_DIRS["$dir"]=1
+
+        if sudo mkdir -p "$dir"; then
+            if sudo tee "$dir/cookie_exceptions.json" >/dev/null <<'EOF'
 {
   "CookiesAllowedForUrls": [
     "[*.]google.com",
@@ -2047,11 +2048,20 @@ EOF
   ]
 }
 EOF
+            then
+                echo "  - Cookie policy written to $dir/cookie_exceptions.json"
+            else
+                warn "Could not write $dir/cookie_exceptions.json"
+            fi
+        else
+            warn "Could not create $dir"
+        fi
+    done
 
-    echo "  - Cookie exceptions policy configured successfully."
+    echo "  - Restart Helium and check helium://policy for CookiesAllowedForUrls."
 else
     echo
-    echo "Skipping Helium browser configuration: helium-browser-bin was not selected or installed."
+    echo "Skipping Helium browser configuration: helium-browser-bin is not installed."
 fi
 
 # --------------------------------------------

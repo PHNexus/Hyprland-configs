@@ -14,3 +14,4 @@ application/vnd.openxmlformats-officedocument.wordprocessingml.document=ai.story
 text/markdown=com.microsoft.VSCode.desktop;
 x-scheme-handler/tonsite=org.telegram.desktop.desktop;
 x-scheme-handler/ton=org.telegram.desktop.desktop;
+image/png=imv.desktop;
