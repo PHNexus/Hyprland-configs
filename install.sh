@@ -2001,6 +2001,7 @@ if [[ "$HAS_HELIUM_BROWSER" -eq 1 ]]; then
 --enable-gpu-rasterization
 --use-gl=angle
 --use-angle=gl
+--password-store=basic
 EOF
 
     echo "  - Created helium-browser-flags.conf successfully."
