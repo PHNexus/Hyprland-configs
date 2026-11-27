@@ -98,6 +98,84 @@ if ! sudo -v; then
 fi
 
 # --------------------------------------------
+# Configure browser access to HID devices (WebHID)
+# --------------------------------------------
+configure_hidraw_browser_access() {
+    local access_group="hidraw-access"
+    local rule="/etc/udev/rules.d/99-hidraw-browser-access.rules"
+    local uid_min account shell_path
+
+    echo
+    echo "Configuring shared browser access to HID devices (keyboards, mice and HID headsets)..."
+
+    if ! command -v getent >/dev/null 2>&1 || ! command -v usermod >/dev/null 2>&1; then
+        warn "getent/usermod not found; skipping shared HID permissions."
+        return 0
+    fi
+
+    uid_min="$(awk '$1 == "UID_MIN" { print $2; exit }' /etc/login.defs 2>/dev/null || true)"
+    [[ "$uid_min" =~ ^[0-9]+$ ]] || uid_min=1000
+
+    if ! getent group "$access_group" >/dev/null 2>&1; then
+        if ! sudo groupadd --system "$access_group"; then
+            warn "Could not create the $access_group group; skipping HID permissions."
+            return 0
+        fi
+    fi
+
+    # Add existing human accounts (UID >= UID_MIN with a usable login shell).
+    while IFS=: read -r account _ account_uid _ _ _ shell_path; do
+        [[ "$account_uid" =~ ^[0-9]+$ ]] || continue
+        (( account_uid >= uid_min )) || continue
+        case "${shell_path##*/}" in
+            nologin|false|sync|shutdown|halt) continue ;;
+        esac
+
+        if ! id -nG "$account" 2>/dev/null | tr ' ' '\n' | grep -Fxq "$access_group"; then
+            if sudo usermod -aG "$access_group" "$account"; then
+                echo "  - Added user '$account' to $access_group."
+            else
+                warn "Could not add user '$account' to $access_group."
+            fi
+        fi
+    done < <(getent passwd)
+
+    # Applies to HID raw interfaces only. Avoids granting every account access
+    # to every USB device, which would be unnecessarily broad for WebUSB.
+    local rule_line='SUBSYSTEM=="hidraw", KERNEL=="hidraw*", GROUP="hidraw-access", MODE="0660"'
+    if ! sudo test -f "$rule"; then
+        if ! sudo install -D -o root -g root -m 0644 /dev/null "$rule"; then
+            warn "Could not create $rule; skipping HID udev rule."
+            return 0
+        fi
+    fi
+
+    if ! sudo grep -Fqx -- "$rule_line" "$rule"; then
+        if ! printf '%s\n' "$rule_line" | sudo tee -a "$rule" >/dev/null; then
+            warn "Could not write the HID udev rule."
+            return 0
+        fi
+    fi
+
+    if command -v udevadm >/dev/null 2>&1; then
+        if sudo udevadm control --reload-rules &&
+            sudo udevadm trigger --subsystem-match=hidraw --action=add; then
+            echo "  - HID udev rules reloaded."
+        else
+            warn "Could not reload/trigger HID udev rules."
+        fi
+    else
+        warn "udevadm not found; HID permissions will apply after a reboot or device reconnect."
+    fi
+
+    echo "  - Group access is ready; users must log out and back in (or reboot) for membership to apply."
+    echo "  - New human accounts created later must also be added to $access_group."
+    echo "  - This covers devices exposed through hidraw/WebHID; it does not grant blanket WebUSB access to all USB devices."
+}
+
+configure_hidraw_browser_access
+
+# --------------------------------------------
 # Configure Bluetooth only when relevant
 # --------------------------------------------
 bluetooth_module_service_exists() {
