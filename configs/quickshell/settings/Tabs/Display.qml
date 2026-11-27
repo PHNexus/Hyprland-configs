@@ -1419,15 +1419,6 @@ Item {
                             id: cardHover
                         }
 
-                        Rectangle {
-                            x: 0
-                            y: 10
-                            width: 3
-                            height: Math.max(0, parent.height - 20)
-                            radius: 1.5
-                            color: card.off ? Theme.alpha(Theme.text, 0.1) : (card.main ? Theme.accent : Theme.alpha("#aeb4bf", 0.28))
-                        }
-
                         Column {
                             id: cardColumn
 
